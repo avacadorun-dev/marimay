@@ -97,11 +97,11 @@ jobs:
         run: cmake -S . -B build -DMMAY_WARNINGS_AS_ERRORS=ON
       - name: Build
         run: cmake --build build --config ${{ matrix.configuration }} --parallel
-      - name: Preflight Windows native toolchain
+      - name: Preflight Windows native toolchain and relocation
         if: runner.os == 'Windows'
         run: >-
           ctest --test-dir build -C ${{ matrix.configuration }}
-          -R "^mmay_cp39_unit$" --no-tests=error --output-on-failure
+          -R "^(mmay_cp39_unit|mmay_install_relocation)$" --no-tests=error --output-on-failure
       - name: Test
         id: test
         run: ctest --test-dir build -C ${{ matrix.configuration }} --parallel 4 --output-on-failure
@@ -255,8 +255,8 @@ jobs:
         run: cmake --preset asan
       - name: Build
         run: cmake --build --preset asan --parallel
-      - name: Preflight Windows native toolchain
-        run: ctest --preset asan -R "^mmay_cp39_unit$" --no-tests=error --output-on-failure
+      - name: Preflight Windows native toolchain and relocation
+        run: ctest --preset asan -R "^(mmay_cp39_unit|mmay_install_relocation)$" --no-tests=error --output-on-failure
       - name: Test
         run: ctest --preset asan
 

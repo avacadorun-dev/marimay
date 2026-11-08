@@ -13,9 +13,10 @@ Linux x86_64 GCC/Clang, Linux ARM64 GCC, macOS ARM64/x86_64, and Windows MSVC.
 CTest contains focused C owners, deterministic allocation failures, negative
 cases, VM/native differentials, and distribution lifecycle checks.
 
-Windows builds run the CP39 native-toolchain preflight before the full CTest
-suite. A failed preflight keeps the job red and exposes bounded raw compiler
-query diagnostics promptly; a pass still requires the complete suite.
+Windows builds preflight the CP39 native toolchain and a relocated native build
+before the full CTest suite. A failed preflight keeps the job red and exposes
+bounded compiler diagnostics and path-with-spaces failures promptly; a pass
+still requires the complete suite.
 
 Additional jobs run Unix ASan/UBSan, Linux LeakSanitizer, Linux TSan,
 Windows ASan, four sustained fuzz targets, and the explicitly pinned optional

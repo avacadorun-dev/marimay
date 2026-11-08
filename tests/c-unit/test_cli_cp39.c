@@ -188,6 +188,7 @@ static void mmay_cp39_expect_toolchain(void) {
     MarimayOwnedBytes output = {0};
     MarimayNativeToolchainStatus probe_status;
     size_t failure_index = 0;
+    size_t allocation_count = 0;
     bool reached_success = false;
     probe_status = mmay_native_toolchain_probe(
         mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
@@ -253,7 +254,21 @@ static void mmay_cp39_expect_toolchain(void) {
         mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
         "invalid", &output
     ) == MMAY_NATIVE_TOOLCHAIN_INVALID_ARGUMENT);
-    for (failure_index = 0; failure_index < 16; failure_index += 1) {
+    {
+        MarimayFailAllocator control;
+        mmay_fail_allocator_init(&control, mmay_system_allocator(), SIZE_MAX);
+        probe_status = mmay_native_toolchain_probe(
+            mmay_fail_allocator(&control), MMAY_NATIVE_C_COMPILER,
+            MMAY_NATIVE_C_COMPILER_VERSION, &output
+        );
+        reached_success = probe_status == MMAY_NATIVE_TOOLCHAIN_OK;
+        MMAY_EXPECT(reached_success);
+        allocation_count = control.attempts;
+        mmay_owned_bytes_dispose(&output);
+        MMAY_EXPECT(control.live_allocations == 0);
+        MMAY_EXPECT(control.live_bytes == 0);
+    }
+    for (failure_index = 0; failure_index < allocation_count; failure_index += 1) {
         MarimayFailAllocator state;
         MarimayNativeToolchainStatus status;
         mmay_fail_allocator_init(
@@ -263,16 +278,19 @@ static void mmay_cp39_expect_toolchain(void) {
             mmay_fail_allocator(&state), MMAY_NATIVE_C_COMPILER,
             MMAY_NATIVE_C_COMPILER_VERSION, &output
         );
+        /* Host pipe chunking can reduce vector growth on a replay. Success
+         * is valid only when the selected failure index was never reached. */
         if (status == MMAY_NATIVE_TOOLCHAIN_OK) {
-            reached_success = true;
-            mmay_owned_bytes_dispose(&output);
+            MMAY_EXPECT(failure_index >= state.attempts);
+            MMAY_EXPECT(output.length != 0);
         } else {
             MMAY_EXPECT(status == MMAY_NATIVE_TOOLCHAIN_ALLOCATION_FAILED);
+            MMAY_EXPECT(failure_index < state.attempts);
             MMAY_EXPECT(output.data == NULL);
         }
+        mmay_owned_bytes_dispose(&output);
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
-        if (reached_success) break;
     }
     MMAY_EXPECT(reached_success);
 }
