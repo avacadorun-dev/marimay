@@ -102,7 +102,7 @@ class PackageTests(unittest.TestCase):
         self.assertFalse((payload / "usr/local/bin/mmay").exists())
         self.assertEqual(arguments[arguments.index("--install-location") + 1],
                          f"/usr/local/lib/marimay/{VERSION}")
-        self.assertEqual(arguments[arguments.index("--identifier") + 1], "org.marimay.mmay")
+        self.assertEqual(arguments[arguments.index("--identifier") + 1], PACKAGE.receipt_identifier(VERSION))
         self.assertEqual(arguments[arguments.index("--ownership") + 1], "recommended")
         self.assertEqual(arguments[arguments.index("--filter") + 1], "^$")
         scripts = Path(arguments[arguments.index("--scripts") + 1])
@@ -223,7 +223,7 @@ class PackageTests(unittest.TestCase):
         manifest(archive_root, VERSION)
         expanded = self.work / "expanded package"
         shutil.copytree(self.root, expanded / "Payload")
-        info = ET.Element("pkg-info", {"identifier": PACKAGE.IDENTIFIER, "version": VERSION,
+        info = ET.Element("pkg-info", {"identifier": PACKAGE.receipt_identifier(VERSION), "version": VERSION,
                                       "install-location": f"/usr/local/lib/marimay/{VERSION}"})
         ET.ElementTree(info).write(expanded / "PackageInfo")
         result = subprocess.CompletedProcess([], 0, b"", b"")
@@ -269,7 +269,7 @@ class PackageTests(unittest.TestCase):
         subprocess.run(["/usr/sbin/pkgutil", "--expand-full", str(output), str(expanded)],
                        check=True, capture_output=True)
         info = ET.parse(expanded / "PackageInfo").getroot()
-        self.assertEqual(info.attrib["identifier"], PACKAGE.IDENTIFIER)
+        self.assertEqual(info.attrib["identifier"], PACKAGE.receipt_identifier(VERSION))
         self.assertEqual(info.attrib["version"], VERSION)
         self.assertEqual(info.attrib["install-location"], f"/usr/local/lib/marimay/{VERSION}")
         self.assertEqual(verify_prefix(expanded / "Payload", VERSION, arch),
@@ -296,8 +296,9 @@ class InstallerTests(unittest.TestCase):
     def hook(self, operation, expected=0, prefix_code=""):
         # Exercise the real installer primitives in an isolated target volume.
         # Actual host probes and Installer integration run on both Mac CI hosts.
+        reader = self.receipt_reader() if hasattr(self, "active_version") else "mmay_receipt_list() { return 1; }"
         code = ('set -eu; . "$1/installer-common.sh"; '
-                'mmay_setup package / "$2"; mmay_receipt_list() { return 1; }; '
+                'mmay_setup package / "$2"; ' + reader + '; '
                 + (prefix_code or ":") + '; mmay_' + operation)
         result = subprocess.run(["/bin/sh", "-c", code, "test", str(self.scripts), str(self.volume)],
                                 capture_output=True, timeout=30)
@@ -314,6 +315,8 @@ class InstallerTests(unittest.TestCase):
         self.command.parent.mkdir(parents=True, exist_ok=True)
         self.command.write_bytes(PACKAGE.wrapper(version))
         self.command.chmod(0o755)
+        self.active_version = version
+        self.receipt_files(version)
         return root
 
     def test_install_then_same_version_is_refused_unchanged(self):
@@ -406,8 +409,9 @@ class InstallerTests(unittest.TestCase):
                                      "test", str(common), system, arch, version], capture_output=True)
             self.assertEqual(result.returncode, expected, result.stderr)
 
-    def receipt_files(self):
-        base = self.volume / "private/var/db/receipts/org.marimay.mmay"
+    def receipt_files(self, version="0.1.0-alpha.0", identifier=None):
+        identifier = identifier or SMOKE.receipt_identifier(version)
+        base = self.volume / f"private/var/db/receipts/{identifier}"
         base.parent.mkdir(parents=True, exist_ok=True)
         files = [Path(str(base) + "." + suffix) for suffix in ("plist", "bom")]
         for path in files:
@@ -415,15 +419,18 @@ class InstallerTests(unittest.TestCase):
         return files
 
     def receipt_reader(self, **changed):
-        fields = {"pkgid": "org.marimay.mmay", "pkg-version": "0.1.0-alpha.0",
-                  "install-location": "usr/local/lib/marimay/0.1.0-alpha.0",
+        version = getattr(self, "active_version", "0.1.0-alpha.0")
+        identifier = SMOKE.receipt_identifier(version)
+        fields = {"pkgid": identifier, "pkg-version": version,
+                  "install-location": f"usr/local/lib/marimay/{version}",
                   "volume": str(self.volume)}
         fields.update(changed)
         cases = []
         for name, value in fields.items():
             body = "return 1" if value is None else "printf '%s\\n' " + shlex.quote(value)
             cases.append(shlex.quote(name) + ") " + body + ";;")
-        return ("mmay_receipt_list() { printf 'org.marimay.mmay\\n'; }; "
+        return ('mmay_receipt_list() { if [ "$1" = ' + shlex.quote(identifier)
+                + " ]; then printf '%s\\n' " + shlex.quote(identifier) + "; else return 1; fi; }; "
                 "mmay_receipt_info() { printf 'synthetic plist reader boundary\\n'; }; "
                 'mmay_receipt_field() { case "$1" in ' + " ".join(cases) + " esac; }")
 
@@ -433,7 +440,7 @@ class InstallerTests(unittest.TestCase):
                        "printf 'org.marimay.mmay\\n'; return 1",
                        "printf 'query failed\\n' >&2; return 1"):
             self.hook("preinstall", 1, "mmay_receipt_list() { " + reader + "; }")
-        files = self.receipt_files()
+        files = self.receipt_files(VERSION)
         for path in files:
             other = files[1] if path == files[0] else files[0]
             other.unlink(missing_ok=True)
@@ -444,10 +451,11 @@ class InstallerTests(unittest.TestCase):
         files[0].symlink_to(self.work / "missing receipt")
         self.hook("preinstall", 1)
 
-    def test_existing_receipt_requires_owned_active_installation_and_exact_fields(self):
+    def test_active_version_receipt_requires_exact_fields_and_complete_files(self):
         files = self.receipt_files()
         before = [path.read_bytes() for path in files]
-        self.hook("preinstall", 1, self.receipt_reader())
+        # An inactive version's receipt is retained without enumerating it.
+        self.hook("preinstall", prefix_code=self.receipt_reader())
         self.old()
         command_before = self.command.read_bytes()
         self.hook("preinstall", prefix_code=self.receipt_reader())
@@ -473,6 +481,20 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(self.command.read_bytes(), command_before)
         self.assertFalse(self.candidate.exists())
 
+    def test_candidate_and_retired_receipts_are_refused_and_active_receipt_is_required(self):
+        for identifier in (SMOKE.receipt_identifier(VERSION), SMOKE.IDENTIFIER):
+            files = self.receipt_files(identifier=identifier)
+            reader = ('mmay_receipt_list() { if [ "$1" = ' + shlex.quote(identifier)
+                      + " ]; then printf '%s\\n' " + shlex.quote(identifier) + "; else return 1; fi; }")
+            self.hook("preinstall", 1, reader)
+            self.assertTrue(all(path.read_bytes() == b"synthetic receipt boundary\n" for path in files))
+            for path in files: path.unlink()
+        self.old()
+        before = self.command.read_bytes()
+        for path in self.receipt_files(): path.unlink()
+        self.hook("preinstall", 1, "mmay_receipt_list() { return 1; }")
+        self.assertEqual(self.command.read_bytes(), before)
+
     def test_receipt_mismatch_identifies_field_and_digest_without_raw_value(self):
         self.old()
         self.receipt_files()
@@ -489,10 +511,12 @@ class InstallerTests(unittest.TestCase):
         self.old()
         self.receipt_files()
         fixture = self.work / "queried receipt.plist"
-        fields = {"pkgid": "org.marimay.mmay", "pkg-version": "0.1.0-alpha.0",
+        fields = {"pkgid": SMOKE.receipt_identifier("0.1.0-alpha.0"), "pkg-version": "0.1.0-alpha.0",
                   "install-location": "usr/local/lib/marimay/0.1.0-alpha.0",
                   "volume": str(self.volume)}
-        reader = ("mmay_receipt_list() { printf 'org.marimay.mmay\\n'; }; "
+        identifier = SMOKE.receipt_identifier("0.1.0-alpha.0")
+        reader = ('. "$1/installer-common.sh"; mmay_receipt_list() { if [ "$1" = ' + shlex.quote(identifier)
+                  + " ]; then printf '%s\\n' " + shlex.quote(identifier) + "; else return 1; fi; }; "
                   "mmay_receipt_info() { /bin/cat " + shlex.quote(str(fixture)) + "; }")
         fixture.write_bytes(plistlib.dumps(fields))
         self.hook("preinstall", prefix_code=reader)
@@ -688,29 +712,37 @@ class InstallGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory).resolve() / "synthetic preflight Мир"
             version = SMOKE.previous_version(work)
+            next_version = version.replace("0.0.0-", "0.1.0-", 1)
             location = f"/usr/local/lib/marimay-ci-receipt-probe/{version}"
             with mock.patch.object(SMOKE, "require_ci") as guard, \
                     mock.patch.object(SMOKE, "receipt_absent") as absent, \
                     mock.patch.object(SMOKE, "command") as run, \
                     mock.patch.object(SMOKE, "sudo") as sudo, \
-                    mock.patch.object(SMOKE, "receipt_identity") as identity, \
+                    mock.patch.object(SMOKE, "probe_snapshot", side_effect=["old", "new", "old"]) as snapshots, \
                     mock.patch("builtins.print"):
                 SMOKE.receipt_preflight(work)
             guard.assert_called_once_with(True)
-            absent.assert_called_once_with(SMOKE.PROBE_IDENTIFIER, SMOKE.REPOSITORY)
-            arguments = run.call_args.args[0]
-            self.assertEqual(arguments[0], "/usr/bin/pkgbuild")
-            self.assertEqual(arguments[arguments.index("--identifier") + 1], SMOKE.PROBE_IDENTIFIER)
-            self.assertNotEqual(SMOKE.PROBE_IDENTIFIER, SMOKE.IDENTIFIER)
-            self.assertEqual(arguments[arguments.index("--version") + 1], version)
-            self.assertEqual(arguments[arguments.index("--install-location") + 1], location)
-            self.assertNotIn("--scripts", arguments)
-            sudo.assert_called_once_with(["/usr/sbin/installer", "-pkg", work / "receipt-probe.pkg",
-                                          "-target", "/"], work)
-            identity.assert_called_once_with(SMOKE.PROBE_IDENTIFIER, version, location, work)
-            self.assertEqual((work / "probe payload/receipt-probe").read_bytes(),
-                             b"Marimay CI receipt probe\n")
-            self.assertFalse((work / "probe payload/bin/mmay").exists())
+            self.assertEqual(absent.call_args_list, [
+                mock.call(SMOKE.PROBE_IDENTIFIER, SMOKE.REPOSITORY),
+                mock.call(SMOKE.receipt_identifier(version, SMOKE.PROBE_IDENTIFIER), SMOKE.REPOSITORY),
+                mock.call(SMOKE.receipt_identifier(next_version, SMOKE.PROBE_IDENTIFIER), SMOKE.REPOSITORY)])
+            self.assertEqual(run.call_count, 2)
+            self.assertEqual(sudo.call_count, 2)
+            for index, value in enumerate((version, next_version)):
+                arguments = run.call_args_list[index].args[0]
+                self.assertEqual(arguments[0], "/usr/bin/pkgbuild")
+                self.assertEqual(arguments[arguments.index("--identifier") + 1],
+                                 SMOKE.receipt_identifier(value, SMOKE.PROBE_IDENTIFIER))
+                self.assertEqual(arguments[arguments.index("--version") + 1], value)
+                self.assertEqual(arguments[arguments.index("--install-location") + 1],
+                                 f"/usr/local/lib/marimay-ci-receipt-probe/{value}")
+                self.assertNotIn("--scripts", arguments)
+                self.assertEqual(sudo.call_args_list[index], mock.call(["/usr/sbin/installer", "-pkg",
+                    work / (value + ".pkg"), "-target", "/"], work))
+                self.assertEqual((work / ("probe payload " + value) / "receipt-probe").read_bytes(),
+                                 b"Marimay CI receipt probe\n")
+            self.assertEqual(snapshots.call_args_list,
+                             [mock.call(version, work), mock.call(next_version, work), mock.call(version, work)])
 
     def test_receipt_preflight_cli_routes_without_release_assets_and_checks_arch(self):
         arguments = ["test-macos-install", "--receipt-preflight", "--arch", ARCH,
@@ -751,7 +783,7 @@ class InstallGateTests(unittest.TestCase):
 
     def test_receipt_mismatch_reports_only_queried_identity_fields(self):
         import plistlib
-        fields = {"pkgid": SMOKE.IDENTIFIER, "pkg-version": "0.0.0",
+        fields = {"pkgid": SMOKE.receipt_identifier("0.0.0-alpha.ci-fixture"), "pkg-version": "0.0.0",
                   "install-location": "usr/local/lib/foreign/0.0.0-alpha.ci-fixture",
                   "volume": "/", "unrelated-system-metadata": "must not report"}
         result = subprocess.CompletedProcess([], 0, plistlib.dumps(fields), b"")
@@ -796,7 +828,7 @@ class InstallGateTests(unittest.TestCase):
             arguments = run.call_args.args[0]
             self.assertEqual(arguments[0], "/usr/bin/pkgbuild")
             self.assertNotIn("--scripts", arguments)
-            self.assertEqual(arguments[arguments.index("--identifier") + 1], SMOKE.IDENTIFIER)
+            self.assertEqual(arguments[arguments.index("--identifier") + 1], SMOKE.receipt_identifier(version))
             self.assertEqual(arguments[arguments.index("--install-location") + 1],
                              f"/usr/local/lib/marimay/{version}")
             sudo.assert_called_once_with(["/usr/sbin/installer", "-pkg",

@@ -23,6 +23,10 @@ def component(value: str) -> str:
     return value
 
 
+def receipt_identifier(version: str, namespace="org.marimay.mmay") -> str:
+    return namespace + "." + component(version)
+
+
 def relative_name(value: str) -> str:
     if (not value or value in (".", "..") or value.startswith("/") or "\\" in value or ";" in value
             or any(ord(c) < 32 or ord(c) == 127 for c in value)

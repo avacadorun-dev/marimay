@@ -3936,6 +3936,13 @@ The receipt location is the exact volume-relative `usr/local/lib/marimay/V`
 reported by `pkgutil`, while the package destination remains absolute.
 Foreign, partial, corrupt or unqueryable receipts fail without replacement;
 receipt absence is checked without enumerating unrelated installations.
+Each version has a distinct receipt ID `org.marimay.mmay.V`. A shared ID is
+unsafe for this layout: actual macOS Installer testing showed that upgrading
+it deleted the previous BOM-owned files before postinstall, breaking the old
+active command. The candidate receipt must be absent; the previous active
+version's matching receipt is required and retained with its files. The retired
+constant `org.marimay.mmay` receipt is a collision, without automatic migration.
+Installation must not use `pkgutil --forget` to bypass ownership checks.
 After payload/ownership validation, the wrapper is
 activated last through atomic rename. Failure preserves the previously active
 command. Standard Installer manages payload/receipts; atomic activation does

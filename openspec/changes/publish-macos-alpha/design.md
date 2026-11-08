@@ -36,12 +36,16 @@ promotion of existing product milestones. No source syntax changes.
    handles payload/receipt lifecycle; we promise atomic activation, not atomic
    file-by-file macOS payload installation. Any existing candidate version
    prefix, including a same-version reinstall, is rejected unchanged. Upgrades
-   require a fresh version slot. Existing Installer receipts must match the
+   require a fresh version slot and a distinct `org.marimay.mmay.V` receipt.
+   A shared receipt ID lets Installer delete the previous BOM-owned files
+   before postinstall; version-specific IDs preserve them and their receipts.
+   Reject an existing candidate or retired constant receipt. An active version
+   requires its matching receipt. Active-version receipts must match the
    verified old active wrapper/prefix and exact package/version/location/volume;
    stock `pkgutil` represents receipt locations relative to the target volume,
    so compare exactly `usr/local/lib/marimay/V` without a leading slash.
    partial, corrupt or foreign records fail closed without replacement.
-   The CI upgrade fixture registers a real old receipt/BOM through Installer,
+   The CI upgrade fixture registers a real old version-specific receipt/BOM through Installer,
    then adds unrelated data outside its BOM and verifies its preservation.
    A failed new payload stays inactive and may
    require explicit recovery; it is not silently removed or overwritten.

@@ -69,6 +69,17 @@ be edited.
 - **THEN** receipt `install-location` must exactly equal the volume-relative
   `usr/local/lib/marimay/V`; absolute or alternate spellings are rejected
 
+### Requirement: Version-specific receipt ownership
+Each version SHALL have a distinct `org.marimay.mmay.V` Installer receipt.
+Candidate and retired constant receipts SHALL be absent before installation.
+An active previous packaged version SHALL require its verified matching receipt;
+its receipt and BOM-owned files SHALL remain unchanged.
+
+#### Scenario: Preserve a previous packaged version
+- **WHEN** a new version is installed beside a verified active previous version
+- **THEN** Installer retains the previous receipt and all its BOM-owned files,
+  and the new wrapper activates only after complete candidate validation
+
 ### Requirement: Verified immutable release publication
 Tag/manual publication SHALL validate tag/version/commit/main ancestry, complete
 repository CI and security, both macOS full test suites, installed smoke tests,

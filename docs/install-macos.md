@@ -99,18 +99,23 @@ old working command on failure. A later alpha uses a new version slot and
 activates its wrapper only after validation. Foreign or modified command
 collisions also fail rather than overwrite the command.
 
-The installer also refuses foreign, partial, corrupt or unreadable Installer
-receipts for its identifier. An existing receipt must match the verified old
+Each version has a separate Installer receipt, so installing a new version
+preserves the old version's files and receipt. The candidate receipt must be
+absent. The installer refuses foreign, partial, corrupt or unreadable receipts
+for the candidate or active version. The active receipt must match the verified old
 active version, location and target volume; it is not replaced merely because
 the new version directory is missing. Receipt checks do not list unrelated
 installed software. Do not forget a receipt to bypass this ownership check.
+The retired unversioned `org.marimay.mmay` receipt also causes a collision;
+it is not silently migrated.
 
 Atomic activation does not make the entire macOS payload transaction atomic.
 An interrupted install can leave an inactive version directory or receipt.
 Inspect the failed slot and Installer log before explicit recovery; retrying
 the same package does not erase or repair that slot automatically.
 
-The package receipt identifier is `org.marimay.mmay`. `pkgutil --pkg-info` and
+The first package receipt identifier is `org.marimay.mmay.0.1.0-alpha.1`;
+later versions use `org.marimay.mmay.V`. `pkgutil --pkg-info` and
 `pkgutil --files` with that identifier inspect the installed receipt. For an
 intact prefix, run `shasum -a 256 -c share/mmay/0.1.0-alpha.1/checksums.sha256`
 from its root to check owned files. Before uninstall or recovery, verify the
@@ -122,6 +127,7 @@ The bundled `MarimayDistributionLifecycle.cmake` supports checksum-validated
 prefix uninstall when CMake 3.25+ is available; CMake is needed only for this
 optional recovery path. It refuses modified owned files and preserves unrelated
 content. macOS Installer itself provides no automatic uninstall command.
-`pkgutil --forget org.marimay.mmay` removes only the receipt, not installed files;
+`pkgutil --forget org.marimay.mmay.0.1.0-alpha.1` removes only that version's
+receipt, not installed files;
 use it only after deliberate file cleanup. Never delete the whole version tree
 to bypass a failed ownership or checksum check.

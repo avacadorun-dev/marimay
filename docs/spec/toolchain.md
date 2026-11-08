@@ -830,14 +830,22 @@ ownership, then atomically activates an owned POSIX wrapper at
 executable symlink and edits neither shell profiles nor PATH. The package
 requires the matching host architecture and macOS 15 or newer.
 
+Each version uses its own package receipt ID `org.marimay.mmay.V`. Installing a
+new version must preserve the previous version's receipt and BOM-owned files;
+the operating system must not treat the two prefixes as one package upgrade.
+
 Preinstall refuses every existing candidate version prefix, including a
 same-version reinstall or incomplete prior attempt, without modifying it.
 Upgrades use a fresh version slot. Foreign or modified command collisions fail
-without replacing the active command. Existing Installer receipts require a
+without replacing the active command. The candidate version's receipt must be
+absent; an existing or incomplete candidate receipt is a collision. An active
+previous packaged version requires its own Installer receipt, a
 verified old active wrapper/prefix, complete physical plist and BOM, and
 matching package ID, version, install location and target volume. Foreign,
 partial, corrupt or unqueryable receipts fail without replacement; absence
-checks inspect only the package's own identifier and receipt files. The
+checks inspect only the candidate, verified active version and retired
+constant `org.marimay.mmay` identifiers and their receipt files. The retired
+identifier must be absent; it is not migrated or accepted as an alias. The
 receipt's `install-location` must exactly equal `usr/local/lib/marimay/V`,
 relative to its separately validated target `volume`; absolute paths and
 alternate spellings are rejected.

@@ -180,42 +180,46 @@ mmay_command_owner() {
 
 # Fixed stock-tool boundaries; isolated tests override these functions only.
 mmay_receipt_list() {
-    /usr/sbin/pkgutil --volume "$MMAY_VOLUME" '--pkgs=^org[.]marimay[.]mmay$'
+    mmay_pattern=$(printf '%s' "$1" | /usr/bin/sed 's/[.]/[.]/g')
+    /usr/sbin/pkgutil --volume "$MMAY_VOLUME" "--pkgs=^$mmay_pattern\$"
 }
 
 mmay_receipt_info() {
-    /usr/sbin/pkgutil --volume "$MMAY_VOLUME" --pkg-info-plist org.marimay.mmay
+    /usr/sbin/pkgutil --volume "$MMAY_VOLUME" --pkg-info-plist "$1"
 }
 
 mmay_receipt_field() {
     /usr/bin/plutil -extract "$1" raw -expect string -o - "$MMAY_WORK/receipt.plist"
 }
 
-mmay_receipt_owner() {
-    mmay_receipts=${mmay_volume}/private/var/db/receipts/org.marimay.mmay
+mmay_receipt_check() {
+    mmay_receipt_id=$1
+    mmay_receipt_mode=$2
+    mmay_receipts=${mmay_volume}/private/var/db/receipts/$mmay_receipt_id
     mmay_physical "$mmay_receipts.plist"
     mmay_physical "$mmay_receipts.bom"
     mmay_status=0
-    mmay_receipt_list > "$MMAY_WORK/receipt-list" 2> "$MMAY_WORK/receipt-errors" || mmay_status=$?
+    mmay_receipt_list "$mmay_receipt_id" > "$MMAY_WORK/receipt-list" 2> "$MMAY_WORK/receipt-errors" || mmay_status=$?
     [ ! -s "$MMAY_WORK/receipt-errors" ] || mmay_die 'cannot query package receipt'
     if [ "$mmay_status" -eq 1 ] && [ ! -s "$MMAY_WORK/receipt-list" ]; then
         [ ! -e "$mmay_receipts.plist" ] && [ ! -e "$mmay_receipts.bom" ] || \
             mmay_die 'package receipt is incomplete or unreadable'
+        [ "$mmay_receipt_mode" = absent ] || mmay_die 'active installation receipt is missing'
         return
     fi
     [ "$mmay_status" -eq 0 ] || mmay_die 'cannot query package receipt'
-    printf 'org.marimay.mmay\n' > "$MMAY_WORK/receipt-expected"
+    printf '%s\n' "$mmay_receipt_id" > "$MMAY_WORK/receipt-expected"
     /usr/bin/cmp -s "$MMAY_WORK/receipt-expected" "$MMAY_WORK/receipt-list" || \
         mmay_die 'unexpected package receipt query result'
     [ -f "$mmay_receipts.plist" ] && [ -f "$mmay_receipts.bom" ] || \
         mmay_die 'package receipt is incomplete'
-    [ -n "$MMAY_OLD_VERSION" ] || mmay_die 'package receipt has no owned active installation'
-    mmay_receipt_info > "$MMAY_WORK/receipt.plist" 2> "$MMAY_WORK/receipt-errors" || \
+    [ "$mmay_receipt_mode" = owner ] || mmay_die 'candidate or retired package receipt already exists'
+    mmay_receipt_info "$mmay_receipt_id" > "$MMAY_WORK/receipt.plist" 2> "$MMAY_WORK/receipt-errors" || \
         mmay_die 'cannot read package receipt'
     [ ! -s "$MMAY_WORK/receipt-errors" ] || mmay_die 'cannot read package receipt'
     for mmay_field in pkgid pkg-version install-location volume; do
         case "$mmay_field" in
-            pkgid) mmay_expected=org.marimay.mmay;;
+            pkgid) mmay_expected=$mmay_receipt_id;;
             pkg-version) mmay_expected=$MMAY_OLD_VERSION;;
             install-location) mmay_expected=usr/local/lib/marimay/$MMAY_OLD_VERSION;;
             volume) mmay_expected=$MMAY_VOLUME;;
@@ -239,7 +243,11 @@ mmay_preinstall() {
     [ ! -e "$MMAY_CANDIDATE" ] && [ ! -L "$MMAY_CANDIDATE" ] || \
         mmay_die 'candidate version prefix already exists; inspect it before retrying'
     mmay_command_owner
-    mmay_receipt_owner
+    mmay_receipt_check "org.marimay.mmay.$MMAY_VERSION" absent
+    mmay_receipt_check org.marimay.mmay absent
+    if [ -n "$MMAY_OLD_VERSION" ]; then
+        mmay_receipt_check "org.marimay.mmay.$MMAY_OLD_VERSION" owner
+    fi
 }
 
 mmay_postinstall() {

@@ -18,7 +18,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 from macos_payload import (ARCHITECTURES, component, digest, physical,
-                           unpack_archive, verify_checksum, verify_prefix)
+                           receipt_identifier, unpack_archive, verify_checksum, verify_prefix)
 import macos_install_log as install_log
 
 
@@ -167,7 +167,7 @@ def inspect_package(package, archive_root, work, version, arch):
     expanded = work / "expanded package"
     command(["/usr/sbin/pkgutil", "--expand-full", package, expanded], work)
     info = ET.parse(expanded / "PackageInfo").getroot()
-    if (info.attrib.get("identifier") != IDENTIFIER or info.attrib.get("version") != version
+    if (info.attrib.get("identifier") != receipt_identifier(version) or info.attrib.get("version") != version
             or info.attrib.get("install-location") != f"/usr/local/lib/marimay/{version}"):
         raise AssertionError("package identity or destination mismatch")
     package_files = verify_prefix(expanded / "Payload", version, arch)
@@ -230,14 +230,15 @@ def receipt_identity(identifier, version, location, work):
 
 
 def receipt_snapshot(version, work):
-    expected = receipt_identity(IDENTIFIER, version, f"/usr/local/lib/marimay/{version}", work)
-    files = command(["/usr/sbin/pkgutil", "--volume", "/", "--files", IDENTIFIER], work)
+    identifier = receipt_identifier(version)
+    expected = receipt_identity(identifier, version, f"/usr/local/lib/marimay/{version}", work)
+    files = command(["/usr/sbin/pkgutil", "--volume", "/", "--files", identifier], work)
     if files.stderr or b"bin/mmay" not in files.stdout.splitlines():
         raise AssertionError("Installer receipt does not own the previous payload")
     receipts = Path("/private/var/db/receipts")
     hashes = {}
     for suffix in ("plist", "bom"):
-        path = receipts / f"{IDENTIFIER}.{suffix}"
+        path = receipts / f"{identifier}.{suffix}"
         physical(path)
         if not path.is_file():
             raise AssertionError("Installer did not register a complete physical receipt")
@@ -269,33 +270,59 @@ def receipt_preflight(work):
     physical(work)
     if work.exists():
         raise ValueError("receipt preflight scratch directory already exists")
-    version = previous_version(work)
-    location = f"/usr/local/lib/marimay-ci-receipt-probe/{version}"
-    installed = Path(location)
-    physical(installed)
-    if installed.exists():
-        raise ValueError("receipt preflight prefix already exists")
+    old_version = previous_version(work)
+    versions = (old_version, old_version.replace("0.0.0-", "0.1.0-", 1))
     receipt_absent(PROBE_IDENTIFIER, REPOSITORY)
+    for version in versions:
+        installed = Path(f"/usr/local/lib/marimay-ci-receipt-probe/{version}")
+        physical(installed)
+        if installed.exists():
+            raise ValueError("receipt preflight prefix already exists")
+        receipt_absent(receipt_identifier(version, PROBE_IDENTIFIER), REPOSITORY)
     work.mkdir(parents=True)
-    source = work / "probe payload"
-    source.mkdir()
-    (source / "receipt-probe").write_bytes(b"Marimay CI receipt probe\n")
-    package = work / "receipt-probe.pkg"
-    command(["/usr/bin/pkgbuild", "--root", source, "--identifier", PROBE_IDENTIFIER,
-        "--version", version, "--install-location", location, "--ownership", "recommended",
-        "--min-os-version", "15.0", "--filter", "^$", package], work)
-    sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work)
-    receipt_identity(PROBE_IDENTIFIER, version, location, work)
-    print("macOS receipt preflight passed")
+    old_record = None
+    for version in versions:
+        identifier = receipt_identifier(version, PROBE_IDENTIFIER)
+        location = f"/usr/local/lib/marimay-ci-receipt-probe/{version}"
+        source = work / ("probe payload " + version)
+        source.mkdir()
+        (source / "receipt-probe").write_bytes(b"Marimay CI receipt probe\n")
+        package = work / (version + ".pkg")
+        command(["/usr/bin/pkgbuild", "--root", source, "--identifier", identifier,
+            "--version", version, "--install-location", location, "--ownership", "recommended",
+            "--min-os-version", "15.0", "--filter", "^$", package], work)
+        sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work)
+        record = probe_snapshot(version, work)
+        if version == old_version:
+            old_record = record
+    if probe_snapshot(old_version, work) != old_record:
+        raise AssertionError("new-version installation changed the previous probe payload or receipt/BOM")
+    print("macOS receipt and previous-version retention preflight passed")
+
+
+def probe_snapshot(version, work):
+    identifier = receipt_identifier(version, PROBE_IDENTIFIER)
+    location = f"/usr/local/lib/marimay-ci-receipt-probe/{version}"
+    identity = receipt_identity(identifier, version, location, work)
+    payload = Path(location) / "receipt-probe"
+    physical(payload)
+    if payload.read_bytes() != b"Marimay CI receipt probe\n":
+        raise AssertionError("receipt preflight payload changed or is missing")
+    hashes = {}
+    for suffix in ("plist", "bom"):
+        path = Path(f"/private/var/db/receipts/{identifier}.{suffix}")
+        physical(path)
+        hashes[suffix] = digest(path)
+    return identity, hashes
 
 
 def install_previous_fixture(work, version):
     source = work / "synthetic previous prefix"
     write_previous_fixture(source, version)
     package = work / "synthetic previous.pkg"
-    # Register a real same-identifier receipt/BOM through Installer, so this
+    # Register a real version-specific receipt/BOM through Installer, so this
     # crosses the actual macOS upgrade boundary rather than copying old files.
-    command(["/usr/bin/pkgbuild", "--root", source, "--identifier", IDENTIFIER,
+    command(["/usr/bin/pkgbuild", "--root", source, "--identifier", receipt_identifier(version),
         "--version", version, "--install-location", f"/usr/local/lib/marimay/{version}",
         "--ownership", "recommended", "--min-os-version", "15.0", "--filter", "^$", package], work)
     sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work)
@@ -422,15 +449,13 @@ def main():
             or global_command.exists() or global_command.is_symlink()):
         raise ValueError("ephemeral runner must have no existing global Marimay command or candidate")
     receipt_absent(IDENTIFIER, work)
+    receipt_absent(receipt_identifier(args.version), work)
     old_version = previous_version(work)
     previous = Path(f"/usr/local/lib/marimay/{old_version}")
     if previous.exists() or previous.is_symlink():
         raise ValueError("synthetic previous prefix already exists")
+    receipt_absent(receipt_identifier(old_version), work)
     previous_receipt = install_previous_fixture(work, old_version)
-    sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work, expected=None)
-    if (global_command.exists() or global_command.is_symlink() or installed.exists()
-            or receipt_snapshot(old_version, work) != previous_receipt):
-        raise AssertionError("receipt without an owned active command was overwritten")
     sudo(["/bin/mkdir", "-p", global_command.parent], work)
     foreign = b"Marimay CI foreign command fixture\n"
     sudo(["/usr/bin/tee", global_command], work, data=foreign)
@@ -457,9 +482,14 @@ def main():
         raise AssertionError("Installer did not atomically activate the expected wrapper")
     verify_prefix(installed, args.version, args.arch)
     installed_receipt = receipt_snapshot(args.version, work)
+    if receipt_snapshot(old_version, work) != previous_receipt:
+        raise AssertionError("upgrade changed the previous version's receipt or BOM")
     if previous_bytes != {p.relative_to(previous).as_posix(): p.read_bytes()
                           for p in previous.rglob("*") if p.is_file()}:
         raise AssertionError("upgrade changed the previously owned prefix or unrelated data")
+    previous_run = command([previous / "bin/mmay"], work)
+    if previous_run.stdout != b"previous alpha fixture\n" or previous_run.stderr:
+        raise AssertionError("upgrade did not preserve the previous executable's behavior")
     checks["installer"] = True
     verify_tool(global_command, work / "global command checks", args.version, args.arch)
     for name in ("doctor-installed", "vm-run", "native-debug", "native-release", "test-both"):
