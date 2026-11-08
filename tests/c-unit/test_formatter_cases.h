@@ -12,5 +12,6 @@ void mmay_test_formatter_rejects_invalid_types(void);
 void mmay_test_formatter_array_type_spelling(void);
 void mmay_test_formatter_boolean_groups(void);
 void mmay_test_formatter_braced_groups(void);
+void mmay_test_formatter_enum_separators(void);
 
 #endif

@@ -101,6 +101,11 @@ jobs:
         run: ./.github/scripts/check-msvc-probe.ps1 -BuildDirectory build
       - name: Build
         run: cmake --build build --config ${{ matrix.configuration }} --parallel
+      - name: Preflight Windows native toolchain
+        if: runner.os == 'Windows'
+        run: >-
+          ctest --test-dir build -C ${{ matrix.configuration }}
+          -R "^mmay_cp39_unit$" --no-tests=error --output-on-failure
       - name: Test
         id: test
         run: ctest --test-dir build -C ${{ matrix.configuration }} --parallel 4 --output-on-failure
@@ -257,6 +262,8 @@ jobs:
         run: ./.github/scripts/check-msvc-probe.ps1 -BuildDirectory build/asan
       - name: Build
         run: cmake --build --preset asan --parallel
+      - name: Preflight Windows native toolchain
+        run: ctest --preset asan -R "^mmay_cp39_unit$" --no-tests=error --output-on-failure
       - name: Test
         run: ctest --preset asan
 

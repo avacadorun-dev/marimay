@@ -157,7 +157,8 @@ static bool mmay_fuzz_trailing_comma(
         return false;
     }
     if ((parent->kind == MMAY_SYNTAX_PATTERN_LIST
-            || parent->kind == MMAY_SYNTAX_PATTERN_FIELDS)
+            || parent->kind == MMAY_SYNTAX_PATTERN_FIELDS
+            || parent->kind == MMAY_SYNTAX_ENUM_VARIANT)
         && index + 1 == parent->child_count) {
         return true;
     }

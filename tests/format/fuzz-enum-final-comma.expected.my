@@ -1,0 +1,18 @@
+enum Single {
+  Only,
+}
+
+enum Pair {
+  First,
+  Last,
+}
+
+enum Payload<T> {
+  Empty,
+  Full(T),
+}
+
+enum Named {
+  Empty,
+  Value { x: int, },
+}

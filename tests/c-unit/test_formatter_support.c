@@ -322,7 +322,8 @@ static bool mmay_formatter_ast_equal_internal(
                     || after->as.token.kind == MMAY_TOKEN_RIGHT_BRACKET
                     || after->as.token.kind == MMAY_TOKEN_RIGHT_BRACE);
         } else if ((left->kind == MMAY_SYNTAX_PATTERN_LIST
-                || left->kind == MMAY_SYNTAX_PATTERN_FIELDS)
+                || left->kind == MMAY_SYNTAX_PATTERN_FIELDS
+                || left->kind == MMAY_SYNTAX_ENUM_VARIANT)
             && left_element != NULL
             && left_element->kind == MMAY_AST_ELEMENT_TOKEN
             && left_element->as.token.kind == MMAY_TOKEN_COMMA
@@ -340,7 +341,8 @@ static bool mmay_formatter_ast_equal_internal(
                     || after->as.token.kind == MMAY_TOKEN_RIGHT_BRACKET
                     || after->as.token.kind == MMAY_TOKEN_RIGHT_BRACE);
         } else if ((right->kind == MMAY_SYNTAX_PATTERN_LIST
-                || right->kind == MMAY_SYNTAX_PATTERN_FIELDS)
+                || right->kind == MMAY_SYNTAX_PATTERN_FIELDS
+                || right->kind == MMAY_SYNTAX_ENUM_VARIANT)
             && right_element != NULL
             && right_element->kind == MMAY_AST_ELEMENT_TOKEN
             && right_element->as.token.kind == MMAY_TOKEN_COMMA

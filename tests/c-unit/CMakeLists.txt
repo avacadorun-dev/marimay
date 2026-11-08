@@ -162,6 +162,7 @@ add_executable(mmay_c_unit
   test_formatter_array_types.c
   test_formatter_boolean_groups.c
   test_formatter_braced_groups.c
+  test_formatter_enum_separators.c
   test_formatter_trivia.c
   test_formatter_failures.c
   test_hash_map.c
