@@ -83,6 +83,9 @@ privileged pull-request trigger. Public forks run without secrets. No job
 publishes a release, deploys a site, writes a package registry, or contacts
 private development infrastructure.
 
+The pinned Gitleaks archive uses GitHub's public release-asset API with bounded
+download retries and timeouts. Its SHA-256 is verified before extraction.
+
 The source-security workflow checks out the exact submitted PR head SHA, or
 the event SHA for pushes and manual runs. It fetches complete branch/tag
 history and the submitted head's ancestry, then keeps both the Gitleaks
