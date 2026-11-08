@@ -102,10 +102,11 @@ jobs:
         run: ctest --test-dir build/alpha --parallel 4 --output-on-failure
       - name: Build distribution archives
         run: cmake --build build/alpha --target mmay_package
-      - name: Stage complete installation and build package
+      - name: Build package from the exact archive staging prefix
+        # CMake runs Darwin ranlib during install. A second install can change
+        # runtime archive bytes, so package the very same prefix as the tar.
         run: |
-          cmake --install build/alpha --prefix "$RUNNER_TEMP/alpha-prefix"
-          python3 tools/package-macos --install-root "$RUNNER_TEMP/alpha-prefix" \
+          python3 tools/package-macos --install-root build/alpha/distribution/stage \
             --output-dir build/alpha/distribution --version "$RELEASE_VERSION" --arch "$RELEASE_ARCH"
       - name: Verify real Installer, global command and relocated archive
         run: >-

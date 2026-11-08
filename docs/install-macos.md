@@ -99,6 +99,12 @@ old working command on failure. A later alpha uses a new version slot and
 activates its wrapper only after validation. Foreign or modified command
 collisions also fail rather than overwrite the command.
 
+The installer also refuses foreign, partial, corrupt or unreadable Installer
+receipts for its identifier. An existing receipt must match the verified old
+active version, location and target volume; it is not replaced merely because
+the new version directory is missing. Receipt checks do not list unrelated
+installed software. Do not forget a receipt to bypass this ownership check.
+
 Atomic activation does not make the entire macOS payload transaction atomic.
 An interrupted install can leave an inactive version directory or receipt.
 Inspect the failed slot and Installer log before explicit recovery; retrying

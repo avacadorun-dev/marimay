@@ -3929,7 +3929,12 @@ owned POSIX wrapper that executes the absolute real binary path. It creates
 no executable symlink and edits no shell profile or PATH. Preinstall rejects
 any existing candidate version prefix, including same-version reinstalls or
 damaged attempts, and rejects foreign or modified global commands. An upgrade
-uses a fresh version slot. After payload/ownership validation, the wrapper is
+uses a fresh version slot. An existing Installer receipt is accepted only
+with the verified old active wrapper/prefix, complete physical plist and BOM,
+and exact package ID, version, install location and target-volume identity.
+Foreign, partial, corrupt or unqueryable receipts fail without replacement;
+receipt absence is checked without enumerating unrelated installations.
+After payload/ownership validation, the wrapper is
 activated last through atomic rename. Failure preserves the previously active
 command. Standard Installer manages payload/receipts; atomic activation does
 not promise atomic file-by-file package installation. A failed inactive

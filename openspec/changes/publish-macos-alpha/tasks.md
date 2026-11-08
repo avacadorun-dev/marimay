@@ -12,7 +12,7 @@
 
 ## 3. macOS package
 
-- [x] 3.1 Generate checksummed ARM64/Intel .pkg files from validated complete prefixes with collision-safe scripts and atomic wrapper activation; verify focused inventory, malformed/tampered/link/foreign-path/error-path tests and unchanged source input.
+- [x] 3.1 Generate checksummed ARM64/Intel .pkg files from validated complete prefixes with collision-safe scripts and atomic wrapper activation; verify focused inventory, malformed/tampered/link/foreign-command/prefix/receipt and error-path tests and unchanged source input.
 - [ ] 3.2 Add real macOS package/layout and installation/upgrade/activation smoke checks plus user installation documentation; verify doctor, VM run/test, both native profiles and moved whole-prefix operation on both CI hosts.
 
 ## 4. Automated publication

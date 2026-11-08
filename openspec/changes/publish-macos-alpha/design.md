@@ -36,7 +36,12 @@ promotion of existing product milestones. No source syntax changes.
    handles payload/receipt lifecycle; we promise atomic activation, not atomic
    file-by-file macOS payload installation. Any existing candidate version
    prefix, including a same-version reinstall, is rejected unchanged. Upgrades
-   require a fresh version slot. A failed new payload stays inactive and may
+   require a fresh version slot. Existing Installer receipts must match the
+   verified old active wrapper/prefix and exact package/version/location/volume;
+   partial, corrupt or foreign records fail closed without replacement.
+   The CI upgrade fixture registers a real old receipt/BOM through Installer,
+   then adds unrelated data outside its BOM and verifies its preservation.
+   A failed new payload stays inactive and may
    require explicit recovery; it is not silently removed or overwritten.
    Signed `.pkg` would require unavailable Apple identity; a shell/Python
    installer would add prerequisites and a separate archive-extraction surface.

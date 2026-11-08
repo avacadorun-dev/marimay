@@ -39,7 +39,7 @@ compiler. Runtime-producer provenance checks SHALL remain exact.
 ### Requirement: Global macOS installer
 The `.pkg` SHALL install the complete versioned prefix and activate
 `/usr/local/bin/mmay` through a wrapper executing its real binary. It SHALL
-reject unrelated or modified command/prefix collisions. A new version SHALL
+reject unrelated or modified command/prefix/receipt collisions. A new version SHALL
 remain inactive until validation succeeds; activation SHALL be atomic. Installer
 failure SHALL preserve the previously active command. Shell profiles SHALL NOT
 be edited.
@@ -58,6 +58,11 @@ be edited.
 - **WHEN** the candidate version prefix already exists, including a reinstall
 - **THEN** the installer rejects it unchanged and requires a fresh version slot
   or explicit user recovery before installing again
+
+#### Scenario: Preserve Installer receipt ownership
+- **WHEN** an existing receipt is foreign, partial, corrupt or inconsistent
+  with the verified old active prefix and target volume
+- **THEN** installation fails without replacing its receipt or active command
 
 ### Requirement: Verified immutable release publication
 Tag/manual publication SHALL validate tag/version/commit/main ancestry, complete

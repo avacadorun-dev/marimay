@@ -10,6 +10,7 @@ import io
 import json
 from pathlib import Path
 import platform
+import shlex
 import shutil
 import subprocess
 import sys
@@ -214,6 +215,22 @@ class PackageTests(unittest.TestCase):
             PACKAGE.build_package(self.root, output, VERSION, ARCH)
         self.assertEqual(list(output.iterdir()), [])
 
+    def test_package_archive_drift_is_reported_without_weakening_byte_checks(self):
+        archive_root = self.work / "archive prefix"
+        shutil.copytree(self.root, archive_root)
+        io_source = archive_root / f"share/mmay/{VERSION}/std/io/io.my"
+        io_source.write_bytes(b"different valid prefix\n")
+        manifest(archive_root, VERSION)
+        expanded = self.work / "expanded package"
+        shutil.copytree(self.root, expanded / "Payload")
+        info = ET.Element("pkg-info", {"identifier": PACKAGE.IDENTIFIER, "version": VERSION,
+                                      "install-location": f"/usr/local/lib/marimay/{VERSION}"})
+        ET.ElementTree(info).write(expanded / "PackageInfo")
+        result = subprocess.CompletedProcess([], 0, b"", b"")
+        with mock.patch.object(SMOKE, "command", return_value=result), \
+                self.assertRaisesRegex(AssertionError, r"changed=\['share/mmay/.*/std/io/io.my'\]"):
+            SMOKE.inspect_package(self.work / "fixture.pkg", archive_root, self.work, VERSION, ARCH)
+
     def test_concurrently_created_output_is_never_overwritten(self):
         output = self.work / "concurrent output"
         def run(arguments, **kwargs):
@@ -280,7 +297,8 @@ class InstallerTests(unittest.TestCase):
         # Exercise the real installer primitives in an isolated target volume.
         # Actual host probes and Installer integration run on both Mac CI hosts.
         code = ('set -eu; . "$1/installer-common.sh"; '
-                'mmay_setup package / "$2"; ' + (prefix_code or ":") + '; mmay_' + operation)
+                'mmay_setup package / "$2"; mmay_receipt_list() { return 1; }; '
+                + (prefix_code or ":") + '; mmay_' + operation)
         result = subprocess.run(["/bin/sh", "-c", code, "test", str(self.scripts), str(self.volume)],
                                 capture_output=True, timeout=30)
         self.assertEqual(result.returncode, expected, result.stderr)
@@ -388,6 +406,87 @@ class InstallerTests(unittest.TestCase):
                                      "test", str(common), system, arch, version], capture_output=True)
             self.assertEqual(result.returncode, expected, result.stderr)
 
+    def receipt_files(self):
+        base = self.volume / "private/var/db/receipts/org.marimay.mmay"
+        base.parent.mkdir(parents=True, exist_ok=True)
+        files = [Path(str(base) + "." + suffix) for suffix in ("plist", "bom")]
+        for path in files:
+            path.write_bytes(b"synthetic receipt boundary\n")
+        return files
+
+    def receipt_reader(self, **changed):
+        fields = {"pkgid": "org.marimay.mmay", "pkg-version": "0.1.0-alpha.0",
+                  "install-location": "/usr/local/lib/marimay/0.1.0-alpha.0",
+                  "volume": str(self.volume)}
+        fields.update(changed)
+        cases = []
+        for name, value in fields.items():
+            body = "return 1" if value is None else "printf '%s\\n' " + shlex.quote(value)
+            cases.append(shlex.quote(name) + ") " + body + ";;")
+        return ("mmay_receipt_list() { printf 'org.marimay.mmay\\n'; }; "
+                "mmay_receipt_info() { printf 'synthetic plist reader boundary\\n'; }; "
+                'mmay_receipt_field() { case "$1" in ' + " ".join(cases) + " esac; }")
+
+    def test_receipt_absence_requires_exact_query_and_no_partial_files(self):
+        self.hook("preinstall")
+        for reader in ("return 2", "return 127", "return 0",
+                       "printf 'org.marimay.mmay\\n'; return 1",
+                       "printf 'query failed\\n' >&2; return 1"):
+            self.hook("preinstall", 1, "mmay_receipt_list() { " + reader + "; }")
+        files = self.receipt_files()
+        for path in files:
+            other = files[1] if path == files[0] else files[0]
+            other.unlink(missing_ok=True)
+            path.write_bytes(b"preserve partial receipt\n")
+            self.hook("preinstall", 1)
+            self.assertEqual(path.read_bytes(), b"preserve partial receipt\n")
+            path.unlink()
+        files[0].symlink_to(self.work / "missing receipt")
+        self.hook("preinstall", 1)
+
+    def test_existing_receipt_requires_owned_active_installation_and_exact_fields(self):
+        files = self.receipt_files()
+        before = [path.read_bytes() for path in files]
+        self.hook("preinstall", 1, self.receipt_reader())
+        self.old()
+        command_before = self.command.read_bytes()
+        self.hook("preinstall", prefix_code=self.receipt_reader())
+        for field, value in (("pkgid", "foreign.identifier"), ("pkg-version", "0.0.0"),
+                ("install-location", "/foreign/prefix"), ("volume", "/other-volume"),
+                ("pkg-version", "0.1.0-alpha.0\n"), ("pkg-version", None)):
+            with self.subTest(field=field, value=value):
+                self.hook("preinstall", 1, self.receipt_reader(**{field: value}))
+        for extra in ("mmay_receipt_info() { return 1; }",
+                      "mmay_receipt_info() { printf 'error' >&2; }",
+                      "mmay_receipt_list() { printf 'foreign.identifier\\n'; }",
+                      "mmay_receipt_field() { printf 'error' >&2; }"):
+            self.hook("preinstall", 1, self.receipt_reader() + "; " + extra)
+        files[1].unlink()
+        self.hook("preinstall", 1, self.receipt_reader())
+        self.assertEqual(files[0].read_bytes(), before[0])
+        self.assertEqual(self.command.read_bytes(), command_before)
+        self.assertFalse(self.candidate.exists())
+
+    @unittest.skipUnless(platform.system() == "Darwin", "stock macOS plist reader boundary")
+    def test_stock_plutil_receipt_strings_are_exact_and_typed(self):
+        import plistlib
+        self.old()
+        self.receipt_files()
+        fixture = self.work / "queried receipt.plist"
+        fields = {"pkgid": "org.marimay.mmay", "pkg-version": "0.1.0-alpha.0",
+                  "install-location": "/usr/local/lib/marimay/0.1.0-alpha.0",
+                  "volume": str(self.volume)}
+        reader = ("mmay_receipt_list() { printf 'org.marimay.mmay\\n'; }; "
+                  "mmay_receipt_info() { /bin/cat " + shlex.quote(str(fixture)) + "; }")
+        fixture.write_bytes(plistlib.dumps(fields))
+        self.hook("preinstall", prefix_code=reader)
+        for value in (7, "0.1.0-alpha.0\n", None):
+            malformed = dict(fields)
+            if value is None: del malformed["pkg-version"]
+            else: malformed["pkg-version"] = value
+            fixture.write_bytes(plistlib.dumps(malformed))
+            self.hook("preinstall", 1, reader)
+
 
 class ArchiveTests(unittest.TestCase):
     def test_only_bounded_regular_members_are_copied(self):
@@ -416,6 +515,25 @@ class ArchiveTests(unittest.TestCase):
 
 
 class InstallGateTests(unittest.TestCase):
+    def test_previous_fixture_registers_real_receipt_with_installer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory).resolve()
+            version = "0.0.0-alpha.ci-fixture"
+            with mock.patch.object(SMOKE, "command") as run, \
+                    mock.patch.object(SMOKE, "sudo") as sudo, \
+                    mock.patch.object(SMOKE, "receipt_snapshot", return_value="registered") as receipt:
+                self.assertEqual(SMOKE.install_previous_fixture(work, version), "registered")
+            arguments = run.call_args.args[0]
+            self.assertEqual(arguments[0], "/usr/bin/pkgbuild")
+            self.assertNotIn("--scripts", arguments)
+            self.assertEqual(arguments[arguments.index("--identifier") + 1], SMOKE.IDENTIFIER)
+            self.assertEqual(arguments[arguments.index("--install-location") + 1],
+                             f"/usr/local/lib/marimay/{version}")
+            sudo.assert_called_once_with(["/usr/sbin/installer", "-pkg",
+                work / "synthetic previous.pkg", "-target", "/"], work)
+            receipt.assert_called_once_with(version, work)
+            self.assertFalse((work / "synthetic previous prefix/unrelated user note").exists())
+
     def test_local_or_incompletely_enabled_execution_is_refused(self):
         for allowed, environment, host in ((False, {"GITHUB_ACTIONS": "true", "RUNNER_OS": "macOS"}, "Darwin"),
                 (True, {}, "Darwin"), (True, {"GITHUB_ACTIONS": "true", "RUNNER_OS": "macOS"}, "Linux")):

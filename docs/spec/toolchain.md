@@ -833,7 +833,12 @@ requires the matching host architecture and macOS 15 or newer.
 Preinstall refuses every existing candidate version prefix, including a
 same-version reinstall or incomplete prior attempt, without modifying it.
 Upgrades use a fresh version slot. Foreign or modified command collisions fail
-without replacing the active command. The new wrapper is activated last by
+without replacing the active command. Existing Installer receipts require a
+verified old active wrapper/prefix, complete physical plist and BOM, and
+matching package ID, version, install location and target volume. Foreign,
+partial, corrupt or unqueryable receipts fail without replacement; absence
+checks inspect only the package's own identifier and receipt files. The
+new wrapper is activated last by
 atomic rename only after validation; failure preserves the old active command.
 This is atomic command activation, not atomic file-by-file Installer payload
 installation. Installer manages receipts and inactive payloads; cleanup of a
