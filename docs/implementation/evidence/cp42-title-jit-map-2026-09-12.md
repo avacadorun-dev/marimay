@@ -1,5 +1,10 @@
 # Accepted title JIT: mapped machine-code costs
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **diagnosed locally**, on `c4acd2efc9a5656cee8156d01ffbf0121f13d348`. Production is
 unchanged from accepted string publication `613b703`. The
 [accepted all32 comparison](cp42-string-publication-v2-2026-09-12-comprehensive.md)
@@ -7,7 +12,7 @@ remains current; title-family, original all32 parity, complete Tier1 and Linux
 LeakSanitizer remain open. JIT remains opt-in.
 
 [Protocol and compact results](cp42-title-jit-map-2026-09-12-summary.json),
-[reproducible sources, exact code bytes, maps and profiles](cp42-title-jit-map-2026-09-12-raw.json.xz).
+[reproducible sources, exact code bytes, maps and profiles](private-artifacts.md#artifact-063).
 The archive stores each file with its encoding and SHA-256. Compression and all
 decoded file identities were verified before publication. No instrumented
 duration is performance acceptance evidence.

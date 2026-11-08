@@ -1,13 +1,18 @@
 # Title runtime costs after accepted string publication
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **diagnosed locally**, on `613b70329a18e024a1a0527ef0ae6ee480b65dc8`. The
 [accepted V2 comparison](cp42-string-publication-v2-2026-09-12.md) remains the
 performance baseline. This record changes no production implementation, source
 workload, argument, output or 64MiB execution heap. Title-family and original
 all32 Go/Rust parity, complete Tier1 and Linux LSan remain open.
 
-[Protocol and results](cp42-title-after-publication-2026-09-12-summary.json), [raw evidence](cp42-title-after-publication-2026-09-12-raw.json.gz),
-[generated-C alias experiment](cp42-title-after-publication-2026-09-12-view-alias.patch).
+[Protocol and results](cp42-title-after-publication-2026-09-12-summary.json), [raw evidence](private-artifacts.md#artifact-060),
+[generated-C alias experiment](private-artifacts.md#artifact-061).
 
 ## Repeated-entry profiles and cleanup
 

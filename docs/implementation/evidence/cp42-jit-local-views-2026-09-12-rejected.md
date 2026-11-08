@@ -1,5 +1,10 @@
 # Local JIT views and adjacent booleans: rejected early
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected at the predeclared early gate**, against
 `da34a10749b5d541ba3d7629c03b9ff3409019e3`. The VM title pair improves by
 **2.1031%**, below the required **3%**.
@@ -9,8 +14,8 @@ remains current. Original all32 Native/VM parity and complete Tier1 remain open.
 JIT remains opt-in.
 
 [Protocol, checks and results](cp42-jit-local-views-2026-09-12-rejected-summary.json),
-[raw sources, scripts, commands and observations](cp42-jit-local-views-2026-09-12-rejected-raw.json.gz),
-[rejected candidate patch](cp42-jit-local-views-2026-09-12-rejected-candidate.patch).
+[raw sources, scripts, commands and observations](private-artifacts.md#artifact-013),
+[rejected candidate patch](private-artifacts.md#artifact-012).
 Private candidate/replay indexes verify that applying the zero-context patch
 with `git apply --unidiff-zero` on the parent reproduces tree `4ff32f552c520fe43cd1b5a75ff8ea50995190a2`.
 All candidate, accepted-control and 114 source/harness hashes were checked.

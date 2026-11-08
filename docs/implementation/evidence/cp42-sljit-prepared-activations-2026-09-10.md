@@ -1,5 +1,10 @@
 # Prepared VM activations and native view revalidation
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 The accepted baseline is `719aa54`. Fresh sampling of its preserved JIT binary
 places logical call transitions in 44.9% of DSU, 49.7% of stack and 52.1% of
 queue samples. Retained-view binding is another substantial cost. These are
@@ -74,9 +79,9 @@ commands, compiler hashes, logs, profiles and source provenance.
 
 Status: **rejected-performance**. Decision recorded at `2026-09-10T18:21:00.798725+00:00`. The checkpoint deadline was met.
 
-[Complete validation and reproduction record](cp42-sljit-prepared-activations-validation-2026-09-10.json), [candidate patch](cp42-sljit-prepared-activations-candidate-2026-09-10.patch), [early matrix](cp42-sljit-prepared-activations-early-2026-09-10.json).
+[Complete validation and reproduction record](cp42-sljit-prepared-activations-validation-2026-09-10.json), [candidate patch](private-artifacts.md#artifact-036), [early matrix](cp42-sljit-prepared-activations-early-2026-09-10.json).
 
-The first candidate is preserved as a [replayable patch](cp42-sljit-prepared-activations-first-candidate-2026-09-10.patch) and [early matrix](cp42-sljit-prepared-activations-first-early-2026-09-10.json); it missed the original early targets.
+The first candidate is preserved as a [replayable patch](private-artifacts.md#artifact-037) and [early matrix](cp42-sljit-prepared-activations-first-early-2026-09-10.json); it missed the original early targets.
 
 ## jit versus accepted control
 

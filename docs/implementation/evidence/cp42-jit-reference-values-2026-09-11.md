@@ -1,10 +1,15 @@
 # JIT reference aliases and record-field value reuse
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **accepted-local**. The JIT remains opt-in. Overall Go/Rust parity,
 complete Tier 1 validation and Linux LeakSanitizer remain open.
 
-[Validation summary](cp42-jit-reference-values-2026-09-11-validation.json), [complete compressed validation](cp42-jit-reference-values-2026-09-11-validation.json.gz),
-[exact source patch](cp42-jit-reference-values-2026-09-11-candidate.patch) and [fresh five-participant comparison](cp42-jit-reference-values-2026-09-11-comprehensive.md).
+[Validation summary](cp42-jit-reference-values-2026-09-11-validation.json), [complete compressed validation](private-artifacts.md#artifact-017),
+[exact source patch](private-artifacts.md#artifact-016) and [fresh five-participant comparison](cp42-jit-reference-values-2026-09-11-comprehensive.md).
 Decompress the raw JSON with `gzip -dc`; encoded and decoded SHA-256 values are
 in the summary. Replay the patch on `ff8f96a021d4d497c9e4b2e6cc7f8378d99cb122` with
 `git apply --unidiff-zero`.

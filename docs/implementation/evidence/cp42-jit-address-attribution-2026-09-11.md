@@ -1,8 +1,13 @@
 # Address-level JIT execution attribution
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **diagnosed-local** on accepted parent `af0aa0f`.
 This records a measured next action, not a speedup or Go/Rust parity result.
-[Summary and exact inputs](cp42-jit-address-attribution-2026-09-11.json); [complete diagnostic records](cp42-jit-address-attribution-2026-09-11.json.gz).
+[Summary and exact inputs](cp42-jit-address-attribution-2026-09-11.json); [complete diagnostic records](private-artifacts.md#artifact-005).
 The archive is gzip JSON; `gzip -dc` decodes it. Both encoded and decoded hashes
 are in the summary. Build scripts, source copies, maps, raw profiles and commands
 are preserved for replay and review.

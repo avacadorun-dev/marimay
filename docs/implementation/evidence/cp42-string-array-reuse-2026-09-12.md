@@ -1,5 +1,10 @@
 # Stable string-array read windows in accepted execution
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **diagnosed locally**, on `ff214f1a0f78a2ee875c82300fdfb4ac575fe2b4`. Production remains
 the accepted string-publication implementation `613b703`. The
 [accepted all32 comparison](cp42-string-publication-v2-2026-09-12-comprehensive.md)
@@ -7,7 +12,7 @@ remains current. Original all32 parity, complete Tier1 and Linux LeakSanitizer
 remain open; JIT remains opt-in.
 
 [Protocol and independently checked results](cp42-string-array-reuse-2026-09-12-summary.json),
-[exact sources, commands, raw counters and owner review](cp42-string-array-reuse-2026-09-12-raw.jsonl.xz).
+[exact sources, commands, raw counters and owner review](private-artifacts.md#artifact-046).
 The archive is newline-delimited JSON compressed with XZ: its first record names
 the schema/parent, then each record has path, UTF-8 data and SHA-256. Every decoded
 file and the entire decoded stream were verified against their recorded hashes.

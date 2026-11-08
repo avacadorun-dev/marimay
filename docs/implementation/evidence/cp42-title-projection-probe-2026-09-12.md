@@ -1,13 +1,18 @@
 # Screen direct string projection from Native title arrays
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **diagnostic screening passed locally**, on `6f8550eab35ae07f47d5eb564ffac441039ca414`.
 Production remains the [accepted string-publication V2 baseline](cp42-string-publication-v2-2026-09-12.md).
 This experiment motivates a general runtime implementation; it accepts no
 optimization and changes no all32, VM, Go/Rust parity or Tier1 status.
 
 [Protocol and complete results](cp42-title-projection-probe-2026-09-12-summary.json),
-[raw scripts, generated C, disassembly and logs](cp42-title-projection-probe-2026-09-12-raw.json.gz),
-[generated-C change](cp42-title-projection-probe-2026-09-12-generated.patch).
+[raw scripts, generated C, disassembly and logs](private-artifacts.md#artifact-065),
+[generated-C change](private-artifacts.md#artifact-064).
 
 ## Mechanism and limits
 

@@ -1,5 +1,10 @@
 # Shared string storage, publication and recent array views
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **accepted locally**, against
 `574c620e766019606572cc02ed31c162012d5054`. The title-search 10k/100k family remains active;
 this is not original all-32-workload Go/Rust parity or complete Tier1 verification.
@@ -7,7 +12,7 @@ JIT remains opt-in. The [first publication candidate](cp42-string-publication-20
 retains its rejected status and missed deadline.
 
 [Protocol, validation and results](cp42-string-publication-v2-2026-09-12-summary.json),
-[raw evidence](cp42-string-publication-v2-2026-09-12-raw.json.gz), [candidate patch](cp42-string-publication-v2-2026-09-12-candidate.patch).
+[raw evidence](private-artifacts.md#artifact-053), [candidate patch](private-artifacts.md#artifact-052).
 Applying the patch to the parent with `git apply --unidiff-zero` reproduces tree
 `3ba342b10c4826a1e5c2aa9453a4989501af5962`. Sources, binary identities, commands, observations, counter copies and
 unsuccessful setup logs are retained; the summary supplies archive/patch hashes.

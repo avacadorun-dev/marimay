@@ -1,5 +1,10 @@
 # Retaining unchanged array identity after a native push
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 The preceding [array-segment candidate](cp42-sljit-array-segments-2026-09-10.md)
 passed local correctness and improved the JIT sum of medians 10.3%, but was
 rejected: DSU median regressions of 2.14% and 2.05% exceeded the 2% threshold
@@ -54,7 +59,7 @@ No observation is discarded.
 
 Status: **accepted-local-opt-in**. Decision recorded at `2026-09-10T16:28:36.292516+00:00`. The follow-up checkpoint deadline was met.
 
-[Complete validation and reproduction record](cp42-sljit-array-identity-validation-2026-09-10.json), [replayable candidate patch](cp42-sljit-array-identity-candidate-2026-09-10.patch), [early paired matrix](cp42-sljit-array-identity-early-2026-09-10.json).
+[Complete validation and reproduction record](cp42-sljit-array-identity-validation-2026-09-10.json), [replayable candidate patch](private-artifacts.md#artifact-031), [early paired matrix](cp42-sljit-array-identity-early-2026-09-10.json).
 
 ## jit versus bbb9b2b
 

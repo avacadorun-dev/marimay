@@ -1,5 +1,10 @@
 # Reusing checked string destination metadata: rejected early
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected at the fixed early gate**, against accepted production at
 parent `f148f9bdda2f7b1d089a52cb130c79a0b771159a`. The title-pair geometric median latency ratio is
 **0.993818388114**, a measured **0.618161% reduction** against the minimum
@@ -12,8 +17,8 @@ Accepted [string publication V2](cp42-string-publication-v2-2026-09-12.md) and t
 remain current. Original Native/VM parity, complete Tier1 and Linux LSan are open.
 
 [Protocol, results and analyses](cp42-jit-string-metadata-2026-09-12-rejected-summary.json),
-[exact source, commands, counters and assembly](cp42-jit-string-metadata-2026-09-12-rejected-raw.json.gz),
-[replayable candidate patch](cp42-jit-string-metadata-2026-09-12-rejected-candidate.patch).
+[exact source, commands, counters and assembly](private-artifacts.md#artifact-025),
+[replayable candidate patch](private-artifacts.md#artifact-024).
 Applying with `git apply --unidiff-zero` on the parent reproduces tree `65e68f7396de5e395315930d812731b2a93dabaf`;
 private-index replay and every archived file's roundtrip are verified. Candidate,
 control binaries and all 114 original source/harness hashes stay fixed.

@@ -1,5 +1,10 @@
 # String-array projection: rejected early
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected at the predeclared early gate**, against
 `a5edc2cd12b2145ddeaf6650f1ca77b18f7d74c2`. Native passes its minimum, but VM+JIT misses
 the required 3% geometric reduction. Production code and normative contracts
@@ -8,8 +13,8 @@ are restored. The accepted baseline remains
 No all32 or complete Tier1 parity status changes; JIT remains opt-in.
 
 [Protocol, complete results and identities](cp42-string-array-projection-2026-09-12-rejected-summary.json),
-[raw scripts, sources, commands and observations](cp42-string-array-projection-2026-09-12-rejected-raw.json.gz),
-[rejected candidate patch](cp42-string-array-projection-2026-09-12-rejected-candidate.patch).
+[raw scripts, sources, commands and observations](private-artifacts.md#artifact-041),
+[rejected candidate patch](private-artifacts.md#artifact-040).
 Applying the patch with `git apply --unidiff-zero` to the parent reproduces tree `4674c785625788ca8e20189e8fe5f9e41bf61ac8`;
 this was checked with independent temporary Git indexes. All candidate source
 and binary hashes and all 114 corpus/harness hashes were checked before and

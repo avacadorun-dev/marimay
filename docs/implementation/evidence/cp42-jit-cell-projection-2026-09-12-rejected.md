@@ -1,5 +1,10 @@
 # Fully checked original-Cell string projection: rejected early
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected at the predeclared early gate**, against
 `33b9e8cf1b20dfd5a89c0b7ff72992b7d5a465c4`. The unchanged VM title pair improves by
 **2.353783%**, below the fixed **3%** minimum.
@@ -10,8 +15,8 @@ normative contracts are restored; accepted
 Original all32 Native/VM parity and complete Tier1 remain open. JIT stays opt-in.
 
 [Protocol and results](cp42-jit-cell-projection-2026-09-12-rejected-summary.json),
-[raw sources, commands and observations](cp42-jit-cell-projection-2026-09-12-rejected-raw.json.gz),
-[exact candidate patch](cp42-jit-cell-projection-2026-09-12-rejected-candidate.patch).
+[raw sources, commands and observations](private-artifacts.md#artifact-007),
+[exact candidate patch](private-artifacts.md#artifact-006).
 Private candidate/replay indexes prove applying the patch with
 `git apply --unidiff-zero` on the parent reproduces tree `15991b0bd84a64eff97a37d7a72785ecd414955a`.
 All candidate, accepted controls and 114 source/harness hashes were verified.

@@ -1,5 +1,10 @@
 # Shared string storage and direct concatenation
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **Rejected** against `7ee78591052071f1d6c0a3371cadc986669f6792`. This stage implements
 the intervention selected by the [text runtime diagnosis](cp42-text-runtime-diagnosis-2026-09-11.md).
 Overall Go/Rust parity, complete Tier 1 verification and Linux LeakSanitizer
@@ -7,8 +12,8 @@ remain open. JIT remains opt-in. The stage starts at 2026-09-11T10:03:46.647042+
 and its publication deadline is 2026-09-11T12:03:46.647042+00:00.
 
 [Protocol, validation and measurement summary](cp42-shared-string-storage-2026-09-11-rejected-summary.json),
-[complete compressed evidence](cp42-shared-string-storage-2026-09-11-rejected-raw.json.gz),
-[replayable candidate patch](cp42-shared-string-storage-2026-09-11-rejected-candidate.patch).
+[complete compressed evidence](private-artifacts.md#artifact-030),
+[replayable candidate patch](private-artifacts.md#artifact-029).
 The summary supplies compressed and decoded hashes. The decoded JSON retains
 exact candidate sources, scripts, commands, logs, diagnostic probes and all
 observations, including unsuccessful setup/preflight launches. Replay the patch

@@ -1,11 +1,16 @@
 # CP42: revalidate checked JIT object views across native entries
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Date: 2026-09-10. Status: **accepted as an opt-in implementation after local correctness
 and performance validation; default enablement, Tier 1 and parity remain open.**
 
 Source parent: `3562de98797320c135c03816c3bf9ef4de2d7a97` plus the 21 inputs in
 the [validation record](cp42-sljit-views-validation-2026-09-10.json) and
-[replayable candidate patch](cp42-sljit-views-candidate-2026-09-10.patch). The compiler embeds that
+[replayable candidate patch](private-artifacts.md#artifact-039). The compiler embeds that
 parent identity; its indexed inputs and binary hash identify the candidate.
 Candidate SHA-256: `699a329a6959da419b2c51a498370f4dc6ebe3d37f0737e0599ccd115b398f52`.
 

@@ -1,5 +1,10 @@
 # Checked string-search loop composition: rejected in the full gate
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected**. The fixed early VM title pair improved
 9.33%, but the full unchanged all32 series confirmed
 an OFF record-create P90 regression: 8.30% initially and
@@ -8,7 +13,7 @@ predeclared 5% allowance. There is no favorable timing retry or retrospective
 acceptance. Production is restored to the parent implementation.
 
 [Protocol, results and hashes](cp42-jit-string-search-loop-2026-09-13-rejected-summary.json),
-[raw evidence](cp42-jit-string-search-loop-2026-09-13-rejected-raw.json.gz), [exact candidate](cp42-jit-string-search-loop-2026-09-13-rejected-candidate.patch),
+[raw evidence](private-artifacts.md#artifact-027), [exact candidate](private-artifacts.md#artifact-026),
 [fresh accepted-production comparison](cp42-jit-string-search-loop-2026-09-13-rejected-accepted-comprehensive.md).
 The published patch uses zero context; `git apply --unidiff-zero` reproduces
 the archived candidate tree. Original context-patch bytes remain in the raw

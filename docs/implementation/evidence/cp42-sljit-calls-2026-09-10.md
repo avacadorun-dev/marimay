@@ -1,5 +1,10 @@
 # CP42: native-call checkpoint rejected by the performance gate
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Date: 2026-09-10. Status: **correctness passed; performance acceptance failed**.
 The candidate is published as a reproducible patch, not merged into the
 production compiler. The existing integrated JIT remains opt-in. Complete
@@ -140,7 +145,7 @@ The complete JIT comparison is shown below. Small movements within noise are not
 
 ## Reproduction and next boundary
 
-The [candidate patch](cp42-sljit-calls-candidate-2026-09-10.patch) applies to
+The [candidate patch](private-artifacts.md#artifact-034) applies to
 `8c14357c3dfb4f6cb116cd1145327c5f8c3c8d8b`. Applying it to a separate temporary
 Git index reproduced all 17 indexed implementation, contract and test inputs
 byte for byte. Use a clean checkout/worktree of that parent, apply the patch,

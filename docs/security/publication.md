@@ -44,3 +44,21 @@ absolute guarantee from a passing scanner.
 Use synthetic hostnames under `.example`, documentation IPv4 ranges, relative
 paths, and no-reply commit metadata. Do not push an older unedited clone to the
 public remote: that would restore the original private history.
+
+## Private experimental implementation payloads
+
+Experimental source snapshots, candidate patch bundles, compressed working
+trees and archived experiment data are retained in the owner's private recovery
+collection. They are excluded from the current public tree and all published
+Git branches and tags. The exact originals and original Git histories remain
+private; this publication cleanup does not integrate their experimental features.
+
+The [artifact index](../implementation/evidence/private-artifacts.md) records
+the 67 retired payloads and their private availability. Public reports retain
+historical measurements and decisions, with links to provenance records instead
+of implementation downloads. They do not claim public reconstruction of those
+private experiments. Original source revisions and protocol input digests remain
+historical identities; sanitized public commit identities can differ.
+
+Required build inputs and conformance fixtures, including the independently
+reviewed SLJIT compatibility patch under `cmake/`, remain part of the source.

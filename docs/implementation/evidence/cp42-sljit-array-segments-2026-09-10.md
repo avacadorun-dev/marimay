@@ -1,5 +1,10 @@
 # Nonallocating array segments in the optional SLJIT tier
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 This stage extends the accepted `bbb9b2b` implementation with complete
 non-string reference-array reads and scalar pushes into existing spare capacity.
 The source workloads and language semantics are unchanged. JIT remains opt-in.
@@ -78,7 +83,7 @@ production, test and contract input without changing the real Git index.
 
 Status: **rejected-performance**. Decision recorded at `2026-09-10T16:06:16.601633+00:00`. The original 15:58 UTC checkpoint deadline was missed; this later validation does not erase the overrun.
 
-[Complete validation and reproduction record](cp42-sljit-array-segments-validation-2026-09-10.json), [replayable candidate patch](cp42-sljit-array-segments-candidate-2026-09-10.patch), [early paired matrix](cp42-sljit-array-segments-early-2026-09-10.json).
+[Complete validation and reproduction record](cp42-sljit-array-segments-validation-2026-09-10.json), [replayable candidate patch](private-artifacts.md#artifact-032), [early paired matrix](cp42-sljit-array-segments-early-2026-09-10.json).
 
 ## jit versus bbb9b2b
 

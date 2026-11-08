@@ -1,12 +1,17 @@
 # Keep immediate enum construction inside JIT segments
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **Rejected**, against `f7a12459b7bf0dff8e6c3671861ea67f297a35d8`. This is a measured
 implementation step under D111, not Go/Rust parity or complete Tier 1 verification.
 JIT remains opt-in. The frozen stage started at 2026-09-11T11:26:16.078186+00:00 and its
 publication deadline is 2026-09-11T13:26:16.078186+00:00; publication time is recorded separately.
 
-[Protocol and summary](cp42-jit-immediate-enum-2026-09-11-rejected-summary.json), [complete raw evidence](cp42-jit-immediate-enum-2026-09-11-rejected-raw.json.gz),
-and [candidate patch](cp42-jit-immediate-enum-2026-09-11-rejected-candidate.patch). Apply with `git apply --unidiff-zero`
+[Protocol and summary](cp42-jit-immediate-enum-2026-09-11-rejected-summary.json), [complete raw evidence](private-artifacts.md#artifact-011),
+and [candidate patch](private-artifacts.md#artifact-010). Apply with `git apply --unidiff-zero`
 on the parent above. The isolated-index replay reproduces tree `7789a965b26182fe704166412ffd1c3c690b7ff5`.
 The summary supplies both compressed and decoded hashes. Raw evidence includes
 exact diagnostic copies, scripts, counter runs, address maps, profiler outputs,

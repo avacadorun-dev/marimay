@@ -1,5 +1,10 @@
 # Retained string bytes in Native, interpreter and JIT
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **accepted locally**, against `d7f48b65550adebcf6e00974f14a99fe8926df37`. The active
 family remains the original title-search 10k/100k pair. Normalization and
 word-frequency follow it in the fixed workload order. This step does not prove
@@ -7,7 +12,7 @@ all32 parity, complete Tier1 conformance, Linux LeakSanitizer or physical x86
 performance. JIT stays opt-in.
 
 [Protocol, validation and results](cp42-string-views-2026-09-11-summary.json),
-[raw evidence](cp42-string-views-2026-09-11-raw.json.gz), [candidate patch](cp42-string-views-2026-09-11-candidate.patch),
+[raw evidence](private-artifacts.md#artifact-055), [candidate patch](private-artifacts.md#artifact-054),
 [initial phase diagnosis](cp42-string-views-2026-09-11-diagnosis.md). Applying the patch to the parent
 with `git apply --unidiff-zero` reproduces tree `4a1ec2ab45c674533789fab9f6a115a9490856af` in an isolated index.
 The summary records archive hashes, exact compiler/binary/source hashes and all
