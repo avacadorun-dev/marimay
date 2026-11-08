@@ -473,6 +473,16 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(self.command.read_bytes(), command_before)
         self.assertFalse(self.candidate.exists())
 
+    def test_receipt_mismatch_identifies_field_and_digest_without_raw_value(self):
+        self.old()
+        self.receipt_files()
+        value = "synthetic mismatched receipt version"
+        result = self.hook("preinstall", 1, self.receipt_reader(**{"pkg-version": value}))
+        fingerprint = hashlib.sha256((value + "\n").encode()).hexdigest()
+        self.assertIn((f"package receipt pkg-version mismatch (sha256={fingerprint}, "
+                       f"bytes={len(value) + 1})").encode(), result.stderr)
+        self.assertNotIn(value.encode(), result.stderr)
+
     @unittest.skipUnless(platform.system() == "Darwin", "stock macOS plist reader boundary")
     def test_stock_plutil_receipt_strings_are_exact_and_typed(self):
         import plistlib
@@ -521,6 +531,52 @@ class ArchiveTests(unittest.TestCase):
 
 
 class InstallGateTests(unittest.TestCase):
+    def test_installer_failure_reports_only_bounded_own_script_diagnostics(self):
+        arguments = ["/usr/bin/sudo", "-n", "/usr/sbin/installer", "-pkg", "own.pkg", "-target", "/"]
+        other = "unrelated system log must not be reported"
+        own = ["syslog prefix Marimay installer: reason %d " % index + "x" * 600
+               for index in range(12)]
+        result = subprocess.CompletedProcess(arguments, 23,
+            (other + "\n" + "\n".join(own)).encode(), (other + "\n").encode())
+        with mock.patch.object(SMOKE.subprocess, "run", return_value=result), \
+                self.assertRaisesRegex(AssertionError, "Installer command failed: exit=23") as caught:
+            SMOKE.command(arguments, Path("/unused"))
+        message = str(caught.exception)
+        self.assertNotIn(other, message)
+        self.assertNotIn("syslog prefix", message)
+        details = json.loads(message.split("own-script=", 1)[1])
+        self.assertEqual(len(details), 8)
+        self.assertTrue(all(len(line) == 512 for line in details))
+        self.assertTrue(details[0].startswith("Marimay installer: reason 4 "))
+        with mock.patch.object(SMOKE.subprocess, "run", return_value=result):
+            self.assertIs(SMOKE.command(arguments, Path("/unused"), expected=None), result)
+        successful = subprocess.CompletedProcess(arguments, 0, b"", b"")
+        with mock.patch.object(SMOKE.subprocess, "run", return_value=successful), \
+                self.assertRaisesRegex(AssertionError, "collision was accepted"):
+            SMOKE.command(arguments, Path("/unused"), expected=None)
+
+    def test_installer_invocations_capture_parsable_current_invocation_logs(self):
+        with mock.patch.object(SMOKE, "command") as run:
+            SMOKE.sudo(["/usr/sbin/installer", "-pkg", "own.pkg", "-target", "/"],
+                       Path("/unused"), expected=None)
+        run.assert_called_once_with(["/usr/bin/sudo", "-n", "/usr/sbin/installer", "-dumplog",
+            "-verboseR", "-pkg", "own.pkg", "-target", "/"], Path("/unused"), None, None)
+
+    def test_installer_failure_fallback_is_scoped_to_own_package_errors(self):
+        arguments = ["/usr/bin/sudo", "-n", "/usr/sbin/installer", "-pkg", "own.pkg"]
+        own = ["PackageKit: org.marimay.mmay/Scripts/preinstall: ERROR cannot load helper",
+               "PackageKit: org.marimay.ci.receipt-probe script FAILED status 127"]
+        excluded = ["PackageKit: unrelated.identifier script failed with private data",
+                    "PackageKit: org.marimay.mmay installed successfully",
+                    "unrelated system error must not be reported"]
+        result = subprocess.CompletedProcess(arguments, 1, b"", "\n".join(own + excluded).encode())
+        with mock.patch.object(SMOKE.subprocess, "run", return_value=result), \
+                self.assertRaisesRegex(AssertionError, "Installer command failed") as caught:
+            SMOKE.command(arguments, Path("/unused"))
+        details = json.loads(str(caught.exception).split("own-script=", 1)[1])
+        self.assertEqual(details, own)
+        self.assertTrue(all(line not in str(caught.exception) for line in excluded))
+
     def test_receipt_preflight_requires_explicit_hosted_mac_consent_before_work(self):
         cases = ((False, {"GITHUB_ACTIONS": "true", "RUNNER_OS": "macOS"}, "Darwin"),
                  (True, {}, "Darwin"),

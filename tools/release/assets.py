@@ -9,12 +9,15 @@ import unicodedata
 from common import ReleaseError, digest, version_value
 
 
-def names(version):
+def names(version, architectures=("arm64", "x86_64")):
     version_value(version)
+    if (not architectures or len(set(architectures)) != len(architectures)
+            or any(arch not in ("arm64", "x86_64") for arch in architectures)):
+        raise ReleaseError("invalid macOS asset architecture set")
     archives = ["marimay-" + version + "-darwin-" + arch + extension
-                for arch in ("arm64", "x86_64") for extension in (".tar.gz", ".pkg")]
+                for arch in architectures for extension in (".tar.gz", ".pkg")]
     archives.append("marimay-" + version + "-source.tar.gz")
-    archives.extend("macos-verification-" + arch + ".json" for arch in ("arm64", "x86_64"))
+    archives.extend("macos-verification-" + arch + ".json" for arch in architectures)
     return set(archives + [name + ".sha256" for name in archives])
 
 
@@ -107,8 +110,8 @@ def inspect_tar(path, version, sha):
             raise ReleaseError("host archive provenance has another source revision")
 
 
-def collect(root, version, sha):
-    expected = names(version)
+def collect(root, version, sha, architectures=("arm64", "x86_64")):
+    expected = names(version, architectures)
     files = {}
     for path in root.rglob("*"):
         if path.is_symlink():
@@ -143,7 +146,7 @@ def collect(root, version, sha):
         "pkgutil-layout", "installer", "doctor-installed", "vm-run", "test-both",
         "native-debug", "native-release", "archive-relocation",
         "foreign-command-rejected", "same-version-rejected")}
-    for arch in ("arm64", "x86_64"):
+    for arch in architectures:
         path = files["macos-verification-" + arch + ".json"]
         if path.stat().st_size > 64 * 1024:
             raise ReleaseError("oversized macOS verification record")

@@ -36,17 +36,38 @@ def require_ci(allowed: bool) -> None:
 
 
 def command(arguments, cwd, expected=0, data=None, timeout=300):
-    result = subprocess.run([str(arg) for arg in arguments], cwd=cwd, input=data,
+    argv = [str(arg) for arg in arguments]
+    result = subprocess.run(argv, cwd=cwd, input=data,
                             capture_output=True, timeout=timeout)
     if expected is None:
         if result.returncode == 0:
             raise AssertionError("an installer collision was accepted")
     elif result.returncode != expected:
+        if (argv[:1] == ["/usr/sbin/installer"]
+                or argv[:3] == ["/usr/bin/sudo", "-n", "/usr/sbin/installer"]):
+            # -dumplog is captured, never dumped wholesale. Emit only this
+            # package's own bounded script diagnostics, excluding system logs.
+            lines = (result.stdout + result.stderr).decode("utf-8", "replace").splitlines()
+            own_lines = []
+            for line in lines:
+                if "Marimay installer:" in line:
+                    own_lines.append("Marimay installer:" + line.split("Marimay installer:", 1)[1])
+            if not own_lines:
+                for line in lines:
+                    lower = line.lower()
+                    if (any(identifier.lower() in lower for identifier in (IDENTIFIER, PROBE_IDENTIFIER))
+                            and any(word in lower for word in ("error", "failed", "script"))):
+                        own_lines.append(line)
+            details = [line[:512] for line in own_lines[-8:]]
+            raise AssertionError("Installer command failed: exit=%d; own-script=%s"
+                                 % (result.returncode, json.dumps(details)))
         raise AssertionError("command failed: %r" % result)
     return result
 
 
 def sudo(arguments, cwd, expected=0, data=None):
+    if arguments[:1] == ["/usr/sbin/installer"]:
+        arguments = [arguments[0], "-dumplog", "-verboseR", *arguments[1:]]
     return command(["/usr/bin/sudo", "-n", *arguments], cwd, expected, data)
 
 

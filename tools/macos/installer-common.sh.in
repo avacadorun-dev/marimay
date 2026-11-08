@@ -224,8 +224,14 @@ mmay_receipt_owner() {
             mmay_die 'package receipt has an invalid identity field'
         [ ! -s "$MMAY_WORK/receipt-errors" ] || mmay_die 'cannot parse package receipt'
         printf '%s\n' "$mmay_expected" > "$MMAY_WORK/receipt-expected"
-        /usr/bin/cmp -s "$MMAY_WORK/receipt-expected" "$MMAY_WORK/receipt-value" || \
-            mmay_die 'package receipt does not match the owned active installation'
+        if ! /usr/bin/cmp -s "$MMAY_WORK/receipt-expected" "$MMAY_WORK/receipt-value"; then
+            mmay_value_hash=$(/usr/bin/shasum -a 256 "$MMAY_WORK/receipt-value") || \
+                mmay_die 'cannot checksum package receipt identity'
+            mmay_value_bytes=$(/usr/bin/wc -c < "$MMAY_WORK/receipt-value") || \
+                mmay_die 'cannot measure package receipt identity'
+            mmay_value_bytes=$((mmay_value_bytes + 0))
+            mmay_die "package receipt $mmay_field mismatch (sha256=${mmay_value_hash%% *}, bytes=$mmay_value_bytes)"
+        fi
     done
 }
 

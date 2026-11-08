@@ -129,6 +129,11 @@ Before compiling either macOS distribution, a small real Installer probe
 checks the host's receipt identity format. It uses a separate CI-only package
 identifier and prefix, leaves the global command untouched, and fails before
 the expensive build if the expected Installer contract differs on that host.
+The real package installation gate runs before the complete portable CTest
+suite, so installation failures do not consume the full test budget. Exact
+verified assets are copied and validated outside the build tree first: CP39
+tests regenerate distribution outputs. Upload still requires the complete
+CTest suite to succeed and uses only the preserved verified bytes.
 
 Only the publishing job receives repository write permission. It validates
 the tag/commit and downloaded asset identities again, uploads to a draft, and
