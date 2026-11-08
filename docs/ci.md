@@ -36,6 +36,10 @@ leave an intermediate in its cache entry. Allocation-failure tests require zero
 live allocator counts and validate the executable whenever optional cleanup
 failure leaves the build successful.
 
+The compiler IPO contract test runs seven separate CMake configurations, each
+bounded by 30 seconds, within a CTest budget of 240 seconds. It flushes progress
+and elapsed time for each case to make timeout failures diagnosable.
+
 ```sh
 cmake --preset debug
 cmake --build --preset debug --parallel

@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 
 module = Path(sys.argv[1]).resolve()
 cmake = sys.argv[2]
@@ -53,11 +54,16 @@ with tempfile.TemporaryDirectory(prefix='mmay-ipo-contract-') as temporary:
         'add_executable(mmay_test ../unit.c)\ntarget_link_libraries(mmay_test PRIVATE mmay_bootstrap)\n')
     for index, (policy, profile, supported, success, expected) in enumerate(cases):
         build = root / str(index)
+        started = time.monotonic()
+        print(f'compiler IPO: case {index + 1}/{len(cases)} '
+              f'{policy}/{profile}, supported={supported}', flush=True)
         result = subprocess.run([cmake, '-S', str(source), '-B', str(build),
                                  '-DMMAY_COMPILER_IPO=' + policy,
                                  '-DCMAKE_BUILD_TYPE=' + profile,
                                  '-DPROBE_SUPPORTED=' + ('TRUE' if supported else 'FALSE')],
                                 capture_output=True, text=True, timeout=30)
+        print(f'compiler IPO: configure finished in {time.monotonic() - started:.2f}s',
+              flush=True)
         assert (result.returncode == 0) == success, (policy, profile, result.stdout, result.stderr)
         if not success:
             assert expected in result.stdout + result.stderr

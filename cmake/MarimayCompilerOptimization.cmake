@@ -10,7 +10,8 @@ if(BUILD_TESTING AND Python3_Interpreter_FOUND)
   add_test(NAME mmay_compiler_ipo
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/../tests/build/test_compiler_ipo.py"
       "${CMAKE_CURRENT_LIST_FILE}" "${CMAKE_COMMAND}")
-  set_tests_properties(mmay_compiler_ipo PROPERTIES TIMEOUT 60 LABELS "build;focused")
+  # Seven independently bounded 30-second configure probes plus teardown.
+  set_tests_properties(mmay_compiler_ipo PROPERTIES TIMEOUT 240 LABELS "build;focused")
 endif()
 
 if(MMAY_COMPILER_IPO STREQUAL "OFF")
