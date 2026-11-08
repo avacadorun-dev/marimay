@@ -531,6 +531,92 @@ class ArchiveTests(unittest.TestCase):
 
 
 class InstallGateTests(unittest.TestCase):
+    def test_log_delta_never_reads_history_rotated_or_truncated_content(self):
+        log = SMOKE.install_log
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory).resolve() / "install.log"
+            path.write_bytes(b"Marimay installer: historical data must not appear\n")
+            before = log.marker(path)
+            with path.open("ab") as stream:
+                stream.write(b"unrelated private system log\nMarimay installer: current guard reason\n")
+            self.assertEqual(log.delta(before, path), ["Marimay installer: current guard reason"])
+            path.rename(path.with_suffix(".old"))
+            path.write_bytes(b"Marimay installer: rotated data must not appear\n")
+            with self.assertRaisesRegex(ValueError, "rotated or was truncated"):
+                log.delta(before, path)
+            before = log.marker(path)
+            path.write_bytes(b"short\n")
+            with self.assertRaisesRegex(ValueError, "rotated or was truncated"):
+                log.delta(before, path)
+            before = log.marker(path)
+            with path.open("ab") as stream:
+                stream.write(b"Marimay installer: excluded beyond bound\n" + b"x" * 128
+                             + b"\nMarimay installer: bounded current reason\n")
+            with mock.patch.object(log, "MAX_DELTA", 64):
+                self.assertEqual(log.delta(before, path), ["Marimay installer: bounded current reason"])
+            lines = (b"package_script_service[42]: Running script org.marimay.mmay\n"
+                     b"package_script_service[42]: ./postinstall: missing: unbound variable\n"
+                     b"package_script_service[42]: [stderr] installer-common.sh: line 12: unbound variable\n"
+                     b"package_script_service[42]: [stderr] find: own-prefix: permission denied\n"
+                     b"package_script_service[99]: ./postinstall: unrelated private failure\n")
+            filtered = log.own_lines(lines)
+            self.assertEqual(len(filtered), 4)
+            self.assertTrue(any("unbound variable" in line for line in filtered))
+            self.assertTrue(any("installer-common.sh: line 12" in line for line in filtered))
+            self.assertTrue(any("find: own-prefix" in line for line in filtered))
+            self.assertFalse(any("unrelated private" in line for line in filtered))
+            later = b"\n".join(b"PackageKit org.marimay.mmay script failed summary" for _ in range(20))
+            preferred = log.own_lines(b"Marimay installer: original guard reason\n" + later)
+            self.assertEqual(len(preferred), 8)
+            self.assertEqual(preferred[0], "Marimay installer: original guard reason")
+
+    def test_log_permission_fallback_is_ci_guarded_fixed_and_bounded(self):
+        before = {"device": 1, "inode": 2, "size": 300}
+        result = subprocess.CompletedProcess([], 0, b'["Marimay installer: scoped reason"]', b"")
+        with mock.patch.object(SMOKE, "require_ci") as guard, \
+                mock.patch.object(SMOKE.install_log, "delta", side_effect=PermissionError), \
+                mock.patch.object(SMOKE.subprocess, "run", return_value=result) as run:
+            self.assertEqual(SMOKE.current_install_log("delta", before), ["Marimay installer: scoped reason"])
+        guard.assert_called_once_with(True)
+        arguments = run.call_args.args[0]
+        self.assertEqual(arguments[:3], ["/usr/bin/sudo", "-n", "--preserve-env=GITHUB_ACTIONS,RUNNER_OS"])
+        self.assertEqual(arguments[4], str(Path(SMOKE.install_log.__file__).resolve()))
+        self.assertEqual(arguments[5:], ["delta", "1", "2", "300"])
+        with mock.patch.object(SMOKE, "require_ci", side_effect=ValueError("not CI")), \
+                mock.patch.object(SMOKE.subprocess, "run") as run, self.assertRaises(ValueError):
+            SMOKE.current_install_log("delta", before)
+        run.assert_not_called()
+
+    def test_failed_upgrade_reports_only_owned_state_and_reraises_original(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory).resolve()
+            candidate = work / "candidate"
+            prefix(candidate)
+            previous = work / "previous"
+            previous.mkdir()
+            (previous / "changed").write_bytes(b"new contents must not be reported")
+            old_version = "0.0.0-alpha.ci-old"
+            wrapper = work / "wrapper"
+            wrapper.write_bytes(SMOKE.launcher(old_version))
+            old_files = {"missing": b"old private contents", "changed": b"old private contents"}
+            original = AssertionError("original Installer failure")
+            with mock.patch.object(SMOKE, "current_install_log", side_effect=[
+                    {"device": 1, "inode": 2, "size": 300}, ["Marimay installer: scoped reason"]]), \
+                    mock.patch.object(SMOKE, "sudo", side_effect=original), \
+                    mock.patch.object(SMOKE.sys, "stderr", new_callable=io.StringIO) as stderr, \
+                    self.assertRaises(AssertionError) as caught:
+                SMOKE.install_upgrade(work / "own.pkg", work, candidate=candidate,
+                    previous=previous, previous_files=old_files, wrapper=wrapper,
+                    old_version=old_version, version=VERSION, arch=ARCH)
+            self.assertIs(caught.exception, original)
+            state = json.loads(stderr.getvalue().split("failure state: ", 1)[1])
+            self.assertEqual(state["candidateValidation"], "ok")
+            self.assertEqual(state["previousMissing"], ["missing"])
+            self.assertEqual(state["previousChanged"], ["changed"])
+            self.assertTrue(state["wrapperUnchanged"])
+            self.assertEqual(state["ownScriptLogDelta"], ["Marimay installer: scoped reason"])
+            self.assertNotIn("contents", stderr.getvalue())
+
     def test_installer_failure_reports_only_bounded_own_script_diagnostics(self):
         arguments = ["/usr/bin/sudo", "-n", "/usr/sbin/installer", "-pkg", "own.pkg", "-target", "/"]
         other = "unrelated system log must not be reported"

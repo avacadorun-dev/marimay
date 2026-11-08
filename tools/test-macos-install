@@ -19,6 +19,7 @@ import xml.etree.ElementTree as ET
 
 from macos_payload import (ARCHITECTURES, component, digest, physical,
                            unpack_archive, verify_checksum, verify_prefix)
+import macos_install_log as install_log
 
 
 REPOSITORY = Path(__file__).resolve().parents[1]
@@ -69,6 +70,87 @@ def sudo(arguments, cwd, expected=0, data=None):
     if arguments[:1] == ["/usr/sbin/installer"]:
         arguments = [arguments[0], "-dumplog", "-verboseR", *arguments[1:]]
     return command(["/usr/bin/sudo", "-n", *arguments], cwd, expected, data)
+
+
+def current_install_log(operation, before=None):
+    require_ci(True)
+    try:
+        return install_log.marker() if operation == "marker" else install_log.delta(before)
+    except PermissionError:
+        arguments = ["/usr/bin/sudo", "-n", "--preserve-env=GITHUB_ACTIONS,RUNNER_OS",
+                     sys.executable, str(Path(install_log.__file__).resolve()), operation]
+        if operation == "delta":
+            install_log.validate_marker(before)
+            arguments.extend(str(before[key]) for key in ("device", "inode", "size"))
+        result = subprocess.run(arguments, capture_output=True, timeout=30)
+        if result.returncode or result.stderr:
+            raise ValueError("scoped install log reader is unavailable")
+        value = json.loads(result.stdout)
+        if operation == "marker":
+            return install_log.validate_marker(value)
+        if (type(value) is not list or len(value) > 8
+                or any(type(line) is not str or len(line) > 512 for line in value)):
+            raise ValueError("invalid scoped install log diagnostic")
+        return value
+
+
+def failed_install_state(candidate, previous, previous_files, wrapper, old_version, version, arch):
+    state = {"candidateExists": candidate.exists() or candidate.is_symlink(),
+             "previousPrefixExists": previous.exists() or previous.is_symlink()}
+    try:
+        verify_prefix(candidate, version, arch)
+        state["candidateValidation"] = "ok"
+    except Exception as error:
+        state["candidateValidation"] = str(error) if type(error) is ValueError else type(error).__name__
+    missing, changed = [], []
+    for name, data in sorted(previous_files.items()):
+        path = previous / name
+        try:
+            physical(path)
+            if not path.is_file():
+                missing.append(name)
+            elif digest(path) != hashlib.sha256(data).hexdigest():
+                changed.append(name)
+        except (OSError, ValueError):
+            changed.append(name)
+    state.update(previousMissing=missing[:20], previousChanged=changed[:20],
+                 previousMissingCount=len(missing), previousChangedCount=len(changed))
+    try:
+        physical(wrapper)
+        state["wrapperUnchanged"] = wrapper.read_bytes() == launcher(old_version)
+    except (OSError, ValueError):
+        state["wrapperUnchanged"] = False
+    return state
+
+
+def install_upgrade(package, work, *, candidate, previous, previous_files, wrapper,
+                    old_version, version, arch):
+    marker_error = None
+    try:
+        before = current_install_log("marker")
+    except Exception as error:
+        before = None
+        marker_error = type(error).__name__
+    try:
+        sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work)
+    except AssertionError:
+        delta_error = None
+        try:
+            lines = current_install_log("delta", before) if before is not None else []
+        except Exception as error:
+            lines = []
+            delta_error = type(error).__name__
+        try:
+            state = failed_install_state(candidate, previous, previous_files, wrapper,
+                                         old_version, version, arch)
+        except Exception as error:
+            state = {"stateDiagnosticError": type(error).__name__}
+        state["ownScriptLogDelta"] = lines
+        state["logMarkerAvailable"] = before is not None
+        state["logMarkerErrorClass"] = marker_error
+        state["logDeltaErrorClass"] = delta_error
+        print("Marimay CI installer failure state: " + json.dumps(state, sort_keys=True), file=sys.stderr)
+        raise
 
 
 def launcher(version):
@@ -368,7 +450,9 @@ def main():
     sudo(["/bin/chmod", "755", global_command], work)
     previous_bytes = {p.relative_to(previous).as_posix(): p.read_bytes()
                       for p in previous.rglob("*") if p.is_file()}
-    sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work)
+    install_upgrade(package, work, candidate=installed, previous=previous,
+        previous_files=previous_bytes, wrapper=global_command, old_version=old_version,
+        version=args.version, arch=args.arch)
     if global_command.is_symlink() or global_command.read_bytes() != launcher(args.version):
         raise AssertionError("Installer did not atomically activate the expected wrapper")
     verify_prefix(installed, args.version, args.arch)
