@@ -909,6 +909,13 @@ types to the same closed runtime layout tags without changing MIR or bytecode
 wire identity. Focused storage tests inspect private layout/accounting while
 native descriptor tests prove the emitted mapping.
 
+Canonical native descriptors use `extern const` declarations and one initialized
+`const` definition with external C linkage in the single generated translation
+unit. This preserves cyclic descriptor identity and immutable metadata without
+tentative const definitions rejected by MSVC's warnings-as-errors profile.
+Their generated names are implementation details with no stable foreign ABI;
+initialized field, variant and dispatch helper tables retain `static const`.
+
 D097 assigns shallow-copy construction to `managed_array_storage.c`, sharing
 its exact-capacity allocation, source-root collection and publication path
 with array literals. `managed_array_mutation.c` owns the allocation-free stable
