@@ -337,6 +337,10 @@ void mmay_test_formatter_fixture_file(void) {
             "format/fuzz-enum-final-comma.expected.my"
         },
         {
+            "format/fuzz-type-final-comma.input.my",
+            "format/fuzz-type-final-comma.expected.my"
+        },
+        {
             "format/cp30-interpolation.input.my",
             "format/cp30-interpolation.expected.my"
         },

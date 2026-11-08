@@ -1,0 +1,61 @@
+import * as io from "std/io";
+
+type Pair = (int, int,);
+type Singleton = (int,);
+type Binary = (int, int,) => int;
+type Unary = (int,) => int;
+
+enum Packet {
+  One(int,),
+  Two(int, int,),
+  Tuple((int,),),
+}
+
+fn mark(trace: []int, value: int): int {
+  const _ = trace.push(value);
+  return value;
+}
+
+fn combine(left: int, right: int): int {
+  return left * 10 + right;
+}
+
+fn pairCode(value: Pair): int {
+  return match value { (left, right) => combine(left, right), };
+}
+
+fn singletonCode(value: Singleton): int {
+  return match value { (item,) => item, };
+}
+
+fn packetCode(value: Packet): int {
+  return match value {
+    Packet.One(item) => item,
+    Packet.Two(left, right) => combine(left, right),
+    Packet.Tuple(item) => singletonCode(item),
+  };
+}
+
+fn evaluate(): int {
+  const trace: []int = [];
+  const pair: Pair = (mark(trace, 1), mark(trace, 2));
+  const callback: Binary = combine;
+  const called = callback(mark(trace, 3), mark(trace, 4));
+  const packet = Packet.Two(mark(trace, 5), mark(trace, 6));
+  const singleton: Singleton = (mark(trace, 7),);
+  if pairCode(pair) != 12 || called != 34 || packetCode(packet) != 56 {
+    return -1;
+  }
+  if singletonCode(singleton) != 7 || packetCode(Packet.Tuple(singleton)) != 7 {
+    return -2;
+  }
+  let code = 0;
+  for item in trace { code = code * 10 + item; }
+  return code;
+}
+
+fn main(): int {
+  if evaluate() != 1234567 { return 1; }
+  const _ = io.println("type separators ok");
+  return 0;
+}

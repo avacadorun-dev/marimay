@@ -266,6 +266,27 @@ void mmay_formatter_fixture_dispose(MarimayFormatterFixture *fixture) {
     mmay_source_manager_dispose(&fixture->sources);
 }
 
+static bool mmay_formatter_optional_type_comma(const MarimayAstNode *node, size_t index) {
+    const MarimayAstElement *first = mmay_ast_child(node, 0);
+    const MarimayAstElement *comma = mmay_ast_child(node, index);
+    const MarimayAstElement *close = mmay_ast_child(node, index + 1);
+    size_t child = 0;
+    if (node->kind != MMAY_SYNTAX_TYPE || first == NULL || comma == NULL
+        || close == NULL || first->kind != MMAY_AST_ELEMENT_TOKEN
+        || first->as.token.kind != MMAY_TOKEN_LEFT_PAREN
+        || comma->kind != MMAY_AST_ELEMENT_TOKEN || comma->as.token.kind != MMAY_TOKEN_COMMA
+        || close->kind != MMAY_AST_ELEMENT_TOKEN || close->as.token.kind != MMAY_TOKEN_RIGHT_PAREN) {
+        return false;
+    }
+    for (child = 0; child < node->child_count; child += 1) {
+        const MarimayAstElement *item = mmay_ast_child(node, child);
+        if (item != NULL && item->kind == MMAY_AST_ELEMENT_TOKEN
+            && ((child < index && item->as.token.kind == MMAY_TOKEN_COMMA)
+                || (child > index + 1 && item->as.token.kind == MMAY_TOKEN_FAT_ARROW))) return true;
+    }
+    return false;
+}
+
 static bool mmay_formatter_ast_equal_internal(
     const MarimayAstNode *left,
     const MarimaySourceSnapshot *left_source,
@@ -298,6 +319,7 @@ static bool mmay_formatter_ast_equal_internal(
             || left->kind == MMAY_SYNTAX_ENUM_VARIANT
             || left->kind == MMAY_SYNTAX_MATCH_EXPRESSION
             || left->kind == MMAY_SYNTAX_NAMED_PAYLOAD
+            || left->kind == MMAY_SYNTAX_POSITIONAL_PAYLOAD
             || left->kind == MMAY_SYNTAX_RECORD_DECL
             || left->kind == MMAY_SYNTAX_RECORD_EXPRESSION
             || left->kind == MMAY_SYNTAX_RECORD_FIELDS
@@ -309,8 +331,8 @@ static bool mmay_formatter_ast_equal_internal(
             || left->kind == MMAY_SYNTAX_NAMED_PATTERN
             || left->kind == MMAY_SYNTAX_PATTERN_LIST
             || left->kind == MMAY_SYNTAX_PATTERN_FIELDS;
-        bool left_trailing_comma = false;
-        bool right_trailing_comma = false;
+        bool left_trailing_comma = mmay_formatter_optional_type_comma(left, left_index);
+        bool right_trailing_comma = mmay_formatter_optional_type_comma(right, right_index);
         if (list_kind && left_element != NULL
             && left_element->kind == MMAY_AST_ELEMENT_TOKEN
             && left_element->as.token.kind == MMAY_TOKEN_COMMA

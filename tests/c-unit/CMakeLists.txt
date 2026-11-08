@@ -163,6 +163,7 @@ add_executable(mmay_c_unit
   test_formatter_boolean_groups.c
   test_formatter_braced_groups.c
   test_formatter_enum_separators.c
+  test_formatter_type_separators.c
   test_formatter_trivia.c
   test_formatter_failures.c
   test_hash_map.c
@@ -255,6 +256,7 @@ add_executable(mmay_c_unit
   test_parser_option_condition.c
   test_parser_nested_generics.c
   test_parser_array_types.c
+  test_parser_type_separators.c
   test_parser_incremental.c
   test_parser_limits.c
   test_process.c
@@ -741,6 +743,18 @@ add_test(
 )
 set_tests_properties(mmay_cp42_void_match PROPERTIES
   LABELS "differential;cp42" TIMEOUT 1800)
+
+add_test(
+  NAME mmay_type_list_separators
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/type-list-separators"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/type-list-separators"
+    "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_type_list_separators.cmake"
+)
+set_tests_properties(mmay_type_list_separators PROPERTIES
+  LABELS "differential;syntax" PROCESSORS 2 COST 100 TIMEOUT 600)
 
 add_test(
   NAME mmay_cp42_test_helpers

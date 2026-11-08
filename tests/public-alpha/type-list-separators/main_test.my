@@ -1,0 +1,20 @@
+@test
+fn typesAndEvaluationOrderRemainExact(): void {
+  expect.equal(evaluate(), 1234567);
+  expect.equal(pairCode((3, 4)), 34);
+}
+
+@test
+fn singletonTupleRetainsItsArity(): void {
+  const value: (int,) = (8,);
+  expect.equal(singletonCode(value), 8);
+  const callback: Unary = (item: int): int => item + 1;
+  expect.equal(callback(8), 9);
+}
+
+@test
+fn positionalPayloadSeparatorsAddNoArguments(): void {
+  expect.equal(packetCode(Packet.One(8)), 8);
+  expect.equal(packetCode(Packet.Two(1, 2)), 12);
+  expect.equal(packetCode(Packet.Tuple((9,))), 9);
+}

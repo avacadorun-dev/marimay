@@ -31,7 +31,7 @@ field_decl                   = [ "public" ] [ "mutable" ] IDENTIFIER ":" type ;
 enum_decl                    = "enum" IDENTIFIER [ type_parameters ] "{" [ enum_variants ] "}" ;
 enum_variants                = enum_variant { "," enum_variant } [ "," ] ;
 enum_variant                 = IDENTIFIER [ positional_payload | named_payload ] ;
-positional_payload           = "(" type_list ")" ;
+positional_payload           = "(" type_list [ "," ] ")" ;
 named_payload                = "{" [ payload_fields ] "}" ;
 payload_fields               = payload_field { "," payload_field } [ "," ] ;
 payload_field                = IDENTIFIER ":" type ;
@@ -54,7 +54,7 @@ nominal_type                 = qualified_ident [ type_arguments ] ;
 qualified_ident              = IDENTIFIER { "." IDENTIFIER } ;
 type_arguments               = "<" type_list [ "," ] ">" ;
 type_list                    = type { "," type } ;
-tuple_type                   = "(" type "," [ type_list ] ")" ;
+tuple_type                   = "(" type "," [ type_list [ "," ] ] ")" ;
 function_type                = "(" [ type_list [ "," ] ] ")" "=>" type ;
 block                        = "{" { statement } "}" ;
 statement                    = const_decl | let_decl | expression_statement | return_statement | defer_statement | if_statement | while_statement | for_statement | scope_statement | unsafe_statement | break_statement | continue_statement | block_statement ;
@@ -158,7 +158,7 @@ pattern_field                = IDENTIFIER [ ":" pattern ] ;
 | `enum_decl` | declaration | baseline | `"enum" IDENTIFIER [ type_parameters ] "{" [ enum_variants ] "}"` |
 | `enum_variants` | list | baseline | `enum_variant { "," enum_variant } [ "," ]` |
 | `enum_variant` | declaration | baseline | `IDENTIFIER [ positional_payload \| named_payload ]` |
-| `positional_payload` | declaration | baseline | `"(" type_list ")"` |
+| `positional_payload` | declaration | baseline | `"(" type_list [ "," ] ")"` |
 | `named_payload` | declaration | baseline | `"{" [ payload_fields ] "}"` |
 | `payload_fields` | list | baseline | `payload_field { "," payload_field } [ "," ]` |
 | `payload_field` | declaration | baseline | `IDENTIFIER ":" type` |
@@ -181,7 +181,7 @@ pattern_field                = IDENTIFIER [ ":" pattern ] ;
 | `qualified_ident` | type | baseline | `IDENTIFIER { "." IDENTIFIER }` |
 | `type_arguments` | list | baseline | `"<" type_list [ "," ] ">"` |
 | `type_list` | list | baseline | `type { "," type }` |
-| `tuple_type` | type | baseline | `"(" type "," [ type_list ] ")"` |
+| `tuple_type` | type | baseline | `"(" type "," [ type_list [ "," ] ] ")"` |
 | `function_type` | type | baseline | `"(" [ type_list [ "," ] ] ")" "=>" type` |
 | `block` | statement | baseline | `"{" { statement } "}"` |
 | `statement` | statement | baseline | `const_decl \| let_decl \| expression_statement \| return_statement \| defer_statement \| if_statement \| while_statement \| for_statement \| scope_statement \| unsafe_statement \| break_statement \| continue_statement \| block_statement` |

@@ -27,5 +27,6 @@ void mmay_test_parser(void) {
     mmay_test_parser_incremental_reuse();
     mmay_test_parser_limits_and_allocation();
     mmay_test_parser_pattern_limits();
+    mmay_test_parser_type_list_separators();
     mmay_test_parser_all_single_bytes();
 }

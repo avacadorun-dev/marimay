@@ -194,7 +194,10 @@ Marimay 1.x has no formatter configuration. The style is:
   arm, argument, field, or enclosing delimiter;
 - no padding inside ordinary parentheses;
 - multiline lists use one item per line and a trailing comma;
-- under D031, import name lists, record construction/pattern fields, and named enum payload fields remain braced formatter groups: compact groups use one inner space, while groups that do not fit break one item per line; named payload declaration fields keep semicolons rather than commas;
+- under D031, import name lists, record construction/pattern fields, and named
+  enum payload fields remain braced formatter groups: compact groups use one
+  inner space, while groups that do not fit break one item per line; under
+  D071, named payload declaration fields use commas with an optional final comma;
 - a braced group's fit is measured from its canonical text and spacing using
   D026, never from an original source byte span or its whitespace count;
 - construction field order is preserved exactly under D040 because it controls
