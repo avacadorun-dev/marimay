@@ -23,6 +23,7 @@ from macos_payload import (ARCHITECTURES, component, digest, physical,
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 IDENTIFIER = "org.marimay.mmay"
+PROBE_IDENTIFIER = "org.marimay.ci.receipt-probe"
 CHECKS = ("pkgutil-layout", "installer", "doctor-installed", "vm-run", "test-both",
           "native-debug", "native-release", "archive-relocation",
           "foreign-command-rejected", "same-version-rejected")
@@ -105,14 +106,24 @@ def write_previous_fixture(root, version):
                                  for name, data in sorted(files.items())).encode("utf-8"))
 
 
-def receipt_snapshot(version, work):
-    result = command(["/usr/sbin/pkgutil", "--volume", "/", "--pkg-info-plist", IDENTIFIER], work)
+def receipt_identity(identifier, version, location, work):
+    result = command(["/usr/sbin/pkgutil", "--volume", "/", "--pkg-info-plist", identifier], work)
     fields = plistlib.loads(result.stdout)
-    expected = {"pkgid": IDENTIFIER, "pkg-version": version,
-                "install-location": f"/usr/local/lib/marimay/{version}", "volume": "/"}
-    if result.stderr or any(type(fields.get(key)) is not str or fields[key] != value
-                            for key, value in expected.items()):
-        raise AssertionError("Installer receipt identity mismatch")
+    expected = {"pkgid": identifier, "pkg-version": version,
+                "install-location": location, "volume": "/"}
+    mismatches = {key: {"expected": value, "actual": repr(fields.get(key)),
+                        "type": type(fields.get(key)).__name__}
+                  for key, value in expected.items()
+                  if type(fields.get(key)) is not str or fields[key] != value}
+    if result.stderr or mismatches:
+        raise AssertionError("Installer receipt identity mismatch: "
+                             + json.dumps(mismatches, sort_keys=True)
+                             + ("; pkgutil wrote stderr" if result.stderr else ""))
+    return expected
+
+
+def receipt_snapshot(version, work):
+    expected = receipt_identity(IDENTIFIER, version, f"/usr/local/lib/marimay/{version}", work)
     files = command(["/usr/sbin/pkgutil", "--volume", "/", "--files", IDENTIFIER], work)
     if files.stderr or b"bin/mmay" not in files.stdout.splitlines():
         raise AssertionError("Installer receipt does not own the previous payload")
@@ -125,6 +136,50 @@ def receipt_snapshot(version, work):
             raise AssertionError("Installer did not register a complete physical receipt")
         hashes[suffix] = digest(path)
     return expected, files.stdout, hashes
+
+
+def previous_version(work):
+    return "0.0.0-alpha.ci-" + work.name.encode().hex()[:24]
+
+
+def receipt_absent(identifier, work):
+    listing = subprocess.run(["/usr/sbin/pkgutil", "--volume", "/",
+        "--pkgs=^" + identifier.replace(".", "[.]") + "$"],
+        cwd=work, capture_output=True, timeout=30)
+    base = Path(f"/private/var/db/receipts/{identifier}")
+    for suffix in ("plist", "bom"):
+        physical(Path(f"{base}.{suffix}"))
+    if (listing.returncode != 1 or listing.stdout or listing.stderr
+            or any(Path(f"{base}.{suffix}").exists() or Path(f"{base}.{suffix}").is_symlink()
+                   for suffix in ("plist", "bom"))):
+        raise ValueError("ephemeral runner must have no previous receipt for " + identifier)
+
+
+def receipt_preflight(work):
+    """Cheap actual-OS boundary, isolated from the release command and receipt."""
+    require_ci(True)
+    work = work.absolute()
+    physical(work)
+    if work.exists():
+        raise ValueError("receipt preflight scratch directory already exists")
+    version = previous_version(work)
+    location = f"/usr/local/lib/marimay-ci-receipt-probe/{version}"
+    installed = Path(location)
+    physical(installed)
+    if installed.exists():
+        raise ValueError("receipt preflight prefix already exists")
+    receipt_absent(PROBE_IDENTIFIER, REPOSITORY)
+    work.mkdir(parents=True)
+    source = work / "probe payload"
+    source.mkdir()
+    (source / "receipt-probe").write_bytes(b"Marimay CI receipt probe\n")
+    package = work / "receipt-probe.pkg"
+    command(["/usr/bin/pkgbuild", "--root", source, "--identifier", PROBE_IDENTIFIER,
+        "--version", version, "--install-location", location, "--ownership", "recommended",
+        "--min-os-version", "15.0", "--filter", "^$", package], work)
+    sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work)
+    receipt_identity(PROBE_IDENTIFIER, version, location, work)
+    print("macOS receipt preflight passed")
 
 
 def install_previous_fixture(work, version):
@@ -214,18 +269,26 @@ def write_evidence(output, version, arch, package, archive, before, checks, sour
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--package", type=Path, required=True)
-    parser.add_argument("--archive", type=Path, required=True)
-    parser.add_argument("--version", required=True)
+    parser.add_argument("--package", type=Path)
+    parser.add_argument("--archive", type=Path)
+    parser.add_argument("--version")
     parser.add_argument("--arch", choices=ARCHITECTURES, required=True)
     parser.add_argument("--work", type=Path, required=True)
-    parser.add_argument("--evidence-output", type=Path, required=True)
+    parser.add_argument("--evidence-output", type=Path)
+    parser.add_argument("--receipt-preflight", action="store_true")
     parser.add_argument("--allow-system-install", action="store_true")
     args = parser.parse_args()
     require_ci(args.allow_system_install)
-    component(args.version)
     if platform.machine() != args.arch:
         raise ValueError("package architecture does not match this Mac runner")
+    if args.receipt_preflight:
+        if any(value is not None for value in (args.package, args.archive, args.version, args.evidence_output)):
+            parser.error("receipt preflight does not accept release asset arguments")
+        receipt_preflight(args.work)
+        return
+    if any(value is None for value in (args.package, args.archive, args.version, args.evidence_output)):
+        parser.error("full installation requires --package, --archive, --version and --evidence-output")
+    component(args.version)
     package, archive, work = args.package.absolute(), args.archive.absolute(), args.work.absolute()
     if (package.name != f"marimay-{args.version}-darwin-{args.arch}.pkg"
             or archive.name != f"marimay-{args.version}-darwin-{args.arch}.tar.gz"):
@@ -251,22 +314,15 @@ def main():
     if (installed.exists() or installed.is_symlink()
             or global_command.exists() or global_command.is_symlink()):
         raise ValueError("ephemeral runner must have no existing global Marimay command or candidate")
-    listing = subprocess.run(["/usr/sbin/pkgutil", "--volume", "/",
-                             "--pkgs=^org[.]marimay[.]mmay$"], capture_output=True, timeout=30)
-    receipt_base = Path(f"/private/var/db/receipts/{IDENTIFIER}")
-    if (listing.returncode != 1 or listing.stdout or listing.stderr
-            or any(Path(f"{receipt_base}.{suffix}").exists()
-                   or Path(f"{receipt_base}.{suffix}").is_symlink()
-                   for suffix in ("plist", "bom"))):
-        raise ValueError("ephemeral runner must have no previous Marimay receipt")
-    previous_version = "0.0.0-alpha.ci-" + work.name.encode().hex()[:24]
-    previous = Path(f"/usr/local/lib/marimay/{previous_version}")
+    receipt_absent(IDENTIFIER, work)
+    old_version = previous_version(work)
+    previous = Path(f"/usr/local/lib/marimay/{old_version}")
     if previous.exists() or previous.is_symlink():
         raise ValueError("synthetic previous prefix already exists")
-    previous_receipt = install_previous_fixture(work, previous_version)
+    previous_receipt = install_previous_fixture(work, old_version)
     sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work, expected=None)
     if (global_command.exists() or global_command.is_symlink() or installed.exists()
-            or receipt_snapshot(previous_version, work) != previous_receipt):
+            or receipt_snapshot(old_version, work) != previous_receipt):
         raise AssertionError("receipt without an owned active command was overwritten")
     sudo(["/bin/mkdir", "-p", global_command.parent], work)
     foreign = b"Marimay CI foreign command fixture\n"
@@ -274,7 +330,7 @@ def main():
     try:
         sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work, expected=None)
         if (global_command.is_symlink() or global_command.read_bytes() != foreign or installed.exists()
-                or receipt_snapshot(previous_version, work) != previous_receipt):
+                or receipt_snapshot(old_version, work) != previous_receipt):
             raise AssertionError("foreign command refusal changed the command or published a prefix")
         checks["foreign-command-rejected"] = True
     finally:
@@ -283,7 +339,7 @@ def main():
     # This unowned file is deliberately added after Installer registered its BOM.
     sudo(["/usr/bin/tee", previous / "unrelated user note"], work,
          data=b"preserve synthetic user content\n")
-    sudo(["/usr/bin/tee", global_command], work, data=launcher(previous_version))
+    sudo(["/usr/bin/tee", global_command], work, data=launcher(old_version))
     sudo(["/bin/chmod", "755", global_command], work)
     previous_bytes = {p.relative_to(previous).as_posix(): p.read_bytes()
                       for p in previous.rglob("*") if p.is_file()}

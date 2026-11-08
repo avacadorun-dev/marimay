@@ -125,6 +125,11 @@ global wrapper from outside the checkout; no shell-profile change or symlink
 is used. Same-version prefix collisions must fail without changing the active
 command; new versions activate their validated wrapper last.
 
+Before compiling either macOS distribution, a small real Installer probe
+checks the host's receipt identity format. It uses a separate CI-only package
+identifier and prefix, leaves the global command untouched, and fails before
+the expensive build if the expected Installer contract differs on that host.
+
 Only the publishing job receives repository write permission. It validates
 the tag/commit and downloaded asset identities again, uploads to a draft, and
 publishes the complete validated draft as a prerelease. Published assets are

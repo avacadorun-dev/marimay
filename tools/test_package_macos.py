@@ -515,6 +515,107 @@ class ArchiveTests(unittest.TestCase):
 
 
 class InstallGateTests(unittest.TestCase):
+    def test_receipt_preflight_requires_explicit_hosted_mac_consent_before_work(self):
+        cases = ((False, {"GITHUB_ACTIONS": "true", "RUNNER_OS": "macOS"}, "Darwin"),
+                 (True, {}, "Darwin"),
+                 (True, {"GITHUB_ACTIONS": "true", "RUNNER_OS": "macOS"}, "Linux"))
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory).resolve() / "must not exist"
+            for allowed, environment, host in cases:
+                arguments = ["test-macos-install", "--receipt-preflight", "--arch", ARCH,
+                             "--work", str(work)] + (["--allow-system-install"] if allowed else [])
+                with self.subTest(allowed=allowed, host=host), \
+                        mock.patch.dict(SMOKE.os.environ, environment, clear=True), \
+                        mock.patch.object(SMOKE.platform, "system", return_value=host), \
+                        mock.patch.object(SMOKE.sys, "argv", arguments), \
+                        mock.patch.object(SMOKE, "command") as run, \
+                        mock.patch.object(SMOKE, "sudo") as sudo, \
+                        self.assertRaises(ValueError):
+                    SMOKE.main()
+                self.assertFalse(work.exists())
+                run.assert_not_called()
+                sudo.assert_not_called()
+
+    def test_receipt_preflight_uses_isolated_actual_installer_boundary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory).resolve() / "synthetic preflight Мир"
+            version = SMOKE.previous_version(work)
+            location = f"/usr/local/lib/marimay-ci-receipt-probe/{version}"
+            with mock.patch.object(SMOKE, "require_ci") as guard, \
+                    mock.patch.object(SMOKE, "receipt_absent") as absent, \
+                    mock.patch.object(SMOKE, "command") as run, \
+                    mock.patch.object(SMOKE, "sudo") as sudo, \
+                    mock.patch.object(SMOKE, "receipt_identity") as identity, \
+                    mock.patch("builtins.print"):
+                SMOKE.receipt_preflight(work)
+            guard.assert_called_once_with(True)
+            absent.assert_called_once_with(SMOKE.PROBE_IDENTIFIER, SMOKE.REPOSITORY)
+            arguments = run.call_args.args[0]
+            self.assertEqual(arguments[0], "/usr/bin/pkgbuild")
+            self.assertEqual(arguments[arguments.index("--identifier") + 1], SMOKE.PROBE_IDENTIFIER)
+            self.assertNotEqual(SMOKE.PROBE_IDENTIFIER, SMOKE.IDENTIFIER)
+            self.assertEqual(arguments[arguments.index("--version") + 1], version)
+            self.assertEqual(arguments[arguments.index("--install-location") + 1], location)
+            self.assertNotIn("--scripts", arguments)
+            sudo.assert_called_once_with(["/usr/sbin/installer", "-pkg", work / "receipt-probe.pkg",
+                                          "-target", "/"], work)
+            identity.assert_called_once_with(SMOKE.PROBE_IDENTIFIER, version, location, work)
+            self.assertEqual((work / "probe payload/receipt-probe").read_bytes(),
+                             b"Marimay CI receipt probe\n")
+            self.assertFalse((work / "probe payload/bin/mmay").exists())
+
+    def test_receipt_preflight_cli_routes_without_release_assets_and_checks_arch(self):
+        arguments = ["test-macos-install", "--receipt-preflight", "--arch", ARCH,
+                     "--work", "/unused-preflight", "--allow-system-install"]
+        environment = {"GITHUB_ACTIONS": "true", "RUNNER_OS": "macOS"}
+        for host_arch in (ARCH, "x86_64"):
+            with mock.patch.dict(SMOKE.os.environ, environment, clear=True), \
+                    mock.patch.object(SMOKE.platform, "system", return_value="Darwin"), \
+                    mock.patch.object(SMOKE.platform, "machine", return_value=host_arch), \
+                    mock.patch.object(SMOKE.sys, "argv", arguments), \
+                    mock.patch.object(SMOKE, "receipt_preflight") as preflight:
+                if host_arch == ARCH:
+                    SMOKE.main()
+                    preflight.assert_called_once_with(Path("/unused-preflight"))
+                else:
+                    with self.assertRaisesRegex(ValueError, "architecture"):
+                        SMOKE.main()
+                    preflight.assert_not_called()
+
+    def test_receipt_preflight_refuses_existing_work_or_receipt_before_install(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory).resolve() / "preflight"
+            with mock.patch.object(SMOKE, "require_ci"), \
+                    mock.patch.object(SMOKE, "receipt_absent", side_effect=ValueError("existing receipt")), \
+                    mock.patch.object(SMOKE, "command") as run, \
+                    mock.patch.object(SMOKE, "sudo") as sudo, self.assertRaises(ValueError):
+                SMOKE.receipt_preflight(work)
+            self.assertFalse(work.exists())
+            run.assert_not_called()
+            sudo.assert_not_called()
+            work.mkdir()
+            with mock.patch.object(SMOKE, "require_ci"), \
+                    mock.patch.object(SMOKE, "receipt_absent") as absent, \
+                    mock.patch.object(SMOKE, "sudo") as sudo, self.assertRaises(ValueError):
+                SMOKE.receipt_preflight(work)
+            absent.assert_not_called()
+            sudo.assert_not_called()
+
+    def test_receipt_mismatch_reports_only_queried_identity_fields(self):
+        import plistlib
+        fields = {"pkgid": SMOKE.IDENTIFIER, "pkg-version": "0.0.0",
+                  "install-location": "usr/local/lib/marimay/0.0.0-alpha.ci-fixture",
+                  "volume": "/", "unrelated-system-metadata": "must not report"}
+        result = subprocess.CompletedProcess([], 0, plistlib.dumps(fields), b"")
+        with mock.patch.object(SMOKE, "command", return_value=result) as command, \
+                self.assertRaisesRegex(AssertionError, "Installer receipt identity mismatch") as caught:
+            SMOKE.receipt_snapshot("0.0.0-alpha.ci-fixture", Path("/unused"))
+        command.assert_called_once()
+        self.assertIn('"pkg-version"', str(caught.exception))
+        self.assertIn('"install-location"', str(caught.exception))
+        self.assertNotIn("unrelated-system-metadata", str(caught.exception))
+        self.assertNotIn("must not report", str(caught.exception))
+
     def test_previous_fixture_registers_real_receipt_with_installer(self):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory).resolve()
