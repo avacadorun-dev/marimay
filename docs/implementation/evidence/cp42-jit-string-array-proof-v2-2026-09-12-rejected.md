@@ -1,5 +1,10 @@
 # Inline certified string-array projection: rejected early
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected at the fixed early gate**, parent `8f5dd3926fcd15dc7d164b8e8fe437d581b280a3`.
 The original VM title pair takes **1.447650% longer**,
 geometric median latency ratio **1.014476502028**. This misses
@@ -11,8 +16,8 @@ and its [all 32 comparison](cp42-string-publication-v2-2026-09-12-comprehensive.
 remain current. Original Native/VM parity, complete Tier1 and Linux LSan remain open.
 
 [Protocol, results and analyses](cp42-jit-string-array-proof-v2-2026-09-12-rejected-summary.json),
-[exact sources, commands, counters and emitted bytes](cp42-jit-string-array-proof-v2-2026-09-12-rejected-raw.json.gz),
-[replayable candidate patch](cp42-jit-string-array-proof-v2-2026-09-12-rejected-candidate.patch).
+[exact sources, commands, counters and emitted bytes](private-artifacts.md#artifact-021),
+[replayable candidate patch](private-artifacts.md#artifact-020).
 The patch reproduces tree `55b3d0b4880b130d52507cabcf01ad22ac3b5b68` on the parent with `git apply --unidiff-zero`,
 verified using private indexes. Every archived text and binary was roundtrip
 verified. The original 114 source/harness hashes and frozen compilers match.

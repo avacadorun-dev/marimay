@@ -1,5 +1,10 @@
 # Alias-aware JIT destination cache invalidation: V2 rejected early
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected at the predeclared early gate**, against
 `e6ad8eae137118e7d7bc2b9561be274f2eeee093`. The original VM title pair improves by
 **2.995623%**, below the fixed **3%** minimum.
@@ -11,8 +16,8 @@ Production and normative contracts are restored. The accepted
 original all32 Native/VM parity and complete Tier1 remain open. JIT stays opt-in.
 
 [Protocol and results](cp42-jit-local-views-v2-2026-09-12-rejected-summary.json),
-[raw sources, commands and observations](cp42-jit-local-views-v2-2026-09-12-rejected-raw.json.gz),
-[exact rejected patch](cp42-jit-local-views-v2-2026-09-12-rejected-candidate.patch).
+[raw sources, commands and observations](private-artifacts.md#artifact-015),
+[exact rejected patch](private-artifacts.md#artifact-014).
 The private candidate/replay index proves patch application with
 `git apply --unidiff-zero` reproduces tree `b110956c73e437a7d194c2e38ca085b91f491130` on the parent.
 All candidate, accepted-control and 114 source/harness hashes were verified.

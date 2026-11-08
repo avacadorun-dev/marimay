@@ -1,0 +1,609 @@
+{
+  "schema": "marimay.private-experiment-artifacts/1",
+  "publication_policy": "Experimental implementation payloads are retained privately and excluded from current source and all published Git histories.",
+  "records": [
+    {
+      "id": "artifact-001",
+      "historical_path": "docs/implementation/evidence/cp42-array-search-notes-2026-09-08.patch",
+      "sha256": "540b59d3d72521d4f3f65e666315a40edb976936df89b8119ef8dd1449c9f088",
+      "bytes": 5800,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-002",
+      "historical_path": "docs/implementation/evidence/cp42-catalog-snapshot-2026-09-09.patch",
+      "sha256": "1e72f047fabbed20a366397d6bbf8a62ddee30ae2ecde247cccc054c06bfa1a7",
+      "bytes": 19898,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-003",
+      "historical_path": "docs/implementation/evidence/cp42-ipo-shared-vm-2026-09-11-candidate.patch",
+      "sha256": "a060f33d82a55437630f863eb2d089baa6019a987e89af0d7b2b443c8070b3c2",
+      "bytes": 54576,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-004",
+      "historical_path": "docs/implementation/evidence/cp42-ipo-shared-vm-2026-09-11-validation.json.gz",
+      "sha256": "10fd224c9d2e2484d6126f525091c2b3806ae2a92a4ff834a40ee76a718dd814",
+      "bytes": 6876592,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-005",
+      "historical_path": "docs/implementation/evidence/cp42-jit-address-attribution-2026-09-11.json.gz",
+      "sha256": "80f6036474f02e962a6e2d097af5dd9a13792abd6400176467679bde2ba2bd0e",
+      "bytes": 1597868,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-006",
+      "historical_path": "docs/implementation/evidence/cp42-jit-cell-projection-2026-09-12-rejected-candidate.patch",
+      "sha256": "16fed1c4f8e1424b2923a1fd36b60dcc4194d06b429242c18336ce949b8de827",
+      "bytes": 74810,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-007",
+      "historical_path": "docs/implementation/evidence/cp42-jit-cell-projection-2026-09-12-rejected-raw.json.gz",
+      "sha256": "316f3f1280b572f9056aa359253450e80d89897f2caa568f15a470ec9c97ae9e",
+      "bytes": 392991,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-008",
+      "historical_path": "docs/implementation/evidence/cp42-jit-enum-bounds-2026-09-11-candidate.patch",
+      "sha256": "f62e8062a02376e7a7834a82da6137505100939e288077551e4acab3203205ec",
+      "bytes": 33087,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-009",
+      "historical_path": "docs/implementation/evidence/cp42-jit-enum-bounds-2026-09-11-raw.json.gz",
+      "sha256": "290c523ca7fee5fd32d188f4456465e72080e73d9780c6880e3335789b829101",
+      "bytes": 8005472,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-010",
+      "historical_path": "docs/implementation/evidence/cp42-jit-immediate-enum-2026-09-11-rejected-candidate.patch",
+      "sha256": "adde8f5755b08d8273db787bdcefe23e778d3ad2ffe9087f0a0a3725bf485c94",
+      "bytes": 25272,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-011",
+      "historical_path": "docs/implementation/evidence/cp42-jit-immediate-enum-2026-09-11-rejected-raw.json.gz",
+      "sha256": "a7de462a7f3e475bd8edc094d831fa2725ebad69f4022392301e81216d188974",
+      "bytes": 11282169,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-012",
+      "historical_path": "docs/implementation/evidence/cp42-jit-local-views-2026-09-12-rejected-candidate.patch",
+      "sha256": "5252709e3fb4f09ff5feb9a35b4dd170864f2f272f5cbf2e51eb0347342affb1",
+      "bytes": 35393,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-013",
+      "historical_path": "docs/implementation/evidence/cp42-jit-local-views-2026-09-12-rejected-raw.json.gz",
+      "sha256": "73f7f9576bdf59fb22951a36718b4d4fb8a3de3926d5505f6147553334fd0a6c",
+      "bytes": 375558,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-014",
+      "historical_path": "docs/implementation/evidence/cp42-jit-local-views-v2-2026-09-12-rejected-candidate.patch",
+      "sha256": "e891fb310f6884b26b9d17a89bb0e7add78510c2d76a8e33066ff64311485178",
+      "bytes": 52395,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-015",
+      "historical_path": "docs/implementation/evidence/cp42-jit-local-views-v2-2026-09-12-rejected-raw.json.gz",
+      "sha256": "c97b7bbbe25c463226a37afd8f2748485b03613d9ad5672e23efea6b7b88d0fd",
+      "bytes": 390746,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-016",
+      "historical_path": "docs/implementation/evidence/cp42-jit-reference-values-2026-09-11-candidate.patch",
+      "sha256": "cff0b55d9114f1a5fecf916eca00d00f356ad3450156c0c7a52b3e11401ce0e7",
+      "bytes": 38799,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-017",
+      "historical_path": "docs/implementation/evidence/cp42-jit-reference-values-2026-09-11-validation.json.gz",
+      "sha256": "d949a85a3b135d7b30097cb4308befe62ce9a94715b0f442f94fb0d3a76313b3",
+      "bytes": 1309136,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-018",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-array-proof-2026-09-12-rejected-candidate.patch",
+      "sha256": "a8af31f34daf113c53b7c9e4a67da0f32b31a2d17452a132733172ca0c343ed8",
+      "bytes": 32520,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-019",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-array-proof-2026-09-12-rejected-raw.json.gz",
+      "sha256": "033fea06b2dcaaeef7b9cf6eb961cebd361ce957c048a7cee5879ed612d35127",
+      "bytes": 405319,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-020",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-array-proof-v2-2026-09-12-rejected-candidate.patch",
+      "sha256": "3edea28437c39e7dad1a3aa6c649b0246f2cc31748247f7e58811fadfb3a2512",
+      "bytes": 43164,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-021",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-array-proof-v2-2026-09-12-rejected-raw.json.gz",
+      "sha256": "e24a6524ad1fd4d049331b9a0adf4d041f6d562903166f2e69cc08bdc2eb25d5",
+      "bytes": 569985,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-022",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-array-proof-v3-2026-09-12-rejected-candidate.patch",
+      "sha256": "2114c7a47c6b5b7f48729b3538b33d10cde6cf6768c8fa9a532f86bcec445fb3",
+      "bytes": 67312,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-023",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-array-proof-v3-2026-09-12-rejected-raw.json.gz",
+      "sha256": "949f4528eb27d2bce3427b5d5b4d34ee54ab76ee783cdafec42a90d9e02abd12",
+      "bytes": 557091,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-024",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-metadata-2026-09-12-rejected-candidate.patch",
+      "sha256": "1dd78d758d7e974f951ef9ec6e4901c6a1bcc7a6b519deeb5e8b1c999ab5b37d",
+      "bytes": 23636,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-025",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-metadata-2026-09-12-rejected-raw.json.gz",
+      "sha256": "c4d9f71a6f62622ddf9829b0647d6d3a12bb3106a46ade1414bc5147b16bf206",
+      "bytes": 405722,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-026",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-search-loop-2026-09-13-rejected-candidate.patch",
+      "sha256": "ec2e8a8a77547192ce2ade6f8107ee506ff725708ef16062b5dd2bd459a42a4c",
+      "bytes": 33198,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-027",
+      "historical_path": "docs/implementation/evidence/cp42-jit-string-search-loop-2026-09-13-rejected-raw.json.gz",
+      "sha256": "4531f3ef75e96f3bd9bb5d82944f490f3f3f4e66b93c19afa9f1e6afb2dd4c45",
+      "bytes": 3604814,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-028",
+      "historical_path": "docs/implementation/evidence/cp42-program-verification-candidate-2026-09-11.patch",
+      "sha256": "ae46522d955e29721ce009416536bf56a0791b443e3e821787f7c187f9c7fc88",
+      "bytes": 22541,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-029",
+      "historical_path": "docs/implementation/evidence/cp42-shared-string-storage-2026-09-11-rejected-candidate.patch",
+      "sha256": "6a70b8c2d7cb41743c92898cb8a7c18238ccc3aa5d36cf605e93310063b58420",
+      "bytes": 14759,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-030",
+      "historical_path": "docs/implementation/evidence/cp42-shared-string-storage-2026-09-11-rejected-raw.json.gz",
+      "sha256": "a7b2279ed4836f71f0983a9f8e3bc20d9721e2be2555d04a415312a4fe68d0e5",
+      "bytes": 1782295,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-031",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-array-identity-candidate-2026-09-10.patch",
+      "sha256": "3ef411b15a99a4b60321a15d9a69ca7342a6418b8aae0ff0453375bdfa663211",
+      "bytes": 39874,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-032",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-array-segments-candidate-2026-09-10.patch",
+      "sha256": "e0da864ca02f78c6cfc034839f414e35a2ad3f0b138459730df0f217f20daac3",
+      "bytes": 39664,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-033",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-array-segments-read-only-candidate-2026-09-10.patch",
+      "sha256": "94fdd4a7da0a29378dfc8828b09a45727088bf35e1be8b0a349dc1bfcf0dee68",
+      "bytes": 3265,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-034",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-calls-candidate-2026-09-10.patch",
+      "sha256": "b3202d8087cb9a1126eb9ef2b2f6951670da7798ac8e10380653505f3782aa95",
+      "bytes": 88255,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-035",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-cursor-candidate-2026-09-10.patch",
+      "sha256": "8a78ace21526dd1223e6920dda83761d26c4eefc6ae34f994e66e93f1d0b3dee",
+      "bytes": 88968,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-036",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-prepared-activations-candidate-2026-09-10.patch",
+      "sha256": "8948b389a98858e110a0e8468eedc43f412ed6d6ebc020ad9c8d22788e12cad7",
+      "bytes": 71604,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-037",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-prepared-activations-first-candidate-2026-09-10.patch",
+      "sha256": "3d4db55c763357b35283d34d3cc370f688ee627314579de8d18bb16e08ac8f50",
+      "bytes": 49105,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-038",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-prepared-isolation-candidate-2026-09-11.patch",
+      "sha256": "bc0454691c97683b8576efabffa80092bf4e10236a40f7aec612c44e64c31c7e",
+      "bytes": 56365,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-039",
+      "historical_path": "docs/implementation/evidence/cp42-sljit-views-candidate-2026-09-10.patch",
+      "sha256": "e10b8911c8e0e814845e61d0de93dc637ad4bc450a0907808736622d26fbfd93",
+      "bytes": 106518,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-040",
+      "historical_path": "docs/implementation/evidence/cp42-string-array-projection-2026-09-12-rejected-candidate.patch",
+      "sha256": "4c827fe50de6afa7d99cdece6eeac24561169d715976efd92190457b7840dab4",
+      "bytes": 56220,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-041",
+      "historical_path": "docs/implementation/evidence/cp42-string-array-projection-2026-09-12-rejected-raw.json.gz",
+      "sha256": "295e0e4713ead214f36eef07c6cb42f1a6bb716dbfe80fae38301d416c3387d7",
+      "bytes": 471262,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-042",
+      "historical_path": "docs/implementation/evidence/cp42-string-array-projection-v2-2026-09-12-rejected-candidate.patch",
+      "sha256": "e310554a3500dcebf3eb9ff9ed62b30513eaf5132d58cfa848862800b6d3378c",
+      "bytes": 77716,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-043",
+      "historical_path": "docs/implementation/evidence/cp42-string-array-projection-v2-2026-09-12-rejected-raw.json.gz",
+      "sha256": "1d64453bdf475010fe5f8ce08eef762540a67f4886f84fe7637b2d93031696d8",
+      "bytes": 735879,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-044",
+      "historical_path": "docs/implementation/evidence/cp42-string-array-projection-v3-2026-09-12-rejected-candidate.patch",
+      "sha256": "8ed306512a95544a123c63170f25603cc7fec479b4818aa147c93e10510d03e8",
+      "bytes": 84502,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-045",
+      "historical_path": "docs/implementation/evidence/cp42-string-array-projection-v3-2026-09-12-rejected-raw.json.gz",
+      "sha256": "f2d2f4434e96f9d13a475aa7911365d283fbcc36ac60dc656f5562ccdee322dc",
+      "bytes": 505593,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-046",
+      "historical_path": "docs/implementation/evidence/cp42-string-array-reuse-2026-09-12-raw.jsonl.xz",
+      "sha256": "0d2fdae203e10170d44d40fd4f042a1410260d9a28f8f57d8d626c411c730d9c",
+      "bytes": 983876,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-047",
+      "historical_path": "docs/implementation/evidence/cp42-string-body-sharing-2026-09-13-rejected-candidate.patch",
+      "sha256": "be45bcc50b9263b25fb6f8460b355556e25017f242970eead7b5d94a3a0ac585",
+      "bytes": 28421,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-048",
+      "historical_path": "docs/implementation/evidence/cp42-string-body-sharing-2026-09-13-rejected-raw.json.gz",
+      "sha256": "62570bf9ec708d426ae0bf53f74ca6e1296b1a259873e49ebea0346d33284d62",
+      "bytes": 795183,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-049",
+      "historical_path": "docs/implementation/evidence/cp42-string-publication-2026-09-11-rejected-candidate.patch",
+      "sha256": "6648ca81119f807b47a1370f57d28ef7bd81e62c97131702b7daea500a3715bb",
+      "bytes": 57676,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-050",
+      "historical_path": "docs/implementation/evidence/cp42-string-publication-2026-09-11-rejected-raw.json.gz",
+      "sha256": "df4b85a5521c07df65a36fce840e71e773aefa351585ebbc3649e9ab73f9a9d7",
+      "bytes": 3629243,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-051",
+      "historical_path": "docs/implementation/evidence/cp42-string-publication-regressions-2026-09-12-raw.json.gz",
+      "sha256": "888e9c5a26d20a3d92f4006a8380249c8221f8530229757a6b544bb71d42e48f",
+      "bytes": 10934309,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-052",
+      "historical_path": "docs/implementation/evidence/cp42-string-publication-v2-2026-09-12-candidate.patch",
+      "sha256": "efcf27f1f0642d2c7c674864efe9631ff5826cc4459e671e06c59982156af2ae",
+      "bytes": 61608,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-053",
+      "historical_path": "docs/implementation/evidence/cp42-string-publication-v2-2026-09-12-raw.json.gz",
+      "sha256": "43d11d68c90e3d466d86087be0a504a42110dd26cb64a53d01e6b4ae8b5003d7",
+      "bytes": 4388363,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-054",
+      "historical_path": "docs/implementation/evidence/cp42-string-views-2026-09-11-candidate.patch",
+      "sha256": "7c408a8fbb5b6183705aab3e6911ec2f8f4082034d6940405b714fd908737ca1",
+      "bytes": 64454,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-055",
+      "historical_path": "docs/implementation/evidence/cp42-string-views-2026-09-11-raw.json.gz",
+      "sha256": "e9a150d51616bdcf0b03705819ac0b8bd17704d288f5ca6835ab170aa4d0acbd",
+      "bytes": 13248417,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-056",
+      "historical_path": "docs/implementation/evidence/cp42-string-views-2026-09-11-v1-source.tar.gz",
+      "sha256": "ddd97f1f08b8be134b3b1a32f10867e97740d1d724ba84e853dc775110b2978a",
+      "bytes": 174975,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-057",
+      "historical_path": "docs/implementation/evidence/cp42-string-views-2026-09-11-v2-source.tar.gz",
+      "sha256": "09ec2677f957ec83df738bdc4474523d23773a0f9ccdc73d95779d0fa5887caf",
+      "bytes": 179094,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-058",
+      "historical_path": "docs/implementation/evidence/cp42-string-views-2026-09-11-v3-source.tar.gz",
+      "sha256": "1b107730b6ab896ae3c3a519e5960de5e7d240da5e36bab9de74048ba5374732",
+      "bytes": 184701,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-059",
+      "historical_path": "docs/implementation/evidence/cp42-text-runtime-diagnosis-2026-09-11-raw.json.gz",
+      "sha256": "9f4e1a1cc931da6656666aacf6d058c27678a2f48a27346deab0ad3f0b022629",
+      "bytes": 1229470,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-060",
+      "historical_path": "docs/implementation/evidence/cp42-title-after-publication-2026-09-12-raw.json.gz",
+      "sha256": "3ad63ebeb8616586fd41ead347b03a33e8d3111035722d688d67b048dfae0400",
+      "bytes": 664965,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-061",
+      "historical_path": "docs/implementation/evidence/cp42-title-after-publication-2026-09-12-view-alias.patch",
+      "sha256": "211d8fb9ac3ead76ba7ff713fde28da398dc8b8bd606119fe3b99a9f4dd9d84f",
+      "bytes": 1136,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-062",
+      "historical_path": "docs/implementation/evidence/cp42-title-after-string-views-2026-09-11-raw.json.gz",
+      "sha256": "c019192ae03c9cb032a9d2f0247b660f927247d7332acda2a97d2f567cb4b159",
+      "bytes": 567602,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-063",
+      "historical_path": "docs/implementation/evidence/cp42-title-jit-map-2026-09-12-raw.json.xz",
+      "sha256": "3c1dadbb58334f46db79574cdd804f307ea32a69352f7e85e96f5f9b2a10cd60",
+      "bytes": 2274764,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-064",
+      "historical_path": "docs/implementation/evidence/cp42-title-projection-probe-2026-09-12-generated.patch",
+      "sha256": "42d2f7155ace46be8c968676f68569f4077cd23b323ea72aba4502af057be1a8",
+      "bytes": 2840,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-065",
+      "historical_path": "docs/implementation/evidence/cp42-title-projection-probe-2026-09-12-raw.json.gz",
+      "sha256": "06842464ec5a3d0ef3341fe833bebc74fe02477a02adce8522f2277f14002e59",
+      "bytes": 606551,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-066",
+      "historical_path": "docs/implementation/evidence/cp42-vm-reachable-preparation-rejected-2026-09-11-candidate.patch",
+      "sha256": "eaba833b48246a0949fae3605763c3fa3d8bb757f0a38644e026815704565318",
+      "bytes": 39049,
+      "category": "experimental_source_patch",
+      "availability": "private",
+      "included_in_public_repository": false
+    },
+    {
+      "id": "artifact-067",
+      "historical_path": "docs/implementation/evidence/cp42-vm-reachable-preparation-rejected-2026-09-11-validation.json.gz",
+      "sha256": "f77799aaa8925564f782820b97912c0371986d928ec19ab4fbf9080f5ff47999",
+      "bytes": 4675438,
+      "category": "experiment_evidence_archive",
+      "availability": "private",
+      "included_in_public_repository": false
+    }
+  ]
+}

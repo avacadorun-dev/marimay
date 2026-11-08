@@ -1,5 +1,10 @@
 # Adaptive checked string-array proof: rejected early
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected at the fixed early gate**, against `d3c502b4d793fb84c1f43cb7740b61204f69d73c`.
 The original VM title pair takes **3.546934% longer**,
 with exact geometric median latency ratio **1.035469337919**.
@@ -11,8 +16,8 @@ Production and normative/architecture changes are restored. Accepted
 current. Original Native/VM parity, complete Tier1 and Linux LSan remain open.
 
 [Protocol, fixed results and counter analysis](cp42-jit-string-array-proof-2026-09-12-rejected-summary.json),
-[exact sources, commands, counters and assembly](cp42-jit-string-array-proof-2026-09-12-rejected-raw.json.gz),
-[replayable candidate patch](cp42-jit-string-array-proof-2026-09-12-rejected-candidate.patch).
+[exact sources, commands, counters and assembly](private-artifacts.md#artifact-019),
+[replayable candidate patch](private-artifacts.md#artifact-018).
 Applying the patch with `git apply --unidiff-zero` on the parent reproduces
 candidate tree `e69bc031cd0b09483980d27a543ead964aacb06f`, verified using private indexes. The raw archive and
 every recovered file were roundtrip-verified. Candidate, control and all 114

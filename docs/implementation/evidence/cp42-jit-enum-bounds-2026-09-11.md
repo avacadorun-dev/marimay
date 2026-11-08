@@ -1,13 +1,18 @@
 # Immediate enums and one checked-index guard
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **Accepted locally**, against `4231bda824fd800307e8be9ec023b616df2876f4`. This D111 step retains
 portable interpreter semantics, safety and limits. Overall Go/Rust parity,
 complete Tier 1 verification, Linux LeakSanitizer and physical x86 performance
 remain open. JIT remains opt-in. The stage started at 2026-09-11T12:21:13.437257+00:00 and
 its publication deadline is 2026-09-11T14:21:13.437257+00:00; commit/push time is recorded separately.
 
-[Protocol and results](cp42-jit-enum-bounds-2026-09-11-summary.json), [complete raw evidence](cp42-jit-enum-bounds-2026-09-11-raw.json.gz),
-[replayable patch](cp42-jit-enum-bounds-2026-09-11-candidate.patch). Apply with `git apply --unidiff-zero`
+[Protocol and results](cp42-jit-enum-bounds-2026-09-11-summary.json), [complete raw evidence](private-artifacts.md#artifact-009),
+[replayable patch](private-artifacts.md#artifact-008). Apply with `git apply --unidiff-zero`
 on the parent above; isolated-index replay reproduces `66391b591acbe07d61c133b6f67fbd520e04f472`. The summary
 supplies both compressed and decoded hashes. The archive retains exact sources,
 scripts, build and validation commands, all observations, profiler/address maps,

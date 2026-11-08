@@ -6214,15 +6214,24 @@
   "source_archives": {
     "v1": {
       "file": "cp42-string-views-2026-09-11-v1-source.tar.gz",
-      "sha256": "87a4e99c84116d2c219efdbebd48298c8e6b319a48f2a93f1ce0ee1a1b447c61"
+      "sha256": "ddd97f1f08b8be134b3b1a32f10867e97740d1d724ba84e853dc775110b2978a",
+      "original_experiment_sha256": "87a4e99c84116d2c219efdbebd48298c8e6b319a48f2a93f1ce0ee1a1b447c61",
+      "availability": "private",
+      "included_in_public_repository": false
     },
     "v2": {
       "file": "cp42-string-views-2026-09-11-v2-source.tar.gz",
-      "sha256": "cc2af7b9fa0d5d4920741abebfefd33015047ba361727b1d98468aceaaae4e8d"
+      "sha256": "09ec2677f957ec83df738bdc4474523d23773a0f9ccdc73d95779d0fa5887caf",
+      "original_experiment_sha256": "cc2af7b9fa0d5d4920741abebfefd33015047ba361727b1d98468aceaaae4e8d",
+      "availability": "private",
+      "included_in_public_repository": false
     },
     "v3": {
       "file": "cp42-string-views-2026-09-11-v3-source.tar.gz",
-      "sha256": "d98f40b17221f685aa3dfa95a72dba04d4a1031c0e25494354d9420b4b249fe5"
+      "sha256": "1b107730b6ab896ae3c3a519e5960de5e7d240da5e36bab9de74048ba5374732",
+      "original_experiment_sha256": "d98f40b17221f685aa3dfa95a72dba04d4a1031c0e25494354d9420b4b249fe5",
+      "availability": "private",
+      "included_in_public_repository": false
     }
   },
   "mechanism": {

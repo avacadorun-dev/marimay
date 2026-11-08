@@ -1,11 +1,16 @@
 # Compiler IPO, shared calls and VM dispatch state
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **accepted-local**. Full Go/Rust parity, default JIT enablement, complete
 Tier 1 and Linux LeakSanitizer coverage remain open.
 
 [Validation summary and exact inputs](cp42-ipo-shared-vm-2026-09-11-validation.json);
-[complete validation, rejected variants and reproduction files](cp42-ipo-shared-vm-2026-09-11-validation.json.gz);
-[replayable source patch](cp42-ipo-shared-vm-2026-09-11-candidate.patch).
+[complete validation, rejected variants and reproduction files](private-artifacts.md#artifact-004);
+[replayable source patch](private-artifacts.md#artifact-003).
 The complete validation file is gzip-compressed JSON; decompress with `gzip -dc`
 and check the encoded and decoded SHA-256 values in the summary.
 Replay the source patch on its recorded parent with `git apply --unidiff-zero`.

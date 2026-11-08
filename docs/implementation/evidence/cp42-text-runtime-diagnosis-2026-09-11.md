@@ -1,5 +1,10 @@
 # Text runtime diagnosis and accepted-version snapshot
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **diagnosis complete; no production change**. Implementation remains
 `f4c9961bc807277c1aa3f34a1d5dc1ff7497c6f2`; its documentation parent is
 `a6dd1366b4fc05c89db8eff7e1beab3138ac460c`. The rejected reachable-preparation
@@ -9,7 +14,7 @@ LeakSanitizer remain open. JIT remains opt-in.
 [Fresh five-participant all32 table](cp42-text-runtime-diagnosis-2026-09-11-comprehensive.md),
 [all samples and pinned inputs](cp42-text-runtime-diagnosis-2026-09-11-comprehensive.json),
 [diagnostic summary](cp42-text-runtime-diagnosis-2026-09-11-summary.json),
-[complete compressed diagnostic record](cp42-text-runtime-diagnosis-2026-09-11-raw.json.gz).
+[complete compressed diagnostic record](private-artifacts.md#artifact-059).
 The summary supplies compressed and decoded SHA-256. Decode the gzip as JSON;
 its `files` map preserves raw profiles, scripts, generated diagnostic C, counter
 build commands/results, host snapshots, exact stdout and instrumented binary

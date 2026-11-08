@@ -1,9 +1,14 @@
 # Title-search costs after retained string bytes
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **completed local diagnosis** of accepted source `78d30702c4ca320cf85d0ec2cab44923b3914938`.
 No additional optimization or parity result is claimed. The original title-search
 pair remains active. [Protocol and results](cp42-title-after-string-views-2026-09-11-summary.json) and
-[complete raw evidence](cp42-title-after-string-views-2026-09-11-raw.json.gz) retain source and binary hashes,
+[complete raw evidence](private-artifacts.md#artifact-062) retain source and binary hashes,
 generated diagnostic copies, commands, all observations and publication evidence
 for the preceding accepted implementation.
 

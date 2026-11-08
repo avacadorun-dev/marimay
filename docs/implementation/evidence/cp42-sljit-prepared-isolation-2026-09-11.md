@@ -1,11 +1,16 @@
 # Prepared JIT activations with an unchanged OFF implementation
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **accepted-local-opt-in** at `2026-09-11T01:22:55.913901+00:00`. The original
 18:51 UTC September 10 checkpoint deadline was missed. Overall Go/Rust parity,
 default JIT enablement, Linux LeakSanitizer and complete Tier 1 validation remain open.
 
 [Validation and reproduction record](cp42-sljit-prepared-isolation-validation-2026-09-11.json);
-[replayable candidate patch](cp42-sljit-prepared-isolation-candidate-2026-09-11.patch);
+[replayable candidate patch](private-artifacts.md#artifact-038);
 [previous rejected candidate](cp42-sljit-prepared-activations-2026-09-10.md).
 
 ## Result and scope

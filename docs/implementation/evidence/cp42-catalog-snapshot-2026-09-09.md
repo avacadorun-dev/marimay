@@ -1,9 +1,14 @@
 # Catalogue runs retain their own toolchain and executables
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Local correctness evidence, 2026-09-09; external benchmark repository
 `algorithm-benchmarks`, parent `3eda605` with the user's existing catalogue work.
 [Snapshot metadata and report hashes](cp42-catalog-snapshot-2026-09-09.json).
-[Exact external harness patch](cp42-catalog-snapshot-2026-09-09.patch).
+[Exact external harness patch](private-artifacts.md#artifact-002).
 
 The user's comprehensive run was interrupted again when this task rebuilt the
 system compiler during measurement. Input-integrity checks correctly preserved

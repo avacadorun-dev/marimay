@@ -1,5 +1,10 @@
 # CP42: predicate array search and Notes integration
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 D099 implements exact free/dot `findIndex` returning `Option<int>`. The receiver
 and predicate are evaluated once before length/generation are captured. One typed
 MIR loop invokes the D098 function value in order, checking array generation
@@ -62,7 +67,7 @@ Sixteen source tests pass on both engines. The process adapter passes 36 scenari
 across VM/native Debug/Release and 21 closed-pipe checks, including search results,
 no-match output, exact errors, ordering, unchanged files and output failures.
 Existing scenarios remain in the adapter. The exact task delta is preserved in
-[this patch](cp42-array-search-notes-2026-09-08.patch) against a safe source-only
+[this patch](private-artifacts.md#artifact-001) against a safe source-only
 snapshot taken before editing. The zero-context patch applies with
 `git apply --unidiff-zero -p2`; its input hashes are recorded, and application
 was checked against that exact snapshot. The external repository already

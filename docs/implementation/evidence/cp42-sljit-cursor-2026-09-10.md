@@ -1,5 +1,10 @@
 # CP42: frame-cursor candidate held; remaining JIT costs profiled
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Date: 2026-09-10. Status: **local correctness passed; implementation held for
 performance stability**. This checkpoint does not merge the candidate into the
 production compiler or enable JIT by default. Go/Rust parity and full Tier 1
@@ -13,7 +18,7 @@ actual stack. This avoids repeated frame-container reads while retaining the
 shared activation owner and all logical call/root/fuel semantics.
 
 Source parent: `deacce5c2e8a3a607042e8f61cb481ce21c09d12`. The
-[candidate patch](cp42-sljit-cursor-candidate-2026-09-10.patch) was replayed in a
+[candidate patch](private-artifacts.md#artifact-035) was replayed in a
 separate Git index and reproduced all 17 indexed implementation, contract and
 test inputs. The [validation record](cp42-sljit-cursor-validation-2026-09-10.json)
 contains their hashes, exact build/test commands, compiler hashes and logs.

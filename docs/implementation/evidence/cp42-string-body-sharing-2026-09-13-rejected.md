@@ -1,5 +1,10 @@
 # Fresh string references over shared bodies: rejected early
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected**. Neither engine improves in the fixed title-pair screen:
 Native pair ratio **1.011506** and VM+JIT
 pair ratio **1.010651**. The requirement was
@@ -8,8 +13,8 @@ favorable retry, full validation or full 32-workload acceptance timing after thi
 Production is restored. The original all 32 Native/VM parity goal remains open.
 
 [Predeclared protocol](cp42-string-body-sharing-2026-09-13-plan.md),
-[results and hashes](cp42-string-body-sharing-2026-09-13-rejected-summary.json), [raw evidence](cp42-string-body-sharing-2026-09-13-rejected-raw.json.gz),
-[candidate patch](cp42-string-body-sharing-2026-09-13-rejected-candidate.patch).
+[results and hashes](cp42-string-body-sharing-2026-09-13-rejected-summary.json), [raw evidence](private-artifacts.md#artifact-048),
+[candidate patch](private-artifacts.md#artifact-047).
 Apply the zero-context patch to `451d98c33e049391b219986bf515154bf7b47e6b` with
 `git apply --unidiff-zero` to reproduce tree `e4955107fbb3ad2687c2b1afbec0eefc3b0ca713`.
 The [latest accepted-production table](cp42-jit-string-search-loop-2026-09-13-rejected-accepted-comprehensive.md)

@@ -1,5 +1,10 @@
 # Shared string allocation and budget preflight: rejected candidate
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected**, against `e74872a7a38e378e1dce3dc541fab456ee3cdb08`. The full Native gate
 contains a confirmed per-row regression, despite an improved aggregate. The
 candidate is archived and production sources are restored before publication.
@@ -7,7 +12,7 @@ The title-search 10k/100k family, original all32 parity, Linux LeakSanitizer and
 complete Tier1 evidence remain open. JIT remains opt-in.
 
 [Protocol and complete result summary](cp42-string-publication-2026-09-11-rejected-summary.json),
-[raw evidence](cp42-string-publication-2026-09-11-rejected-raw.json.gz), [candidate patch](cp42-string-publication-2026-09-11-rejected-candidate.patch).
+[raw evidence](private-artifacts.md#artifact-050), [candidate patch](private-artifacts.md#artifact-049).
 Applying the patch to the parent with `git apply --unidiff-zero` reproduces tree
 `c751c22d18c6d1a99e2b323fd1a095bc8a4c9e32`. Exact sources, binaries, commands, every observation and failed setup
 logs are retained. The summary gives patch and compressed/decoded archive hashes.

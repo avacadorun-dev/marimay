@@ -1,11 +1,16 @@
 # Deduplicated canonical-program verification
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **accepted-local** at `2026-09-11T02:44:39.875384+00:00`. Overall Go/Rust parity,
 default JIT enablement, Linux LeakSanitizer and complete Tier 1 remain open.
 The 75-minute checkpoint deadline was met.
 
 [Validation, reproduction scripts and identity proofs](cp42-program-verification-validation-2026-09-11.json);
-[replayable candidate patch](cp42-program-verification-candidate-2026-09-11.patch);
+[replayable candidate patch](private-artifacts.md#artifact-028);
 [preceding source-phase diagnosis](cp42-source-phase-profile-2026-09-11.md).
 
 ## Change and invariants

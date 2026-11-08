@@ -1,5 +1,10 @@
 # VM reachable preparation: rejected candidate
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **rejected**. Production remains the implementation from `f4c9961`.
 No performance change or new language/toolchain contract is accepted by this
 record. The bounded source-phase diagnosis completed, but its selected
@@ -7,8 +12,8 @@ preparation candidate failed the declared repeated P90 regression gate.
 Overall Go/Rust parity, full Tier 1 coverage and Linux LeakSanitizer remain open.
 
 [Validation summary](cp42-vm-reachable-preparation-rejected-2026-09-11-validation.json),
-[complete compressed evidence](cp42-vm-reachable-preparation-rejected-2026-09-11-validation.json.gz),
-[replayable candidate patch](cp42-vm-reachable-preparation-rejected-2026-09-11-candidate.patch).
+[complete compressed evidence](private-artifacts.md#artifact-067),
+[replayable candidate patch](private-artifacts.md#artifact-066).
 The summary gives compressed and decoded SHA-256. Replay the patch on
 `f4c9961bc807277c1aa3f34a1d5dc1ff7497c6f2` with `git apply --unidiff-zero`.
 The patch's source and proposed contract changes are historical experiment

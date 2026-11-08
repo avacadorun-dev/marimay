@@ -1,11 +1,16 @@
 # Diagnosis of string-publication regressions
 
+> **Private experiment payloads.** Archived implementations and patches
+> referenced in this historical report are retained privately. Commands
+> and digests below document the original experiment; they are not public
+> reproduction instructions. See the [artifact index](private-artifacts.md).
+
 Status: **completed local diagnosis** on `65220b0c1f685ecaa1fca0be2bb196cca7740939`. Production is unchanged;
 the [string-publication candidate](cp42-string-publication-2026-09-11-rejected.md)
 remains rejected for Native record-create median and OFF Dijkstra P90. No
 diagnostic result accepts that candidate or establishes parity or full Tier1.
 
-[Protocols and results](cp42-string-publication-regressions-2026-09-12-summary.json), [complete raw evidence](cp42-string-publication-regressions-2026-09-12-raw.json.gz).
+[Protocols and results](cp42-string-publication-regressions-2026-09-12-summary.json), [complete raw evidence](private-artifacts.md#artifact-051).
 The raw archive retains diagnostic sources, original generated benchmark C,
 commands, object/archive/executable identities, all observations, host journals,
 sampled stacks, the first measurement method and unsuccessful setup attempts.
