@@ -85,7 +85,7 @@ void mmay_test_native_c_emitter_call_policy(void) {
     const MarimayCheckedFunction *large = NULL;
     const MarimayCheckedFunction *pressured = NULL;
     const MarimayCheckedFunction *preserve = NULL;
-    const MarimayMirFunction *functions[12];
+    const MarimayMirFunction *functions[12] = {0};
     MarimayNativeCProgram program;
     MarimayOwnedBytes generated;
     char large_signature[96];
@@ -96,7 +96,6 @@ void mmay_test_native_c_emitter_call_policy(void) {
     size_t index = 0;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&program, 0, sizeof(program));
     memset(&generated, 0, sizeof(generated));
     MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));

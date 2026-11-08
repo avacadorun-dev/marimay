@@ -541,11 +541,13 @@ void mmay_test_bytecode_allocation_failures(void) {
     for (failure_index = 0; failure_index < 256 && !reached_success;
         failure_index += 1) {
         MarimayFailAllocator state;
+        bool built = false;
         mmay_fail_allocator_init(&state, mmay_system_allocator(), failure_index);
-        MMAY_EXPECT(mmay_test_bytecode_build_full(
+        built = mmay_test_bytecode_build_full(
             &function,
             mmay_fail_allocator(&state)
-        ) == (failure_index >= state.attempts));
+        );
+        MMAY_EXPECT(built == (failure_index >= state.attempts));
         if (function.initialized) {
             reached_success = true;
             mmay_bytecode_function_dispose(&function);

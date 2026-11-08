@@ -31,7 +31,7 @@ static bool mmay_test_native_nominal_read_example(
     if (written < 0 || (size_t)written >= sizeof(path)) {
         return false;
     }
-    file = fopen(path, "rb");
+    file = mmay_test_open_file(path, "rb");
     if (file == NULL) {
         return false;
     }
@@ -77,7 +77,7 @@ static void mmay_test_native_nominal_source_differential(void) {
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     const MarimayCheckedFunction *entry = NULL;
-    const MarimayMirFunction *functions[20];
+    const MarimayMirFunction *functions[20] = {0};
     MarimayBytecodeProgram bytecode;
     MarimayBytecodeProgram decoded;
     MarimayOwnedBytes encoded;
@@ -98,7 +98,6 @@ static void mmay_test_native_nominal_source_differential(void) {
     bool execution_initialized = false;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&bytecode, 0, sizeof(bytecode));
     memset(&decoded, 0, sizeof(decoded));
     memset(&encoded, 0, sizeof(encoded));

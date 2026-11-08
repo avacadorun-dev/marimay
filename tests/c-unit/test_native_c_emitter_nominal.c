@@ -192,7 +192,7 @@ static void mmay_test_native_nominal_boundary_cases(void) {
     const MarimayCheckedFunction *nested = NULL;
     const MarimayCheckedFunction *dispatch = NULL;
     const MarimayCheckedFunction *main = NULL;
-    const MarimayMirFunction *functions[16];
+    const MarimayMirFunction *functions[16] = {0};
     MarimayNativeCProgram program;
     MarimayOwnedBytes generated;
     size_t function_count = 0;
@@ -200,7 +200,6 @@ static void mmay_test_native_nominal_boundary_cases(void) {
     bool reached_boundary = false;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&program, 0, sizeof(program));
     memset(&generated, 0, sizeof(generated));
     MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));

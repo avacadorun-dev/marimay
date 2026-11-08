@@ -4,25 +4,36 @@ context: |
   Language: en
   All artifacts must be written in en.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  Marimay is a programming language with a portable C17 bootstrap and runtime.
+  The command is mmay; sources use .my and project files use mmay.mod,
+  mmay.work, and mmay.lock. VM and native execution share typed MIR semantics.
+  Read AGENTS.md and docs/agent-workflow.md before changing the project.
+  Authority is docs/spec/, accepted docs/design/decisions.md entries, then
+  IMPLEMENTATION-BRIEF.md and docs/implementation/. OpenSpec plans and summaries
+  link those contracts; they do not establish a competing language specification.
+  Milestone verification requires revision-specific commands, platform scope,
+  and evidence linked from ROADMAP.md. A local pass is not Tier 1 verification.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Identify existing requirement IDs, accepted decisions, and normative documents.
+    - State the observable behavior and affected compiler or runtime owners.
+  design:
+    - Follow docs/implementation/compiler-architecture.md and focused owner boundaries.
+    - Account for cleanup, material error paths, and deterministic allocation failures.
+  specs:
+    - Link existing docs/spec/ contracts and resolve conflicts through an accepted decision.
+    - Update normative documents in the same change as implementation and tests.
+  tasks:
+    - Include focused tests, applicable VM/native comparisons, formatter fixtures, and examples.
+    - Run architecture, roadmap, C memory-policy, generated, documentation, and publication gates.
+    - Record actual commands, revisions, platform scope, and remaining acceptance criteria.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+operations:
+  apply:
+    guidance:
+      - Preserve unrelated work and load focused contracts, owners, and tests before edits.
+      - Require zero live allocations and live bytes after allocator-backed test teardown.
+  archive:
+    guidance:
+      - Keep incomplete platform or acceptance criteria explicit; do not promote roadmap status without evidence.

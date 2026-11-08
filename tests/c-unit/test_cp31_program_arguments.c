@@ -143,7 +143,7 @@ static void mmay_cp31_status_result_panic_contract(
 }
 
 static void mmay_cp31_invalid_encoding(MarimaySession *session) {
-    char invalid_utf8[] = {(char)0xff, 0};
+    char invalid_utf8[] = "\xff";
     const char *arguments[] = {
         "mmay", "run", "run/cp31/arguments.my", "--", invalid_utf8
     };

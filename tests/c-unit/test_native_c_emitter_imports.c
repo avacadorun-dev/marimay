@@ -106,7 +106,7 @@ static void mmay_test_native_import_form(
     MarimayCheckerImportFixture fixture;
     MarimayCheckResult checked;
     const MarimayCheckedFunction *entry = NULL;
-    const MarimayMirFunction *functions[16];
+    const MarimayMirFunction *functions[16] = {0};
     MarimayBytecodeProgram bytecode;
     MarimayBytecodeExecution execution;
     MarimayBytecodeExecutionOptions execution_options;
@@ -123,7 +123,6 @@ static void mmay_test_native_import_form(
     bool execution_initialized = false;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&bytecode, 0, sizeof(bytecode));
     memset(&execution, 0, sizeof(execution));
     memset(&vm_result, 0, sizeof(vm_result));

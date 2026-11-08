@@ -1,0 +1,48 @@
+if(NOT DEFINED MMAY_TEST_TOOL OR NOT DEFINED MMAY_TEST_SOURCE OR NOT DEFINED MMAY_TEST_WORK)
+  message(FATAL_ERROR "Type-list separator test variables are missing")
+endif()
+
+file(REMOVE_RECURSE "${MMAY_TEST_WORK}")
+file(MAKE_DIRECTORY "${MMAY_TEST_WORK}")
+file(COPY "${MMAY_TEST_SOURCE}/" DESTINATION "${MMAY_TEST_WORK}/source" PATTERN ".mmay" EXCLUDE)
+set(source "${MMAY_TEST_WORK}/source")
+
+function(separator_expect expected)
+  execute_process(COMMAND ${ARGN} RESULT_VARIABLE status
+    OUTPUT_VARIABLE output ERROR_VARIABLE error TIMEOUT 120)
+  if(NOT status STREQUAL "0" OR NOT output STREQUAL "${expected}" OR NOT error STREQUAL "")
+    message(FATAL_ERROR "Type separators: ${ARGN}: status=${status}; stdout=${output}; stderr=${error}")
+  endif()
+endfunction()
+
+foreach(spelling raw formatted)
+  if(spelling STREQUAL "formatted")
+    execute_process(COMMAND "${MMAY_TEST_TOOL}" fmt "${source}"
+      RESULT_VARIABLE format_status OUTPUT_VARIABLE format_output ERROR_VARIABLE format_error)
+    if(NOT format_status STREQUAL "0" OR NOT format_error STREQUAL "")
+      message(FATAL_ERROR "Type separator formatting failed: ${format_status}/${format_output}/${format_error}")
+    endif()
+    separator_expect("" "${MMAY_TEST_TOOL}" fmt "${source}" --check)
+  endif()
+  separator_expect("" "${MMAY_TEST_TOOL}" check "${source}")
+  execute_process(COMMAND "${MMAY_TEST_TOOL}" test "${source}" --engine both
+    RESULT_VARIABLE test_status OUTPUT_VARIABLE test_output ERROR_VARIABLE test_error TIMEOUT 120)
+  if(NOT test_status STREQUAL "0" OR NOT test_error STREQUAL ""
+      OR NOT test_output MATCHES "3 passed; 0 failed")
+    message(FATAL_ERROR "Type separator ${spelling} VM/native tests: ${test_status}/${test_output}/${test_error}")
+  endif()
+  separator_expect("type separators ok\n" "${MMAY_TEST_TOOL}" run "${source}" --engine vm)
+  foreach(profile debug release)
+    set(flags)
+    if(profile STREQUAL "release")
+      set(flags --release)
+    endif()
+    set(binary "${MMAY_TEST_WORK}/${spelling}-${profile}${MMAY_TEST_SUFFIX}")
+    execute_process(COMMAND "${MMAY_TEST_TOOL}" build "${source}" ${flags} --output "${binary}"
+      RESULT_VARIABLE build_status OUTPUT_VARIABLE build_output ERROR_VARIABLE build_error TIMEOUT 120)
+    if(NOT build_status STREQUAL "0" OR NOT build_error STREQUAL "")
+      message(FATAL_ERROR "Type separator ${spelling}/${profile} build: ${build_status}/${build_output}/${build_error}")
+    endif()
+    separator_expect("type separators ok\n" "${binary}")
+  endforeach()
+endforeach()

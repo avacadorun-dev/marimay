@@ -20,13 +20,13 @@ if(NOT cp32_build_status EQUAL 0)
   )
 endif()
 
-function(cp32_compare_case name input expected_status expected_stdout expected_stderr)
+function(cp32_compare_case name input newline_style expected_status expected_stdout expected_stderr)
   set(input_path "${cp32_directory}/${name}.input")
   set(vm_output "${cp32_directory}/${name}.vm.stdout")
   set(vm_error "${cp32_directory}/${name}.vm.stderr")
   set(native_output "${cp32_directory}/${name}.native.stdout")
   set(native_error "${cp32_directory}/${name}.native.stderr")
-  file(WRITE "${input_path}" "${input}")
+  file(CONFIGURE OUTPUT "${input_path}" CONTENT "${input}" @ONLY NEWLINE_STYLE ${newline_style})
   execute_process(
     COMMAND "${MMAY_TEST_TOOL}" run "${MMAY_TEST_SOURCE}"
     INPUT_FILE "${input_path}"
@@ -63,19 +63,19 @@ function(cp32_compare_case name input expected_status expected_stdout expected_s
 endfunction()
 
 cp32_compare_case(
-  crlf "hello\r\n" 0
+  crlf "hello\n" CRLF 0
   "6f7574206c696e650a68656c6c6f0a"
   "657272206c696e650a"
 )
 cp32_compare_case(
-  eof "" 0
+  eof "" LF 0
   "6f7574206c696e650a3c656f663e0a"
   "657272206c696e650a"
 )
 string(ASCII 255 cp32_invalid_utf8)
-cp32_compare_case(invalid_utf8 "${cp32_invalid_utf8}\n" 1 "" "-")
+cp32_compare_case(invalid_utf8 "${cp32_invalid_utf8}\n" LF 1 "" "-")
 cp32_compare_case(
-  line_too_long "123456789012345678901234567890123\n" 1 "" "-"
+  line_too_long "123456789012345678901234567890123\n" LF 1 "" "-"
 )
 
 if(UNIX)
@@ -86,7 +86,7 @@ if(UNIX)
   set(cp32_broken_expected
     "657272206c696e650a6572726f725b47343030335d3a207374616e646172642073747265616d20666c757368206661696c65640a"
   )
-  file(WRITE "${cp32_broken_input}" "pipe\n")
+  file(CONFIGURE OUTPUT "${cp32_broken_input}" CONTENT "pipe\n" @ONLY NEWLINE_STYLE LF)
   foreach(engine IN ITEMS vm native)
     set(cp32_broken_error "${cp32_directory}/broken-pipe.${engine}.stderr")
     if(engine STREQUAL "vm")

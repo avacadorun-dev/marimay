@@ -671,6 +671,9 @@ static bool mmay_native_c_emit_array_element_descriptor(
     return true;
 }
 
+/* Canonical descriptors may form cycles. External const declarations avoid
+ * tentative const definitions (MSVC C4132) while retaining one immutable
+ * definition per name in the generated C translation unit. */
 static bool mmay_native_c_emit_nominal_forward_declarations(
     MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *const *functions,
@@ -702,7 +705,7 @@ static bool mmay_native_c_emit_nominal_forward_declarations(
                 if (mmay_native_c_layout_is_canonical(
                         functions, count, layout, type
                     ) && (!mmay_native_c_write(
-                        buffer, "static const MarimayManaged%sDescriptor ", name
+                        buffer, "extern const MarimayManaged%sDescriptor ", name
                     ) || !mmay_native_c_write_descriptor_name(
                         buffer, kind, type
                     ) || !mmay_native_c_write(buffer, ";\n"))) return false;
@@ -739,7 +742,7 @@ static bool mmay_native_c_emit_record_descriptor(
         }
         if (!mmay_native_c_write(buffer, "};\n")) return false;
     }
-    if (!mmay_native_c_write(buffer, "static const MarimayManagedRecordDescriptor ")
+    if (!mmay_native_c_write(buffer, "const MarimayManagedRecordDescriptor ")
         || !mmay_native_c_write_descriptor_name(buffer, layout.kind, record->type)
         || !mmay_native_c_write(buffer, " = {%zu, ", record->field_count)) {
         return false;
@@ -803,7 +806,7 @@ static bool mmay_native_c_emit_enum_descriptor(
     }
     if (enumeration->variant_count != 0
         && !mmay_native_c_write(buffer, "};\n")) return false;
-    if (!mmay_native_c_write(buffer, "static const MarimayManagedEnumDescriptor ")
+    if (!mmay_native_c_write(buffer, "const MarimayManagedEnumDescriptor ")
         || !mmay_native_c_write_descriptor_name(
             buffer, layout.kind, enumeration->type
         ) || !mmay_native_c_write(
@@ -882,7 +885,7 @@ bool mmay_native_c_emit_managed_descriptors(
                     == MMAY_NATIVE_C_ARRAY_GENERIC
                 && (!mmay_native_c_write(
                     buffer,
-                    "static const MarimayManagedArrayDescriptor mmay_g_ad_%u;\n",
+                    "extern const MarimayManagedArrayDescriptor mmay_g_ad_%u;\n",
                     (unsigned int)array->type
                 ))) return false;
         }
@@ -908,7 +911,7 @@ bool mmay_native_c_emit_managed_descriptors(
                     == MMAY_NATIVE_C_ARRAY_GENERIC) {
                 if (!mmay_native_c_write(
                         buffer,
-                        "static const MarimayManagedArrayDescriptor mmay_g_ad_%u = {",
+                        "const MarimayManagedArrayDescriptor mmay_g_ad_%u = {",
                         (unsigned int)array->type
                     ) || !mmay_native_c_emit_array_element_descriptor(
                         buffer, functions, count, array
@@ -959,7 +962,7 @@ bool mmay_native_c_emit_managed_descriptors(
             if (interface != NULL && mmay_native_c_layout_is_canonical(
                     functions, count, layout, interface->type
                 ) && (!mmay_native_c_write(
-                    buffer, "static const MarimayManagedInterfaceDescriptor "
+                    buffer, "const MarimayManagedInterfaceDescriptor "
                 ) || !mmay_native_c_write_descriptor_name(
                     buffer, layout.kind, interface->type
                 ) || !mmay_native_c_write(
@@ -1070,8 +1073,6 @@ bool mmay_native_c_emit_managed_parameter_check(
         &function->register_types, parameter
     );
     MarimayNativeCManagedLayout layout;
-    const char *descriptor_type = NULL;
-    const char *describe = NULL;
     if (type == NULL || *type < MMAY_TYPE_FIRST_DYNAMIC) return type != NULL;
     if (!mmay_native_c_find_managed_layout(functions, count, *type, &layout)) {
         return false;
@@ -1163,16 +1164,4 @@ bool mmay_native_c_emit_managed_parameter_check(
         return mmay_native_c_write(buffer,
             ") { mmay_g_s = mmay_g_m == MMAY_MANAGED_OK ? 7 : mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n");
     }
-    if (!mmay_native_c_write(buffer,
-        "  { const %s *mmay_g_actual = NULL; mmay_g_m = %s(&mmay_g_x->heap, mmay_g_v_%zu, &mmay_g_actual); if (mmay_g_m != MMAY_MANAGED_OK || mmay_g_actual != ",
-        descriptor_type, describe, parameter)) return false;
-    if (layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
-        if (!mmay_native_c_write(buffer, "%s",
-            mmay_native_c_array_descriptor(layout.function, *type))) return false;
-    } else if (!mmay_native_c_write(buffer, "&")
-        || !mmay_native_c_write_descriptor_name(buffer, layout.kind, *type)) {
-        return false;
-    }
-    return mmay_native_c_write(buffer,
-        ") { mmay_g_s = mmay_g_m == MMAY_MANAGED_OK ? 7 : mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n");
 }

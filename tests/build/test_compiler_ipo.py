@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 
 module = Path(sys.argv[1]).resolve()
 cmake = sys.argv[2]
@@ -17,6 +18,7 @@ add_executable(mmay unit.c)
 target_link_libraries(mmay PRIVATE mmay_bootstrap)
 add_subdirectory(child)
 include("@MODULE@")
+file(WRITE "${CMAKE_BINARY_DIR}/configurations.txt" "${CMAKE_CONFIGURATION_TYPES}")
 foreach(target mmay_bootstrap mmay_sljit mmay mmay_test mmay_native_runtime_release unrelated)
   get_target_property(all ${target} INTERPROCEDURAL_OPTIMIZATION)
   get_target_property(release ${target} INTERPROCEDURAL_OPTIMIZATION_RELEASE)
@@ -52,15 +54,25 @@ with tempfile.TemporaryDirectory(prefix='mmay-ipo-contract-') as temporary:
         'add_executable(mmay_test ../unit.c)\ntarget_link_libraries(mmay_test PRIVATE mmay_bootstrap)\n')
     for index, (policy, profile, supported, success, expected) in enumerate(cases):
         build = root / str(index)
+        started = time.monotonic()
+        print(f'compiler IPO: case {index + 1}/{len(cases)} '
+              f'{policy}/{profile}, supported={supported}', flush=True)
         result = subprocess.run([cmake, '-S', str(source), '-B', str(build),
                                  '-DMMAY_COMPILER_IPO=' + policy,
                                  '-DCMAKE_BUILD_TYPE=' + profile,
                                  '-DPROBE_SUPPORTED=' + ('TRUE' if supported else 'FALSE')],
                                 capture_output=True, text=True, timeout=30)
+        print(f'compiler IPO: configure finished in {time.monotonic() - started:.2f}s',
+              flush=True)
         assert (result.returncode == 0) == success, (policy, profile, result.stdout, result.stderr)
         if not success:
             assert expected in result.stdout + result.stderr
             continue
+        # Multi-config generators expose Release independently of the requested
+        # CMAKE_BUILD_TYPE; AUTO must enable only that configuration there too.
+        if ((build / 'configurations.txt').read_text().strip()
+                and policy == 'AUTO' and supported):
+            expected = 'release'
         for line in (build / 'properties.txt').read_text().splitlines():
             target, all_configs, release, debug = line.split(':')
             enabled = target in {'mmay_bootstrap', 'mmay_sljit', 'mmay', 'mmay_test'}

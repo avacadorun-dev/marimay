@@ -321,7 +321,7 @@ set(mmay_stream_source "${MMAY_TEST_SOURCE_DIR}/tests/public-alpha/cp32-stdio")
 set(mmay_stream_input "${mmay_root}/native-run.input")
 set(mmay_stream_output "${mmay_root}/native-run.stdout")
 set(mmay_stream_error "${mmay_root}/native-run.stderr")
-file(WRITE "${mmay_stream_input}" "stream line\r\n")
+file(CONFIGURE OUTPUT "${mmay_stream_input}" CONTENT "stream line\n" @ONLY NEWLINE_STYLE CRLF)
 execute_process(
   COMMAND "${mmay_program}" run --engine native "${mmay_stream_source}"
   INPUT_FILE "${mmay_stream_input}"

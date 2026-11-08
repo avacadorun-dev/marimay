@@ -97,7 +97,7 @@ static void preparation_lowering_failures(void) {
     bool complete = false;
     for (size_t failure = 0; failure < 512 && !complete; failure += 1) {
         MarimayFailAllocator state;
-        MarimayMirFunction input[2] = {{0}, {0}};
+        MarimayMirFunction input[2] = {0};
         MarimayBytecodeProgram program = {0};
         const MarimayMirFunction *functions[] = {&input[0], &input[1]};
         mmay_fail_allocator_init(&state, mmay_system_allocator(), SIZE_MAX);

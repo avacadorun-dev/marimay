@@ -23,6 +23,7 @@ ctest --preset debug
 ./tools/check-architecture
 ./tools/check-roadmap
 ./tools/check-release-contract
+./tools/check-publication
 ```
 
 Use `asan-ubsan` for memory and undefined-behavior checks. Linux LeakSanitizer

@@ -5,9 +5,10 @@ set(root "${MMAY_TEST_WORK}/Мир с пробелом")
 file(MAKE_DIRECTORY "${root}")
 file(WRITE "${root}/mmay.mod" "module \"tests.cp42.locations\"\nlanguage \"0.1\"\n")
 string(ASCII 239 187 191 bom)
-string(ASCII 13 cr)
-set(helper "${bom}// UTF-8 🙂${cr}\nimport * as io from \"std/io\";${cr}\nfn same<T>(value: T, other: T): void {${cr}\n  const _ = io.eprintln(\"до ошибки\");${cr}\n  const label = \"Я🙂\"; expect.equal(value, other);${cr}\n}${cr}\n")
-file(WRITE "${root}/помощник_test.my" "${helper}")
+set(helper "${bom}// UTF-8 🙂\nimport * as io from \"std/io\";\nfn same<T>(value: T, other: T): void {\n  const _ = io.eprintln(\"до ошибки\");\n  const label = \"Я🙂\"; expect.equal(value, other);\n}\n")
+# Write exactly one CRLF per source line, including on Windows hosts.
+file(CONFIGURE OUTPUT "${root}/помощник_test.my" CONTENT "${helper}"
+  @ONLY NEWLINE_STYLE CRLF)
 file(SHA256 "${root}/помощник_test.my" original_hash)
 file(WRITE "${root}/main_test.my"
   "@test fn integerFailure(): void { same(1, 2); }\n@test fn stringFailure(): void { same(\"а\", \"б\"); }\n@test fn continues(): void { expect.true(true); }\n")

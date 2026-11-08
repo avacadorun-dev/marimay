@@ -1,6 +1,7 @@
 #include "vm_jit_memory.h"
 #include <stdalign.h>
 #include <string.h>
+#include "mmay/base/alignment.h"
 typedef union MarimayJitAllocation {
     MarimayMaxAlign alignment;
     struct { size_t bytes; intptr_t executable_offset; } owned;

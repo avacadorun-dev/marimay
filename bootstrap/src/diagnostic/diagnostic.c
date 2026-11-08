@@ -482,8 +482,8 @@ bool mmay_diagnostic_render(
     const MarimayDiagnostic *diagnostic
 ) {
     const char *severity = NULL;
-    MarimaySourcePosition start;
-    MarimaySourcePosition end;
+    MarimaySourcePosition start = {0};
+    MarimaySourcePosition end = {0};
     bool has_source = false;
     if (diagnostic == NULL || diagnostic->code == NULL || diagnostic->message == NULL) {
         return false;

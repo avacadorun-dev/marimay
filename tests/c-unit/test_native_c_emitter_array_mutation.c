@@ -54,12 +54,11 @@ void mmay_test_native_c_emitter_array_mutation(void) {
         "}\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
-    const MarimayMirFunction *functions[16];
+    const MarimayMirFunction *functions[16] = {0};
     MarimayNativeCProgram program;
     MarimayOwnedBytes generated;
     size_t index = 0;
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&program, 0, sizeof(program));
     memset(&generated, 0, sizeof(generated));
     MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));

@@ -193,7 +193,7 @@ bool mmay_checker_private_maybe_box_interface(
         const MarimayCheckInterfaceMethodDeclaration *method = mmay_vector_at_const(
             &interface_declaration->methods, index
         );
-        MarimayCheckCallable implementation;
+        MarimayCheckCallable implementation = {0};
         MarimayCheckCallResolution resolution = method == NULL
             ? MMAY_CHECK_CALL_INTERNAL_ERROR : mmay_check_resolve_call(
                 function->checker, method->name, true, result->type,

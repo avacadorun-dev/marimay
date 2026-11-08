@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "mmay/base/alignment.h"
+
 struct MarimayArenaBlock {
     MarimayArenaBlock *next;
     size_t allocation_size;
@@ -11,6 +13,9 @@ struct MarimayArenaBlock {
     MarimayMaxAlign alignment_anchor;
     unsigned char bytes[];
 };
+
+_Static_assert(offsetof(MarimayArenaBlock, bytes) % _Alignof(MarimayMaxAlign) == 0,
+    "arena storage starts at maximum alignment");
 
 static bool mmay_is_power_of_two(size_t value) {
     return value != 0 && (value & (value - 1)) == 0;

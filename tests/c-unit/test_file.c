@@ -334,7 +334,7 @@ static void mmay_test_file_failure_atomicity(void) {
 
 static void mmay_test_file_validation(void) {
     static const unsigned char bytes[] = "x";
-    static const char invalid_utf8[] = {'x', (char)0xff};
+    static const char invalid_utf8[] = "x\xff";
     MarimayFakeFile file;
     MarimayFileOps ops;
     mmay_fake_file_init(&file, SIZE_MAX);
@@ -364,7 +364,7 @@ static void mmay_test_file_validation(void) {
         ops,
         mmay_system_allocator(),
         invalid_utf8,
-        sizeof(invalid_utf8),
+        sizeof(invalid_utf8) - 1,
         "out.my",
         strlen("out.my"),
         bytes,
@@ -482,7 +482,7 @@ static void mmay_test_file_read_all(void) {
 }
 
 static bool mmay_test_write_file(const char *path, const unsigned char *bytes, size_t length) {
-    FILE *file = fopen(path, "wb");
+    FILE *file = mmay_test_open_file(path, "wb");
     bool ok = file != NULL;
     if (ok) {
         ok = fwrite(bytes, 1, length, file) == length;
@@ -502,8 +502,8 @@ static void mmay_test_real_file_adapter(void) {
     size_t failure_index = 0;
     bool reached_success = false;
 
-    (void)remove(temporary_path);
-    (void)remove(destination_path);
+    (void)mmay_test_remove_file(temporary_path);
+    (void)mmay_test_remove_file(destination_path);
     MMAY_EXPECT(mmay_test_write_file(
         destination_path,
         original,
@@ -532,7 +532,7 @@ static void mmay_test_real_file_adapter(void) {
             reached_success = true;
         } else {
             MMAY_EXPECT(status == MMAY_FILE_ALLOCATION_FAILED);
-            file = fopen(destination_path, "rb");
+            file = mmay_test_open_file(destination_path, "rb");
             MMAY_EXPECT(file != NULL);
             if (file != NULL) {
                 observed_length = fread(observed, 1, sizeof(observed), file);
@@ -540,7 +540,7 @@ static void mmay_test_real_file_adapter(void) {
                 MMAY_EXPECT(observed_length == sizeof(original) - 1);
                 MMAY_EXPECT(memcmp(observed, original, sizeof(original) - 1) == 0);
             }
-            file = fopen(temporary_path, "rb");
+            file = mmay_test_open_file(temporary_path, "rb");
             MMAY_EXPECT(file == NULL);
             if (file != NULL) {
                 (void)fclose(file);
@@ -554,7 +554,7 @@ static void mmay_test_real_file_adapter(void) {
     }
     MMAY_EXPECT(reached_success);
 
-    file = fopen(destination_path, "rb");
+    file = mmay_test_open_file(destination_path, "rb");
     MMAY_EXPECT(file != NULL);
     if (file != NULL) {
         observed_length = fread(observed, 1, sizeof(observed), file);
@@ -569,7 +569,7 @@ static void mmay_test_real_file_adapter(void) {
         MMAY_EXPECT((status.st_mode & 0777) == 0640);
     }
 #endif
-    file = fopen(temporary_path, "rb");
+    file = mmay_test_open_file(temporary_path, "rb");
     MMAY_EXPECT(file == NULL);
     if (file != NULL) {
         (void)fclose(file);
@@ -585,8 +585,8 @@ static void mmay_test_real_file_adapter(void) {
         replacement,
         sizeof(replacement)
     ) == MMAY_FILE_ALREADY_EXISTS);
-    (void)remove(temporary_path);
-    (void)remove(destination_path);
+    (void)mmay_test_remove_file(temporary_path);
+    (void)mmay_test_remove_file(destination_path);
 }
 
 static void mmay_test_executable_publication(void) {
@@ -596,8 +596,8 @@ static void mmay_test_executable_publication(void) {
     static const unsigned char replacement[] = "new executable";
     size_t failure_index = 0;
     bool reached_success = false;
-    (void)remove(temporary);
-    (void)remove(destination);
+    (void)mmay_test_remove_file(temporary);
+    (void)mmay_test_remove_file(destination);
     for (failure_index = 0; failure_index < 8; failure_index += 1) {
         MarimayFailAllocator state;
         MarimayFileStatus status;
@@ -622,7 +622,7 @@ static void mmay_test_executable_publication(void) {
             reached_success = true;
         } else {
             MMAY_EXPECT(status == MMAY_FILE_ALLOCATION_FAILED);
-            file = fopen(destination, "rb");
+            file = mmay_test_open_file(destination, "rb");
             MMAY_EXPECT(file != NULL);
             if (file != NULL) {
                 observed_length = fread(
@@ -637,7 +637,7 @@ static void mmay_test_executable_publication(void) {
         }
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
-        (void)remove(temporary);
+        (void)mmay_test_remove_file(temporary);
         if (reached_success) break;
     }
     MMAY_EXPECT(reached_success);
@@ -652,8 +652,8 @@ static void mmay_test_executable_publication(void) {
         mmay_system_allocator(), NULL, 0,
         destination, sizeof(destination) - 1
     ) == MMAY_FILE_INVALID_ARGUMENT);
-    (void)remove(temporary);
-    MMAY_EXPECT(remove(destination) == 0);
+    (void)mmay_test_remove_file(temporary);
+    MMAY_EXPECT(mmay_test_remove_file(destination) == 0);
 }
 
 void mmay_test_file(void) {

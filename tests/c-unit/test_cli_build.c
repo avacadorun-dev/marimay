@@ -6,6 +6,7 @@
 #include "mmay/base/allocator.h"
 #include "mmay/cli.h"
 #include "mmay/native/build.h"
+#include "mmay/platform/directory.h"
 #include "mmay/platform/file.h"
 #include "mmay/platform/process.h"
 #include "mmay/session.h"
@@ -243,7 +244,7 @@ static void mmay_cli_build_test_atomic_failures(MarimaySession *session) {
     MarimayOwnedBytes bytes = {0};
     FILE *file = NULL;
     (void)remove("cp10-stale-artifact");
-    file = fopen("cp10-stale-artifact", "wb");
+    file = mmay_test_open_file("cp10-stale-artifact", "wb");
     MMAY_EXPECT(file != NULL);
     if (file != NULL) {
         MMAY_EXPECT(fwrite(
@@ -303,6 +304,123 @@ static void mmay_cli_build_test_allocations(void) {
     MMAY_EXPECT(remove("cp10-allocation.c") == 0);
 }
 
+static void mmay_cli_build_expect_silent_artifact(
+    const MarimayNativeBuildResult *result, const char *expected_path
+) {
+    const char *arguments[] = {(const char *)result->artifact_path.data, NULL};
+    MarimayProcessResult process = {0};
+    MMAY_EXPECT(result->artifact_path.data != NULL && !result->cache_hit);
+    if (result->artifact_path.data == NULL) return;
+    MMAY_EXPECT(strcmp((const char *)result->artifact_path.data, expected_path) == 0);
+    MMAY_EXPECT(mmay_process_run(
+        mmay_system_allocator(), arguments, 1, 1024, &process
+    ) == MMAY_PROCESS_OK);
+    MMAY_EXPECT(!process.signaled && process.exit_code == 0
+        && process.output.length == 0);
+    mmay_process_result_dispose(&process);
+}
+
+static void mmay_cli_build_test_native_allocations(void) {
+    static const char root[] = "cp10 native allocation";
+    MarimayMirFunction function = {0};
+    const MarimayMirFunction *functions[] = {&function};
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirTerminator terminator = {0};
+    MarimayNativeBuildRequest request = {0};
+    MarimayNativeBuildResult result = {0};
+    MarimayFailAllocator control;
+    MarimayNativeBuildStatus status;
+    char cached_path[32769];
+    char object_path[32769];
+    const char *separator = NULL;
+    size_t attempts = 0;
+    size_t index = 0;
+    int written = 0;
+    bool initialized = mmay_mir_function_init(
+        &function, mmay_system_allocator(), (MarimaySymbolId){{0x98}},
+        NULL, 0, MMAY_TYPE_VOID, mmay_mir_function_default_options()
+    );
+    MMAY_EXPECT(initialized);
+    if (!initialized) return;
+    MMAY_EXPECT(mmay_mir_add_block(&function, &block));
+    terminator.kind = MMAY_MIR_RETURN;
+    terminator.value = MMAY_MIR_NO_REGISTER;
+    terminator.target = MMAY_MIR_NO_BLOCK;
+    terminator.otherwise = MMAY_MIR_NO_BLOCK;
+    MMAY_EXPECT(mmay_mir_set_terminator(&function, block, terminator));
+    MMAY_EXPECT(mmay_mir_verify(&function) == MMAY_MIR_VERIFY_OK);
+    MMAY_EXPECT(mmay_directory_create(
+        mmay_system_allocator(), root, sizeof(root) - 1
+    ) == MMAY_FILE_OK);
+    request.functions = functions;
+    request.function_count = 1;
+    request.entry_symbol = function.symbol;
+    request.root_directory = root;
+    request.root_directory_length = sizeof(root) - 1;
+    request.tool_executable_path = mmay_test_toolchain_executable();
+    status = mmay_native_build(mmay_system_allocator(), &request, &result);
+    MMAY_EXPECT(status == MMAY_NATIVE_BUILD_OK);
+    if (status != MMAY_NATIVE_BUILD_OK || result.artifact_path.data == NULL
+        || result.artifact_path.length >= sizeof(cached_path)) goto cleanup;
+    memcpy(cached_path, result.artifact_path.data, result.artifact_path.length + 1);
+    separator = strrchr(cached_path, '/');
+    if (strrchr(cached_path, '\\') != NULL
+        && (separator == NULL || strrchr(cached_path, '\\') > separator)) {
+        separator = strrchr(cached_path, '\\');
+    }
+    MMAY_EXPECT(separator != NULL);
+    if (separator == NULL) goto cleanup;
+    written = snprintf(
+        object_path, sizeof(object_path), "%.*sprogram.c.obj",
+        (int)(separator + 1 - cached_path), cached_path
+    );
+    MMAY_EXPECT(written > 0 && (size_t)written < sizeof(object_path));
+    if (written <= 0 || (size_t)written >= sizeof(object_path)) goto cleanup;
+    mmay_native_build_result_dispose(&result);
+    MMAY_EXPECT(mmay_test_remove_file(cached_path) == 0);
+    mmay_fail_allocator_init(&control, mmay_system_allocator(), SIZE_MAX);
+    status = mmay_native_build(mmay_fail_allocator(&control), &request, &result);
+    MMAY_EXPECT(status == MMAY_NATIVE_BUILD_OK);
+    if (status == MMAY_NATIVE_BUILD_OK) {
+        mmay_cli_build_expect_silent_artifact(&result, cached_path);
+    }
+    attempts = control.attempts;
+    mmay_native_build_result_dispose(&result);
+    MMAY_EXPECT(control.live_allocations == 0 && control.live_bytes == 0);
+    MMAY_EXPECT(attempts != 0 && attempts < 4096);
+    for (index = 0; index < attempts && index < 4096; index += 1) {
+        MarimayFailAllocator state;
+        (void)mmay_test_remove_file(cached_path);
+        mmay_fail_allocator_init(&state, mmay_system_allocator(), index);
+        status = mmay_native_build(mmay_fail_allocator(&state), &request, &result);
+        if (status == MMAY_NATIVE_BUILD_OK) {
+            /* Pipe chunking may leave the index unreached. A reached failure
+             * can also be an optional void FileOps.remove conversion; either
+             * case still requires the exact executable result. */
+            mmay_cli_build_expect_silent_artifact(&result, cached_path);
+        } else {
+            MMAY_EXPECT(index < state.attempts);
+            MMAY_EXPECT(status == MMAY_NATIVE_BUILD_ALLOCATION_FAILED
+                || status == MMAY_NATIVE_BUILD_IO_FAILED
+                || status == MMAY_NATIVE_BUILD_COMPILE_FAILED);
+            MMAY_EXPECT(result.artifact_path.data == NULL);
+        }
+        if (state.attempts > attempts) attempts = state.attempts;
+        mmay_native_build_result_dispose(&result);
+        MMAY_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+        /* A failed allocation in optional removal may leave cache-local disk
+         * state; test teardown retries it with the system allocator. */
+        mmay_platform_file_ops().remove(
+            NULL, mmay_system_allocator(), object_path, strlen(object_path)
+        );
+    }
+    MMAY_EXPECT(attempts < 4096);
+    (void)mmay_test_remove_file(cached_path);
+cleanup:
+    mmay_native_build_result_dispose(&result);
+    mmay_mir_function_dispose(&function);
+}
+
 static void mmay_cli_build_test_missing_toolchain(void) {
     const MarimayMirFunction *dummy = (const MarimayMirFunction *)(uintptr_t)1;
     MarimayNativeBuildRequest request;
@@ -330,4 +448,5 @@ void mmay_test_cli_build(void) {
     mmay_cli_build_test_atomic_failures(&session);
     mmay_cli_build_test_allocations();
     mmay_cli_build_test_missing_toolchain();
+    mmay_cli_build_test_native_allocations();
 }

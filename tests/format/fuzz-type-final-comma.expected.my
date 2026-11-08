@@ -1,0 +1,15 @@
+type Pair = (int, string);
+
+type Nested = ((int,), string);
+
+type Callback = (int, string) => int;
+
+type Unary = (int,) => int;
+
+type Singleton = (int,);
+
+enum E {
+  Scalar(int),
+  Pair(int, string),
+  Singleton((int,)),
+}

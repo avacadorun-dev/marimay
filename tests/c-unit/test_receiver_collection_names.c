@@ -139,7 +139,7 @@ static void mmay_test_receiver_names_behavior(void) {
     const MarimayCheckedFunction *probe = NULL;
     const MarimayCheckedFunction *stack_push = NULL;
     const MarimayCheckedSymbol *stack = NULL;
-    const MarimayMirFunction *functions[16];
+    const MarimayMirFunction *functions[16] = {0};
     MarimayMirValue interpreted;
     MarimayBytecodeProgram bytecode;
     MarimayNativeCProgram native;
@@ -151,7 +151,6 @@ static void mmay_test_receiver_names_behavior(void) {
     memset(&bytecode, 0, sizeof(bytecode));
     memset(&native, 0, sizeof(native));
     memset(&generated, 0, sizeof(generated));
-    memset(functions, 0, sizeof(functions));
     MMAY_EXPECT(mmay_checker_fixture_init(&fixture, mmay_receiver_names_source));
     MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,

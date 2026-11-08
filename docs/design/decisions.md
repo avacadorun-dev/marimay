@@ -1975,6 +1975,22 @@ aliases, and executable statements retain semicolons.
 This decision supersedes D025, the tuple/data examples in D031 and D054, and
 the corresponding sections of the baseline grammar.
 
+Clarification, 2026-11-08: the grammar rows for `tuple_type` and
+`positional_payload` omitted optional final commas already accepted by the
+parser, while the formatter contract requires trailing commas in broken
+lists. A formatter bullet also retained D025/D031's named-payload semicolons
+despite this decision and the language specification requiring commas. Those
+projections are inconsistent and must follow D071.
+
+Parenthesized tuple-element, function-parameter-type, and positional
+enum-payload-type lists permit an optional final comma without changing their
+types, arity, order, or evaluation. A singleton tuple still requires its first
+comma: `(T,)` is a tuple type, `(value,)` is a tuple value, and `(expression)`
+remains grouping. `(T)` alone is not a type; `(T) => U` is a function type.
+Named payload fields use commas, including an optional final comma. Correcting
+the grammar, formatter comparison oracles, and stale prose records this
+existing contract; it does not introduce a new runtime feature.
+
 Reason: tuple/array identity should be visible without contextual typing, and
 data-member lists should not alternate between statement punctuation inside an
 item and list punctuation immediately outside it.

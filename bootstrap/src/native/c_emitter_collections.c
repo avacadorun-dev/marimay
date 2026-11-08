@@ -84,7 +84,7 @@ bool mmay_native_c_emit_collection_descriptor_declarations(
             if (collection != NULL && mmay_native_c_collection_canonical(
                     functions, count, function, index, collection->type
                 ) && (!mmay_native_c_write(
-                    buffer, "static const MarimayManagedMapDescriptor "
+                    buffer, "extern const MarimayManagedMapDescriptor "
                 ) || !mmay_native_c_write_descriptor_name(
                     buffer, MMAY_NATIVE_C_MANAGED_COLLECTION, collection->type
                 ) || !mmay_native_c_write(buffer, ";\n"))) return false;
@@ -111,7 +111,7 @@ bool mmay_native_c_emit_collection_descriptors(
                     functions, count, function, index, collection->type
                 )) continue;
             if (!mmay_native_c_write(
-                    buffer, "static const MarimayManagedMapDescriptor "
+                    buffer, "const MarimayManagedMapDescriptor "
                 ) || !mmay_native_c_write_descriptor_name(
                     buffer, MMAY_NATIVE_C_MANAGED_COLLECTION, collection->type
                 ) || !mmay_native_c_write(buffer, " = {")

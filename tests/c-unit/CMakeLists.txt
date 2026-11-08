@@ -162,6 +162,8 @@ add_executable(mmay_c_unit
   test_formatter_array_types.c
   test_formatter_boolean_groups.c
   test_formatter_braced_groups.c
+  test_formatter_enum_separators.c
+  test_formatter_type_separators.c
   test_formatter_trivia.c
   test_formatter_failures.c
   test_hash_map.c
@@ -254,7 +256,9 @@ add_executable(mmay_c_unit
   test_parser_option_condition.c
   test_parser_nested_generics.c
   test_parser_array_types.c
+  test_parser_type_separators.c
   test_parser_incremental.c
+  test_parser_limits.c
   test_process.c
   test_runtime_lines.c
   test_file_line_engines.c
@@ -361,11 +365,13 @@ function(mmay_prepare_c_unit_working_directory destination)
     "${CMAKE_CURRENT_SOURCE_DIR}/snapshots/version.json.in"
     "${destination}/snapshots/version.json"
     @ONLY
+    NEWLINE_STYLE LF
   )
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/snapshots/version.txt.in"
     "${destination}/snapshots/version.txt"
     @ONLY
+    NEWLINE_STYLE LF
   )
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md"
@@ -495,6 +501,7 @@ mmay_add_focused_checkpoint_test(cp39 1)
 add_test(
   NAME mmay_install_relocation
   COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_PYTHON=${Python3_EXECUTABLE}"
     "-DMMAY_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
     "-DMMAY_TEST_CONFIG=$<CONFIG>"
     "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/run/cp9/acceptance.my"
@@ -739,6 +746,18 @@ add_test(
 )
 set_tests_properties(mmay_cp42_void_match PROPERTIES
   LABELS "differential;cp42" TIMEOUT 1800)
+
+add_test(
+  NAME mmay_type_list_separators
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/type-list-separators"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/type-list-separators"
+    "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_type_list_separators.cmake"
+)
+set_tests_properties(mmay_type_list_separators PROPERTIES
+  LABELS "differential;syntax" PROCESSORS 2 COST 100 TIMEOUT 600)
 
 add_test(
   NAME mmay_cp42_test_helpers

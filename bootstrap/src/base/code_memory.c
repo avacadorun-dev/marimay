@@ -12,6 +12,17 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
+
+#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
+static unsigned char *mmay_code_memory_base(const MarimayCodeMemory *memory) {
+    return (unsigned char *)memory->address - MMAY_CODE_MEMORY_ENTRY_PADDING;
+}
+static void mmay_code_memory_copy(MarimayCodeMemory *memory,
+    const void *source, size_t bytes) {
+    memset(mmay_code_memory_base(memory), 0, MMAY_CODE_MEMORY_ENTRY_PADDING);
+    memcpy(memory->address, source, bytes);
+}
+#endif
 #if defined(__APPLE__) && defined(__aarch64__) && !defined(__arm64e__)
 #include <pthread.h>
 #include <libkern/OSCacheControl.h>
@@ -24,8 +35,9 @@ static int mmay_code_memory_write(void *opaque) {
     const MarimayCodePublication *p = opaque;
     if (p == NULL || p->memory == NULL || p->source == NULL || p->bytes == 0
         || p->memory->address == NULL || p->memory->published
-        || p->bytes > p->memory->bytes) return -1;
-    memcpy(p->memory->address, p->source, p->bytes);
+        || p->memory->bytes < MMAY_CODE_MEMORY_ENTRY_PADDING
+        || p->bytes > p->memory->bytes - MMAY_CODE_MEMORY_ENTRY_PADDING) return -1;
+    mmay_code_memory_copy(p->memory, p->source, p->bytes);
     return 0;
 }
 PTHREAD_JIT_WRITE_ALLOW_CALLBACKS_NP(mmay_code_memory_write);
@@ -64,6 +76,8 @@ MarimayCodeMemoryStatus mmay_code_memory_reserve(MarimayCodeMemory *memory,
     if (!mmay_code_memory_supported()) return MMAY_CODE_MEMORY_UNAVAILABLE;
     size_t page = mmay_code_memory_page_size();
     if (page == 0) return MMAY_CODE_MEMORY_UNAVAILABLE;
+    if (bytes > SIZE_MAX - MMAY_CODE_MEMORY_ENTRY_PADDING) return MMAY_CODE_MEMORY_LIMIT;
+    bytes += MMAY_CODE_MEMORY_ENTRY_PADDING;
     size_t tail = bytes % page, extra = tail ? page - tail : 0;
     if (bytes > SIZE_MAX - extra || bytes + extra > limit) return MMAY_CODE_MEMORY_LIMIT;
     bytes += extra;
@@ -86,14 +100,18 @@ MarimayCodeMemoryStatus mmay_code_memory_reserve(MarimayCodeMemory *memory,
 #else
     return MMAY_CODE_MEMORY_UNAVAILABLE;
 #endif
-    memory->address = address; memory->bytes = bytes; memory->published = false; memory->fault = fault;
+    /* Anonymous/committed OS pages are initially zero-filled, including the
+     * readable prefix probed by Clang's indirect-function sanitizer. */
+    memory->address = (unsigned char *)address + MMAY_CODE_MEMORY_ENTRY_PADDING;
+    memory->bytes = bytes; memory->published = false; memory->fault = fault;
     if (fault != NULL) { fault->live_mappings += 1; fault->live_bytes += bytes; }
     return MMAY_CODE_MEMORY_OK;
 }
 MarimayCodeMemoryStatus mmay_code_memory_publish(MarimayCodeMemory *memory,
     const void *source, size_t bytes) {
     if (memory == NULL || memory->address == NULL || memory->published
-        || source == NULL || bytes == 0 || bytes > memory->bytes) return MMAY_CODE_MEMORY_INVALID;
+        || source == NULL || bytes == 0 || memory->bytes < MMAY_CODE_MEMORY_ENTRY_PADDING
+        || bytes > memory->bytes - MMAY_CODE_MEMORY_ENTRY_PADDING) return MMAY_CODE_MEMORY_INVALID;
     if (mmay_code_memory_fault(memory->fault)) return MMAY_CODE_MEMORY_UNAVAILABLE;
 #if defined(__APPLE__) && defined(__aarch64__) && !defined(__arm64e__)
     if (__builtin_available(macOS 11.4, *)) {
@@ -102,13 +120,13 @@ MarimayCodeMemoryStatus mmay_code_memory_publish(MarimayCodeMemory *memory,
         sys_icache_invalidate(memory->address, bytes);
     } else return MMAY_CODE_MEMORY_UNAVAILABLE;
 #elif defined(_WIN32)
-    memcpy(memory->address, source, bytes);
+    mmay_code_memory_copy(memory, source, bytes);
     DWORD old = 0;
-    if (!VirtualProtect(memory->address, memory->bytes, PAGE_EXECUTE_READ, &old)
+    if (!VirtualProtect(mmay_code_memory_base(memory), memory->bytes, PAGE_EXECUTE_READ, &old)
         || !FlushInstructionCache(GetCurrentProcess(), memory->address, bytes)) return MMAY_CODE_MEMORY_UNAVAILABLE;
 #elif defined(__linux__) || defined(__APPLE__)
-    memcpy(memory->address, source, bytes);
-    if (mprotect(memory->address, memory->bytes, PROT_READ | PROT_EXEC) != 0) return MMAY_CODE_MEMORY_UNAVAILABLE;
+    mmay_code_memory_copy(memory, source, bytes);
+    if (mprotect(mmay_code_memory_base(memory), memory->bytes, PROT_READ | PROT_EXEC) != 0) return MMAY_CODE_MEMORY_UNAVAILABLE;
     __builtin___clear_cache(memory->address, (char *)memory->address + bytes);
 #else
     return MMAY_CODE_MEMORY_UNAVAILABLE;
@@ -120,9 +138,9 @@ void mmay_code_memory_dispose(MarimayCodeMemory *memory) {
     if (memory == NULL) return;
     if (memory->address != NULL) {
 #if defined(_WIN32)
-        if (!VirtualFree(memory->address, 0, MEM_RELEASE)) abort();
+        if (!VirtualFree(mmay_code_memory_base(memory), 0, MEM_RELEASE)) abort();
 #elif defined(__APPLE__) || defined(__linux__)
-        if (munmap(memory->address, memory->bytes) != 0) abort();
+        if (munmap(mmay_code_memory_base(memory), memory->bytes) != 0) abort();
 #endif
         /* A failed release violates ownership; never report it as a zero ledger. */
         if (memory->fault != NULL) { memory->fault->live_mappings -= 1; memory->fault->live_bytes -= memory->bytes; }

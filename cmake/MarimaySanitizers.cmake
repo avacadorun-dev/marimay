@@ -1,16 +1,4 @@
 function(mmay_target_sanitizers target)
-  if(MSVC)
-    if(MMAY_ENABLE_ADDRESS_SANITIZER OR "${ARGV1}" STREQUAL "release")
-      set(mmay_runtime_checks "")
-    else()
-      set(mmay_runtime_checks "$<$<CONFIG:Debug>:StackFrameErrorCheck;UninitializedVariable>")
-    endif()
-    if(POLICY CMP0184)
-      set_property(TARGET ${target} PROPERTY MSVC_RUNTIME_CHECKS "${mmay_runtime_checks}")
-    elseif(mmay_runtime_checks)
-      target_compile_options(${target} PRIVATE "$<$<CONFIG:Debug>:/RTC1>")
-    endif()
-  endif()
   if(NOT MMAY_ENABLE_ADDRESS_SANITIZER AND NOT MMAY_ENABLE_UNDEFINED_SANITIZER
       AND NOT MMAY_ENABLE_THREAD_SANITIZER)
     return()
@@ -25,7 +13,11 @@ function(mmay_target_sanitizers target)
     if(MMAY_ENABLE_UNDEFINED_SANITIZER OR MMAY_ENABLE_THREAD_SANITIZER)
       message(FATAL_ERROR "Requested sanitizer is not available in the MSVC preset")
     endif()
+    mmay_disable_msvc_runtime_checks(${target})
     target_compile_options(${target} PRIVATE /fsanitize=address)
+    # Instrumented object metadata selects the ASan libraries in MSVC. The
+    # compiler's /fsanitize switch is not a link.exe option; incremental linking
+    # is incompatible with ASan.
     target_link_options(${target} PRIVATE /INCREMENTAL:NO)
     return()
   endif()

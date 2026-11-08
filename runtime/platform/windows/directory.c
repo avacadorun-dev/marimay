@@ -452,9 +452,15 @@ MarimayFileStatus mmay_directory_publish(
         &destination, &destination_size, NULL
     );
     if (status != MMAY_FILE_OK) goto cleanup;
+    if (GetFileAttributesW(destination) != INVALID_FILE_ATTRIBUTES) {
+        status = MMAY_FILE_ALREADY_EXISTS;
+        goto cleanup;
+    }
     if (!MoveFileExW(temporary, destination, MOVEFILE_WRITE_THROUGH)) {
         DWORD error = GetLastError();
         status = error == ERROR_ALREADY_EXISTS || error == ERROR_FILE_EXISTS
+            || (error == ERROR_ACCESS_DENIED
+                && GetFileAttributesW(destination) != INVALID_FILE_ATTRIBUTES)
             ? MMAY_FILE_ALREADY_EXISTS : MMAY_FILE_IO_FAILED;
     }
 cleanup:
@@ -483,8 +489,11 @@ MarimayFileStatus mmay_directory_remove_empty(
         allocator, path, path_length, &wide, &allocation_size, NULL
     );
     if (status != MMAY_FILE_OK) return status;
-    if (!RemoveDirectoryW(wide) && GetLastError() != ERROR_PATH_NOT_FOUND) {
-        status = MMAY_FILE_IO_FAILED;
+    if (!RemoveDirectoryW(wide)) {
+        DWORD error = GetLastError();
+        if (error != ERROR_PATH_NOT_FOUND && error != ERROR_FILE_NOT_FOUND) {
+            status = MMAY_FILE_IO_FAILED;
+        }
     }
     mmay_deallocate(&allocator, wide, allocation_size);
     return status;

@@ -228,7 +228,7 @@ bool mmay_native_c_emit_call_arguments(
         const MarimayTypeId *callee_type = mmay_vector_at_const(
             &callee->register_types, argument_index
         );
-        MarimayNativeCManagedLayout callee_layout;
+        MarimayNativeCManagedLayout callee_layout = {0};
         MarimayNativeCManagedLayout caller_layout;
         bool record_parameter = callee_type != NULL
             && *callee_type >= MMAY_TYPE_FIRST_DYNAMIC
@@ -637,7 +637,7 @@ bool mmay_native_c_emit_function(
         const MarimayTypeId *type = mmay_vector_at_const(
             &function->register_types, index
         );
-        MarimayNativeCManagedLayout layout;
+        MarimayNativeCManagedLayout layout = {0};
         bool record_parameter = type != NULL
             && *type >= MMAY_TYPE_FIRST_DYNAMIC
             && mmay_native_c_find_managed_layout(

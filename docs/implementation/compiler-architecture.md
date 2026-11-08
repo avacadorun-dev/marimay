@@ -758,6 +758,19 @@ and staging allocations pass through `vm_jit_memory.c` to the existing allocator
 that adapter does not own OS policy. Both allocation ledgers remain testable.
 Only the central page owner may use mmap/munmap or VirtualAlloc/VirtualFree.
 
+Under [D111](../design/decisions.md),
+the callable payload begins after a 16-byte zero-filled prefix in the same
+owned code mapping. [Clang's indirect-function sanitizer](https://github.com/llvm/llvm-project/blob/release/18.x/clang/lib/CodeGen/CGExpr.cpp)
+probes immediately before a target to recognize compiler-emitted type metadata.
+A target at the mapping boundary would make that probe access an unowned page. The prefix
+keeps the probe readable without disabling instrumentation or manufacturing
+compiler-specific type hashes. Publication protects the complete mapping;
+release reconstructs its original base. The executable-code budget and page
+ledger charge the prefix and page rounding, while publication bounds use only
+the remaining payload capacity. `jit/test_code_memory.c` owns prefix reads,
+exact-capacity/overflow rejection, payload and prefix write protection, and
+the unchanged complete allocator/platform-failure sweeps and zero ledgers.
+
 `cmake/MarimaySljit.cmake` owns optional dependency/build composition.
 `tools/prepare-sljit.py` validates the explicit local dependency against
 `cmake/sljit-source.json`, copies only named upstream inputs under the build
@@ -895,6 +908,13 @@ sequencing; none duplicates descriptor selection or raw/reference semantics.
 types to the same closed runtime layout tags without changing MIR or bytecode
 wire identity. Focused storage tests inspect private layout/accounting while
 native descriptor tests prove the emitted mapping.
+
+Canonical native descriptors use `extern const` declarations and one initialized
+`const` definition with external C linkage in the single generated translation
+unit. This preserves cyclic descriptor identity and immutable metadata without
+tentative const definitions rejected by MSVC's warnings-as-errors profile.
+Their generated names are implementation details with no stable foreign ABI;
+initialized field, variant and dispatch helper tables retain `static const`.
 
 D097 assigns shallow-copy construction to `managed_array_storage.c`, sharing
 its exact-capacity allocation, source-root collection and publication path

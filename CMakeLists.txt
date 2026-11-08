@@ -10,6 +10,7 @@ project(Marimay VERSION 0.1.0 LANGUAGES C)
 include(CTest)
 include(GNUInstallDirs)
 include(cmake/MarimayWarnings.cmake)
+include(cmake/MarimayMsvcRuntimeChecks.cmake)
 include(cmake/MarimaySanitizers.cmake)
 
 set(CMAKE_C_STANDARD 17)
@@ -22,11 +23,7 @@ option(MMAY_ENABLE_UNDEFINED_SANITIZER "Enable UndefinedBehaviorSanitizer" OFF)
 option(MMAY_ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
 option(MMAY_BUILD_FUZZERS "Build Clang libFuzzer frontend targets" OFF)
 
-# CMake <4 puts /RTC1 into the global Debug flags. Reapply it per target so
-# an optimized runtime archive and ASan never inherit incompatible checks.
-if(MSVC AND NOT POLICY CMP0184)
-  string(REGEX REPLACE "(^| )/RTC[1csu]+( |$)" " " CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
-endif()
+mmay_configure_msvc_runtime_checks()
 
 if(MMAY_BUILD_FUZZERS)
   if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -286,13 +283,13 @@ set(MMAY_NATIVE_RUNTIME_MANIFEST_PROFILE debug)
 configure_file(
   cmake/mmay_native_runtime.manifest.in
   "${MMAY_NATIVE_RUNTIME_DEBUG_MANIFEST}"
-  @ONLY
+  @ONLY NEWLINE_STYLE UNIX
 )
 set(MMAY_NATIVE_RUNTIME_MANIFEST_PROFILE release)
 configure_file(
   cmake/mmay_native_runtime.manifest.in
   "${MMAY_NATIVE_RUNTIME_RELEASE_MANIFEST}"
-  @ONLY
+  @ONLY NEWLINE_STYLE UNIX
 )
 
 set(MMAY_NATIVE_RUNTIME_SOURCES
@@ -364,8 +361,14 @@ function(mmay_add_native_runtime target profile optimization output_directory)
       ARCHIVE_OUTPUT_DIRECTORY_${mmay_config} "${output_directory}"
     )
   endforeach()
-  mmay_target_sanitizers(${target} "${profile}")
+  mmay_target_sanitizers(${target})
   if(MSVC)
+    # Generated C uses the same static CRT in both logical output profiles.
+    # Do not inherit /MDd or /MD from the compiler's CMake configuration.
+    set_property(TARGET ${target} PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded)
+    if(profile STREQUAL "release")
+      mmay_disable_msvc_runtime_checks(${target})
+    endif()
     target_compile_options(${target} PRIVATE /fp:strict "${optimization}")
   else()
     target_compile_options(${target} PRIVATE
@@ -920,26 +923,30 @@ if(BUILD_TESTING)
     )
     add_test(
       NAME mmay_roadmap
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
     )
     set_tests_properties(mmay_roadmap PROPERTIES
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_custom_target(check-roadmap
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       COMMENT "Checking roadmap and checkpoint invariants"
       VERBATIM
     )
     add_test(
       NAME mmay_release_contract
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
     )
     set_tests_properties(mmay_release_contract PROPERTIES
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_custom_target(check-release-contract
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       COMMENT "Checking release metadata and CLI0 closure ownership"
       VERBATIM

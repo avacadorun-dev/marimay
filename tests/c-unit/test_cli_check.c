@@ -46,7 +46,7 @@ static bool mmay_check_test_read(
     size_t capacity,
     size_t *length
 ) {
-    FILE *file = fopen(path, "rb");
+    FILE *file = mmay_test_open_file(path, "rb");
     size_t count = 0;
     bool ok = file != NULL;
     if (ok) {

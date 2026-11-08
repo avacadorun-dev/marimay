@@ -535,15 +535,16 @@ static void mmay_cp36_native(
     const MarimayCheckedFunction *entries[3] = {
         fixture->probe, fixture->map_mutation, fixture->set_mutation
     };
+#if !defined(_WIN32)
     const char *messages[3] = {
         NULL, "map iterator invalidated by mutation",
         "set iterator invalidated by mutation"
     };
+#endif
     size_t index = 0;
     for (index = 0; index < 3; index += 1) {
         MarimayNativeCProgram program;
         MarimayOwnedBytes source = {0};
-        char expected[512];
         memset(&program, 0, sizeof(program));
         program.functions = functions;
         program.function_count = function_count;
@@ -568,10 +569,11 @@ static void mmay_cp36_native(
                     &entries[index]->mir,
                     MMAY_MIR_COLLECTION_REQUIRE_GENERATION, 0
                 );
+            MMAY_EXPECT(require != NULL);
 #if !defined(_WIN32)
+            char expected[512];
             char symbol_hex[33];
             char message_hex[96];
-            MMAY_EXPECT(require != NULL);
             MMAY_EXPECT(mmay_test_native_hex_bytes(
                 entries[index]->mir.symbol.bytes,
                 sizeof(entries[index]->mir.symbol.bytes),
@@ -852,9 +854,8 @@ static void mmay_cp36_native_allocation_failures(
 
 void mmay_test_cp36_collections(void) {
     MarimayCp36Fixture fixture;
-    const MarimayMirFunction *functions[16];
+    const MarimayMirFunction *functions[16] = {0};
     size_t function_count;
-    memset(functions, 0, sizeof(functions));
     MMAY_EXPECT(mmay_cp36_fixture_init(&fixture));
     if (fixture.probe == NULL) {
         mmay_cp36_fixture_dispose(&fixture);

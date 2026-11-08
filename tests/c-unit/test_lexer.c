@@ -132,7 +132,7 @@ static bool mmay_read_lexer_fixture(
     size_t capacity,
     size_t *length
 ) {
-    FILE *file = fopen(path, "rb");
+    FILE *file = mmay_test_open_file(path, "rb");
     size_t count = 0;
     bool read_ok = false;
     bool close_ok = false;

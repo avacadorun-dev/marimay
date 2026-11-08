@@ -1,4 +1,5 @@
 #include "vm_jit_memory.h"
+#include "mmay/base/alignment.h"
 #include "sljitLir.h"
 #include <stdio.h>
 #include <string.h>
@@ -74,7 +75,10 @@ static Observation observe(size_t allocation_failure, size_t platform_failure, s
         EXPECT(mmay_code_memory_reserve(&build.memory, 1, capacity, &faults) == MMAY_CODE_MEMORY_INVALID);
         EXPECT(entry(0) == 3079);
 #if defined(__APPLE__) || defined(__linux__)
-        if (protection) check_immutable(build.memory.address);
+        if (protection) {
+            check_immutable(build.memory.address);
+            check_immutable((unsigned char *)build.memory.address - MMAY_CODE_MEMORY_ENTRY_PADDING);
+        }
 #else
         (void)protection;
 #endif
@@ -85,6 +89,40 @@ static Observation observe(size_t allocation_failure, size_t platform_failure, s
     EXPECT(faults.live_mappings == 0 && faults.live_bytes == 0);
     return (Observation){failing.attempts, faults.attempts, status};
 }
+
+static void entry_padding_contract(void) {
+    MarimayCodeMemory memory = {0};
+    MarimayCodeMemoryFault faults = {SIZE_MAX, 0, 0, 0};
+    const unsigned char zero[MMAY_CODE_MEMORY_ENTRY_PADDING] = {0};
+    const unsigned char source = 0x5a;
+    EXPECT(mmay_code_memory_reserve(&memory, 1, SIZE_MAX, &faults) == MMAY_CODE_MEMORY_OK);
+    size_t mapped_bytes = memory.bytes;
+    EXPECT(mapped_bytes > MMAY_CODE_MEMORY_ENTRY_PADDING);
+    EXPECT(memcmp((unsigned char *)memory.address - sizeof(zero), zero, sizeof(zero)) == 0);
+    mmay_code_memory_dispose(&memory);
+    EXPECT(faults.live_mappings == 0 && faults.live_bytes == 0);
+    faults.attempts = 0;
+    EXPECT(mmay_code_memory_reserve(&memory, mapped_bytes - sizeof(zero), mapped_bytes, &faults)
+        == MMAY_CODE_MEMORY_OK);
+    EXPECT(memory.bytes == mapped_bytes && faults.live_bytes == mapped_bytes);
+    EXPECT(mmay_code_memory_publish(&memory, &source, mapped_bytes) == MMAY_CODE_MEMORY_INVALID);
+    EXPECT(faults.attempts == 1 && !memory.published);
+    EXPECT(mmay_code_memory_publish(&memory, &source, 1) == MMAY_CODE_MEMORY_OK);
+    EXPECT(*(const unsigned char *)memory.address == source);
+    EXPECT(memcmp((unsigned char *)memory.address - sizeof(zero), zero, sizeof(zero)) == 0);
+    mmay_code_memory_dispose(&memory);
+    EXPECT(faults.live_mappings == 0 && faults.live_bytes == 0);
+    faults.attempts = 0;
+    EXPECT(mmay_code_memory_reserve(&memory, mapped_bytes - sizeof(zero) + 1, mapped_bytes, &faults)
+        == MMAY_CODE_MEMORY_LIMIT);
+    EXPECT(mmay_code_memory_reserve(&memory, SIZE_MAX - sizeof(zero) + 1, SIZE_MAX, &faults)
+        == MMAY_CODE_MEMORY_LIMIT);
+    EXPECT(mmay_code_memory_reserve(&memory, SIZE_MAX - sizeof(zero), SIZE_MAX, &faults)
+        == MMAY_CODE_MEMORY_LIMIT);
+    EXPECT(memory.address == NULL && faults.attempts == 0);
+    EXPECT(faults.live_mappings == 0 && faults.live_bytes == 0);
+}
+
 static void argument_contract(void) {
     MarimayFailAllocator failing;
     mmay_fail_allocator_init(&failing, mmay_system_allocator(), SIZE_MAX);
@@ -132,6 +170,7 @@ static void argument_contract(void) {
 int main(void) {
     argument_contract();
     if (!mmay_code_memory_supported()) { puts("code memory unavailable on this host"); return 77; }
+    entry_padding_contract();
     Observation control = observe(SIZE_MAX, SIZE_MAX, 8U*1024U*1024U, true);
     EXPECT(control.status == MMAY_CODE_MEMORY_OK && control.allocations > 4 && control.platform_attempts == 2);
     for (size_t i = 0; i < control.allocations; ++i) {

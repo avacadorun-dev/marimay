@@ -55,11 +55,11 @@ static MarimayNativeRuntimePaths mmay_cp13_paths(
 
 static bool mmay_cp13_copy_file(const char *source, const char *destination) {
     unsigned char buffer[8192];
-    FILE *input = fopen(source, "rb");
+    FILE *input = mmay_test_open_file(source, "rb");
     FILE *output = NULL;
     bool ok = input != NULL;
     if (ok) {
-        output = fopen(destination, "wb");
+        output = mmay_test_open_file(destination, "wb");
         ok = output != NULL;
     }
     while (ok) {
@@ -79,7 +79,7 @@ static bool mmay_cp13_copy_file(const char *source, const char *destination) {
 
 static bool mmay_cp13_write_file(const char *path, const char *bytes) {
     size_t length = strlen(bytes);
-    FILE *output = fopen(path, "wb");
+    FILE *output = mmay_test_open_file(path, "wb");
     bool ok = output != NULL;
     if (ok && fwrite(bytes, 1, length, output) != length) ok = false;
     if (output != NULL && fclose(output) != 0) ok = false;
@@ -87,7 +87,7 @@ static bool mmay_cp13_write_file(const char *path, const char *bytes) {
 }
 
 static bool mmay_cp13_append_byte(const char *path) {
-    FILE *output = fopen(path, "ab");
+    FILE *output = mmay_test_open_file(path, "ab");
     bool ok = output != NULL;
     if (ok && fputc('\n', output) == EOF) ok = false;
     if (output != NULL && fclose(output) != 0) ok = false;
@@ -114,9 +114,10 @@ static void mmay_cp13_expect_probe(
     char include_argument[32772];
 #if defined(_WIN32)
     char executable_argument[32772];
+    char object_path[32772];
 #endif
     char source_path[32768];
-    const char *arguments[12];
+    const char *arguments[16];
     const char *run_arguments[2];
     size_t argument_count = 0;
     int written = snprintf(
@@ -128,26 +129,34 @@ static void mmay_cp13_expect_probe(
     if (written <= 0 || (size_t)written >= sizeof(source_path)) return;
 #if defined(_WIN32)
     written = snprintf(
-        include_argument, sizeof(include_argument), "/I%s",
+        include_argument, sizeof(include_argument), "%s",
         (const char *)artifact->runtime_include.data
     );
     MMAY_EXPECT(written > 0 && (size_t)written < sizeof(include_argument));
     written = snprintf(
         executable_argument, sizeof(executable_argument),
-        "/Fe:%s", output_path
+        "%s", output_path
     );
     MMAY_EXPECT(
         written > 0 && (size_t)written < sizeof(executable_argument)
     );
+    written = snprintf(object_path, sizeof(object_path), "%s.obj", output_path);
+    MMAY_EXPECT(written > 0 && (size_t)written < sizeof(object_path));
     arguments[argument_count++] = MMAY_TEST_C_COMPILER;
     arguments[argument_count++] = "/nologo";
     arguments[argument_count++] = "/std:c17";
+    arguments[argument_count++] = "/utf-8";
 #if defined(MMAY_TEST_C_SANITIZER)
     arguments[argument_count++] = MMAY_TEST_C_SANITIZER;
+    arguments[argument_count++] = "/Z7";
 #endif
+    arguments[argument_count++] = "/I";
     arguments[argument_count++] = include_argument;
+    arguments[argument_count++] = "/Fo:";
+    arguments[argument_count++] = object_path;
     arguments[argument_count++] = source_path;
     arguments[argument_count++] = (const char *)artifact->archive.data;
+    arguments[argument_count++] = "/Fe:";
     arguments[argument_count++] = executable_argument;
 #else
     written = snprintf(
@@ -180,9 +189,15 @@ static void mmay_cp13_expect_probe(
         }
         MMAY_EXPECT(false);
         mmay_process_result_dispose(&process);
+#if defined(_WIN32)
+        (void)mmay_test_remove_file(object_path);
+#endif
         return;
     }
     mmay_process_result_dispose(&process);
+#if defined(_WIN32)
+    MMAY_EXPECT(mmay_test_remove_file(object_path) == 0);
+#endif
     run_arguments[0] = output_path;
     run_arguments[1] = NULL;
     memset(&process, 0, sizeof(process));
@@ -209,8 +224,9 @@ static void mmay_cp13_test_profiles(void) {
     MMAY_EXPECT(strcmp(debug.content_hash, release.content_hash) != 0);
     MMAY_EXPECT(!debug.installed && !release.installed);
 #if defined(_WIN32)
-    mmay_cp13_expect_probe(&debug, "debug\n", "cp13-profile-debug.exe");
-    mmay_cp13_expect_probe(&release, "release\n", "cp13-profile-release.exe");
+    /* The raw C probe uses the host CRT's text-mode puts newline. */
+    mmay_cp13_expect_probe(&debug, "debug\r\n", "cp13-profile-debug.exe");
+    mmay_cp13_expect_probe(&release, "release\r\n", "cp13-profile-release.exe");
 #else
     mmay_cp13_expect_probe(&debug, "debug\n", "./cp13-profile-debug");
     mmay_cp13_expect_probe(&release, "release\n", "./cp13-profile-release");
@@ -237,7 +253,7 @@ static void mmay_cp13_test_paths_and_hash(void) {
     MMAY_EXPECT(mmay_cp13_select(MMAY_NATIVE_RUNTIME_DEBUG, &paths, &first));
 #if defined(_WIN32)
     mmay_cp13_expect_probe(
-        &first, "debug\n",
+        &first, "debug\r\n",
         "cp13 runtime path with spaces/profile probe.exe"
     );
 #else

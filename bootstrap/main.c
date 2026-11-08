@@ -1,6 +1,11 @@
 #include <signal.h>
 #include <stdio.h>
 
+#if defined(_WIN32)
+#include <fcntl.h>
+#include <io.h>
+#endif
+
 #include "mmay/base/allocator.h"
 #include "mmay/base/stream.h"
 #include "mmay/base/writer.h"
@@ -24,6 +29,17 @@ int main(int argument_count, char **host_arguments) {
     MarimayProgramArgumentsStatus import_status;
     MarimaySession session;
     int exit_code = 0;
+#if defined(_WIN32)
+    int input_descriptor = _fileno(stdin);
+    int output_descriptor = _fileno(stdout);
+    int error_descriptor = _fileno(stderr);
+    if ((input_descriptor >= 0 && _setmode(input_descriptor, _O_BINARY) == -1)
+        || (output_descriptor >= 0 && _setmode(output_descriptor, _O_BINARY) == -1)
+        || (error_descriptor >= 0 && _setmode(error_descriptor, _O_BINARY) == -1)) {
+        fputs("error[I0002]: runtime host stream setup failed\n", stderr);
+        return 70;
+    }
+#endif
 #if defined(SIGPIPE)
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
         fputs("error[I0002]: runtime host signal setup failed\n", stderr);

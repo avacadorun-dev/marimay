@@ -453,6 +453,23 @@ const pair: (string, int) = ("port", 8080);
 A one-element tuple is `(value,)` / `(T,)`; `(value)` remains grouping. A
 function type retains the arrow, for example `(string, int) => bool`.
 
+Parenthesized type lists accept an optional final comma in tuple types,
+function-parameter types, and positional enum-payload declarations. The comma
+does not add an element or change types, arity, or evaluation order:
+
+```marimay
+type PairWithSeparator = (string, int,);
+type PredicateWithSeparator = (string, int,) => bool;
+enum PayloadWithSeparator {
+  Item(int,),
+  Tuple((int,),),
+}
+```
+
+`Item` above carries one `int`; `Tuple` carries one singleton tuple. The only
+comma in `(T,)` is required and cannot be removed as an optional separator.
+An empty `()` is not a tuple type, and `(T)` alone is not a type.
+
 `[]T` construction uses the compiler-known variadic prelude
 `arrayOf(...)` function or a contextual array literal. This avoids inventing
 static methods on types and avoids treating arbitrary heterogeneous values as

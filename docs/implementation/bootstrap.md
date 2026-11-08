@@ -91,6 +91,25 @@ change.
 
 The MSVC build uses `/std:c17`, `/W4`, and `/WX` through the same Debug/Release presets, and the `asan` preset selects MSVC AddressSanitizer. UBSan and TSan are not available in the MSVC presets.
 
+MSVC AddressSanitizer keeps compiler instrumentation and inferred sanitizer
+libraries, with incremental linking and incompatible `/RTC` checks disabled.
+The separately built Release runtime archive also disables `/RTC` so its `/O2`
+profile remains valid inside a Debug build. Ordinary unsanitized Debug targets
+retain runtime checks. CMake 4 uses the target runtime-check property; the
+CMake 3.25 compatibility path preserves the same target distinction.
+Both native runtime archives and generated C use the static MSVC C runtime
+(`/MT`), independently of the compiler's CMake configuration. Logical debug
+and release outputs retain their respective `/Od` and `/O2` optimization.
+MSVC compiles first-party and generated C as UTF-8. The CLI and generated
+native entry points select binary mode for available standard streams so D075
+preserves exact bytes, including LF and Ctrl-Z. Runtime manifests are generated
+with LF independently of checkout line endings and retain exact validation.
+The Windows process adapter leaves simple arguments bare and escapes arguments
+that need quoting. Native compiler options `/I` and `/Fe:` carry their path in
+a separate argument, including paths with spaces in relocated installations.
+See the [MSVC ASan build reference](https://learn.microsoft.com/en-us/cpp/sanitizers/asan-building)
+and [runtime-check restrictions](https://learn.microsoft.com/en-us/cpp/build/reference/rtc-run-time-error-checks).
+
 ## Fuzz targets
 
 The persistent I1 fuzz targets require a Clang distribution that includes the

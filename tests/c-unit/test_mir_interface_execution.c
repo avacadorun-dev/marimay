@@ -300,7 +300,7 @@ static void mmay_test_mir_interface_allocation_failures(
         MarimayAllocator allocator;
         MarimayMirExecution execution;
         MarimayMirValue interface_value;
-        MarimayMirValue result;
+        MarimayMirValue result = {0};
         MarimayMirInterpretStatus status;
         MarimayTestMirInterfaceCallContext context;
         mmay_fail_allocator_init(

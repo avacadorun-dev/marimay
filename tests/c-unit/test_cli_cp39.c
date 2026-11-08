@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include "cli_native_run.h"
 #include "mmay/base/allocator.h"
 #include "mmay/build_config.h"
@@ -13,6 +18,7 @@
 #include "mmay/native/toolchain.h"
 #include "mmay/platform/directory.h"
 #include "mmay/platform/file.h"
+#include "mmay/platform/process.h"
 #include "mmay/session.h"
 
 static int mmay_cp39_run(
@@ -134,16 +140,111 @@ static void mmay_cp39_expect_init_allocations(void) {
     MMAY_EXPECT(reached_success);
 }
 
-static void mmay_cp39_expect_toolchain(void) {
+#if defined(_WIN32)
+static void mmay_cp39_expect_msvc_identity(void) {
+    const char *version = MMAY_NATIVE_C_COMPILER_VERSION;
+    size_t base_length = 0;
+    size_t separators = 0;
+    char alternate[128];
     MarimayOwnedBytes output = {0};
-    size_t failure_index = 0;
-    bool reached_success = false;
+    int written = 0;
+    while (version[base_length] != '\0') {
+        if (version[base_length] == '.' && ++separators == 3) break;
+        base_length += 1;
+    }
+    MMAY_EXPECT(base_length > 0 && base_length < sizeof(alternate));
+    if (base_length == 0 || base_length >= sizeof(alternate)) return;
+    if (strcmp(version + base_length, ".0") == 0) {
+        memcpy(alternate, version, base_length);
+        alternate[base_length] = '\0';
+        MMAY_EXPECT(mmay_native_toolchain_probe(
+            mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
+            alternate, &output
+        ) == MMAY_NATIVE_TOOLCHAIN_OK);
+        mmay_owned_bytes_dispose(&output);
+    }
+    written = snprintf(alternate, sizeof(alternate), "%.*s.%u",
+        (int)base_length, version,
+        strcmp(version + base_length, ".1") == 0 ? 2U : 1U);
+    MMAY_EXPECT(written > 0 && (size_t)written < sizeof(alternate));
+    if (written <= 0 || (size_t)written >= sizeof(alternate)) return;
     MMAY_EXPECT(mmay_native_toolchain_probe(
         mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
+        alternate, &output
+    ) == MMAY_NATIVE_TOOLCHAIN_UNAVAILABLE);
+    MMAY_EXPECT(output.data == NULL);
+    /* A shorter final field must not match the prefix of the reported build. */
+    memcpy(alternate, version, base_length - 1);
+    alternate[base_length - 1] = '\0';
+    MMAY_EXPECT(mmay_native_toolchain_probe(
+        mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
+        alternate, &output
+    ) == MMAY_NATIVE_TOOLCHAIN_UNAVAILABLE);
+    MMAY_EXPECT(output.data == NULL);
+}
+#endif
+
+static void mmay_cp39_expect_toolchain(void) {
+    MarimayOwnedBytes output = {0};
+    MarimayNativeToolchainStatus probe_status;
+    size_t failure_index = 0;
+    size_t allocation_count = 0;
+    bool reached_success = false;
+    probe_status = mmay_native_toolchain_probe(
+        mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
         MMAY_NATIVE_C_COMPILER_VERSION, &output
-    ) == MMAY_NATIVE_TOOLCHAIN_OK);
+    );
+#if defined(_WIN32)
+    if (probe_status != MMAY_NATIVE_TOOLCHAIN_OK) {
+        const char *arguments[] = {MMAY_NATIVE_C_COMPILER, "/?", NULL};
+        MarimayProcessResult query = {0};
+        MarimayProcessStatus query_status = mmay_process_run(
+            mmay_system_allocator(), arguments, 2, 65536, &query
+        );
+        size_t index = 0;
+        size_t code_count = 0;
+        DWORD input_flags = 0;
+        HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+        bool input_valid = input != NULL && input != INVALID_HANDLE_VALUE
+            && GetHandleInformation(input, &input_flags) != 0;
+        fprintf(stderr,
+            "MSVC raw identity query: status=%d; exit=%u; signaled=%u; bytes=%zu; stdinValid=%u; stdinInheritable=%u; head=",
+            (int)query_status, (unsigned int)query.exit_code,
+            query.signaled ? 1U : 0U, query.output.length,
+            input_valid ? 1U : 0U,
+            input_valid && (input_flags & HANDLE_FLAG_INHERIT) != 0 ? 1U : 0U);
+        for (index = 0; index < query.output.length && index < 16; index += 1) {
+            fprintf(stderr, "%02x", (unsigned int)query.output.data[index]);
+        }
+        if (query.exit_code != 0) {
+            fputs("; codes=", stderr);
+            for (index = 0; index + 5 <= query.output.length && code_count < 8;
+                index += 1) {
+                const unsigned char *candidate = query.output.data + index;
+                size_t digit = 0;
+                if (candidate[0] != 'D' && candidate[0] != 'C') continue;
+                for (digit = 1; digit < 5; digit += 1) {
+                    if (candidate[digit] < '0' || candidate[digit] > '9') break;
+                }
+                if (digit == 5 && (index + 5 == query.output.length
+                        || query.output.data[index + 5] < '0'
+                        || query.output.data[index + 5] > '9')) {
+                    if (code_count != 0) fputc(',', stderr);
+                    (void)fwrite(candidate, 1, 5, stderr);
+                    code_count += 1;
+                }
+            }
+        }
+        fputc('\n', stderr);
+        mmay_process_result_dispose(&query);
+    }
+#endif
+    MMAY_EXPECT(probe_status == MMAY_NATIVE_TOOLCHAIN_OK);
     MMAY_EXPECT(output.length != 0);
     mmay_owned_bytes_dispose(&output);
+#if defined(_WIN32)
+    mmay_cp39_expect_msvc_identity();
+#endif
     MMAY_EXPECT(mmay_native_toolchain_probe(
         mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
         "999.999.999", &output
@@ -153,7 +254,21 @@ static void mmay_cp39_expect_toolchain(void) {
         mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
         "invalid", &output
     ) == MMAY_NATIVE_TOOLCHAIN_INVALID_ARGUMENT);
-    for (failure_index = 0; failure_index < 16; failure_index += 1) {
+    {
+        MarimayFailAllocator control;
+        mmay_fail_allocator_init(&control, mmay_system_allocator(), SIZE_MAX);
+        probe_status = mmay_native_toolchain_probe(
+            mmay_fail_allocator(&control), MMAY_NATIVE_C_COMPILER,
+            MMAY_NATIVE_C_COMPILER_VERSION, &output
+        );
+        reached_success = probe_status == MMAY_NATIVE_TOOLCHAIN_OK;
+        MMAY_EXPECT(reached_success);
+        allocation_count = control.attempts;
+        mmay_owned_bytes_dispose(&output);
+        MMAY_EXPECT(control.live_allocations == 0);
+        MMAY_EXPECT(control.live_bytes == 0);
+    }
+    for (failure_index = 0; failure_index < allocation_count; failure_index += 1) {
         MarimayFailAllocator state;
         MarimayNativeToolchainStatus status;
         mmay_fail_allocator_init(
@@ -163,16 +278,19 @@ static void mmay_cp39_expect_toolchain(void) {
             mmay_fail_allocator(&state), MMAY_NATIVE_C_COMPILER,
             MMAY_NATIVE_C_COMPILER_VERSION, &output
         );
+        /* Host pipe chunking can reduce vector growth on a replay. Success
+         * is valid only when the selected failure index was never reached. */
         if (status == MMAY_NATIVE_TOOLCHAIN_OK) {
-            reached_success = true;
-            mmay_owned_bytes_dispose(&output);
+            MMAY_EXPECT(failure_index >= state.attempts);
+            MMAY_EXPECT(output.length != 0);
         } else {
             MMAY_EXPECT(status == MMAY_NATIVE_TOOLCHAIN_ALLOCATION_FAILED);
+            MMAY_EXPECT(failure_index < state.attempts);
             MMAY_EXPECT(output.data == NULL);
         }
+        mmay_owned_bytes_dispose(&output);
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
-        if (reached_success) break;
     }
     MMAY_EXPECT(reached_success);
 }

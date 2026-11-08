@@ -86,10 +86,9 @@ and desktop support are **target design**, not completed features. The
 
 You need **CMake 3.25+**, a **C17 compiler** (GCC, Clang, AppleClang, or MSVC),
 and **Python 3.10+** for repository checks. The default bootstrap has no fetched
-third-party dependency. The locally checked starting point is macOS ARM64 with
-AppleClang. The first public CI run exposed GCC warnings-as-errors and MSVC
-build failures; those targets are still being worked on. See
-[current CI limitations](docs/ci.md#first-public-run) before trying another platform.
+third-party dependency. The first public CI run exposed GCC and MSVC
+portability failures. See [CI and platform evidence](docs/ci.md) for the
+current checks, historical failures, and limits of each verification result.
 Run these commands from the repository root:
 
 <!-- cp29-quick-start:begin -->
@@ -169,6 +168,8 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) before changi
 code. Human and agent contributions follow the same architecture, evidence,
 memory-ownership, and review rules. [Agent workflow](docs/agent-workflow.md)
 explains context loading, handoffs, and reporting checks accurately.
+The [OpenSpec workflow](openspec/README.md) connects change proposals and tasks
+to the existing specifications, decisions, owners, and evidence.
 
 Use [GitHub issues](https://github.com/marimay-lang/marimay/issues) for ordinary
 bugs and design discussion. Report vulnerabilities privately using

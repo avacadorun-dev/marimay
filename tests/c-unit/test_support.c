@@ -1,10 +1,82 @@
 #include "test_support.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 static int mmay_failures = 0;
 static const char *mmay_executable = NULL;
+
+#if defined(_WIN32)
+static bool mmay_test_wide_text(const char *text, wchar_t *wide, int capacity) {
+    return text != NULL && MultiByteToWideChar(
+        CP_UTF8, MB_ERR_INVALID_CHARS, text, -1, wide, capacity
+    ) > 0;
+}
+#endif
+
+FILE *mmay_test_open_file(const char *path, const char *mode) {
+#if defined(_WIN32)
+    wchar_t wide_path[4096];
+    wchar_t wide_mode[16];
+    if (!mmay_test_wide_text(path, wide_path, 4096)
+        || !mmay_test_wide_text(mode, wide_mode, 16)) {
+        return NULL;
+    }
+#if defined(_MSC_VER)
+    FILE *file = NULL;
+    return _wfopen_s(&file, wide_path, wide_mode) == 0 ? file : NULL;
+#else
+    return _wfopen(wide_path, wide_mode);
+#endif
+#else
+    return fopen(path, mode);
+#endif
+}
+
+int mmay_test_remove_file(const char *path) {
+#if defined(_WIN32)
+    wchar_t wide_path[4096];
+    return mmay_test_wide_text(path, wide_path, 4096) ? _wremove(wide_path) : -1;
+#else
+    return remove(path);
+#endif
+}
+
+FILE *mmay_test_temporary_file(void) {
+#if defined(_MSC_VER)
+    static size_t next_file = 0;
+    size_t attempt = 0;
+    /* tmpfile_s writes to the drive root. Each test owner already has a
+       private writable working directory; x prevents replacing any file and
+       D binds deletion to the last stream/child handle closing. */
+    for (attempt = 0; attempt < 64 && next_file != SIZE_MAX; attempt += 1) {
+        char path[64];
+        FILE *file = NULL;
+        int written = snprintf(path, sizeof(path), "mmay-test-stream-%zu.tmp", next_file);
+        errno_t status;
+        next_file += 1;
+        if (written < 0 || (size_t)written >= sizeof(path)) {
+            return NULL;
+        }
+        status = fopen_s(&file, path, "w+bxD");
+        if (status == 0) {
+            return file;
+        }
+        if (status != EEXIST) {
+            return NULL;
+        }
+    }
+    return NULL;
+#else
+    return tmpfile();
+#endif
+}
 
 static bool mmay_test_buffer_write(void *context, const char *bytes, size_t length) {
     MarimayTestBuffer *buffer = context;
@@ -66,7 +138,7 @@ void mmay_test_expect_file(
     char expected[16384];
     FILE *input = NULL;
     size_t length = 0;
-    input = fopen(expected_path, "rb");
+    input = mmay_test_open_file(expected_path, "rb");
     if (input == NULL) {
         mmay_test_fail(file, line, "expected file opens");
         return;

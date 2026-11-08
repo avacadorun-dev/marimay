@@ -21,7 +21,7 @@ static bool mmay_test_defer_source(char *source, size_t capacity) {
         || (size_t)written >= sizeof(path)) {
         return false;
     }
-    file = fopen(path, "rb");
+    file = mmay_test_open_file(path, "rb");
     if (file == NULL) {
         return false;
     }
@@ -133,7 +133,7 @@ static void mmay_test_defer_engine_differential(void) {
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     const MarimayCheckedFunction *entry = NULL;
-    const MarimayMirFunction *functions[32];
+    const MarimayMirFunction *functions[32] = {0};
     MarimayBytecodeProgram bytecode;
     MarimayBytecodeProgram decoded;
     MarimayOwnedBytes encoded;
@@ -150,7 +150,6 @@ static void mmay_test_defer_engine_differential(void) {
     bool execution_ready = false;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&bytecode, 0, sizeof(bytecode));
     memset(&decoded, 0, sizeof(decoded));
     memset(&encoded, 0, sizeof(encoded));
@@ -307,14 +306,13 @@ static void mmay_test_defer_native_cycle(void) {
         "fn main(): void { recursive(); }\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
-    const MarimayMirFunction *functions[2];
+    const MarimayMirFunction *functions[2] = {0};
     const MarimayCheckedFunction *entry = NULL;
     MarimayNativeCProgram program;
     MarimayOwnedBytes generated;
     size_t index = 0;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&program, 0, sizeof(program));
     memset(&generated, 0, sizeof(generated));
     MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
@@ -500,7 +498,7 @@ static void mmay_test_defer_bytecode_invariants(void) {
     const MarimayCheckedFunction *entry = NULL;
     MarimayBytecodeFunction lowered;
     MarimayBytecodeProgram program;
-    const MarimayMirFunction *functions[3];
+    const MarimayMirFunction *functions[3] = {0};
     MarimayBytecodeInstruction *cleanup = NULL;
     MarimayBytecodeInstruction *return_instruction = NULL;
     MarimayBytecodeBlock *cleanup_block = NULL;
@@ -516,7 +514,6 @@ static void mmay_test_defer_bytecode_invariants(void) {
     memset(&checked, 0, sizeof(checked));
     memset(&lowered, 0, sizeof(lowered));
     memset(&program, 0, sizeof(program));
-    memset(functions, 0, sizeof(functions));
     MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
     if (!fixture.ast_initialized || mmay_check_ast(
             &fixture.ast, "test/defer-bytecode", mmay_system_allocator(),
@@ -1032,7 +1029,7 @@ static void mmay_test_defer_panic_policy(void) {
     char source[16384];
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
-    const MarimayMirFunction *functions[32];
+    const MarimayMirFunction *functions[32] = {0};
     const MarimayCheckedFunction *cleanup = NULL;
     const MarimayCheckedFunction *earlier = NULL;
     const MarimayCheckedFunction *body = NULL;
@@ -1046,7 +1043,6 @@ static void mmay_test_defer_panic_policy(void) {
     size_t index = 0;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     if (!mmay_test_defer_source(source, sizeof(source))
         || !mmay_checker_fixture_init(&fixture, source)
         || !fixture.ast_initialized

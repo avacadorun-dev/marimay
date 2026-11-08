@@ -1,0 +1,4 @@
+type Pair = (int, string,);
+type Callback = (int, string,) => int;
+type Singleton = (int,);
+enum E { Scalar(int,), Tuple((int,),), }

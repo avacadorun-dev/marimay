@@ -167,7 +167,7 @@ void mmay_test_native_c_emitter_array_storage(void) {
         }
         int written = snprintf(
             expected, sizeof(expected),
-            "static const MarimayManagedArrayDescriptor mmay_g_ad_%u = {%s, %s, %s, %s, NULL};",
+            "const MarimayManagedArrayDescriptor mmay_g_ad_%u = {%s, %s, %s, %s, NULL};",
             (unsigned int)(MMAY_TYPE_FIRST_DYNAMIC + 200 + index),
             cell,
             cases[index].storage,

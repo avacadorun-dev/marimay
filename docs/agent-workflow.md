@@ -15,6 +15,30 @@ Do not use a `codex/` branch prefix.
 Name the responsible owner and expected behavior before editing. A backend
 must not repair checker semantics. Narrow responsibilities matter beyond line counts.
 
+## Keep the specification and evidence connected
+
+Use the existing repository documents as the specification-driven workflow:
+
+| Question | Authoritative location |
+| --- | --- |
+| What behavior is required? | [Normative specifications](spec/) and [requirement IDs](requirements.md) |
+| Why was it chosen? | Accepted entries in [design decisions](design/decisions.md) |
+| Who implements it? | [Compiler architecture](implementation/compiler-architecture.md) and focused owner files/tests |
+| What remains to be delivered? | [Product roadmap](implementation/roadmap.md), [checkpoint ledger](implementation/checkpoints.md), and their [register](implementation/roadmap.tsv) |
+| What has actually been checked? | Direct reports in the [evidence index](implementation/evidence/README.md), with exact revisions, commands, and platform scope |
+
+For each proposed semantic change, identify its requirement and decision,
+update the normative contract, then implement and verify the affected owners.
+Keep implementation, tests, examples, and evidence in the same reviewable
+change. Resolve conflicting contracts through a decision and specification
+update before implementing them. This workflow uses the existing authority
+order; do not create a second competing specification tree.
+
+The repository's [OpenSpec configuration and workflow](../openspec/README.md)
+use this same map for proposals, designs, and tasks. OpenSpec change records
+link the normative documents and accepted decisions; their planning status
+does not replace the roadmap's evidence requirements.
+
 ## Implement and verify
 
 Follow the semantic-change protocol in AGENTS.md. Include the accepted decision,

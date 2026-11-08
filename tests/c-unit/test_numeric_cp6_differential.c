@@ -32,7 +32,7 @@ static bool mmay_test_numeric_cp6_source(char *source, size_t capacity) {
     if (written < 0 || (size_t)written >= sizeof(path)) {
         return false;
     }
-    file = fopen(path, "rb");
+    file = mmay_test_open_file(path, "rb");
     if (file == NULL) {
         return false;
     }
@@ -72,7 +72,7 @@ void mmay_test_numeric_cp6_differential(void) {
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     const MarimayCheckedFunction *entry = NULL;
-    const MarimayMirFunction *functions[16];
+    const MarimayMirFunction *functions[16] = {0};
     MarimayBytecodeProgram bytecode;
     MarimayBytecodeProgram decoded;
     MarimayOwnedBytes encoded;
@@ -92,7 +92,6 @@ void mmay_test_numeric_cp6_differential(void) {
     bool execution_ready = false;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&bytecode, 0, sizeof(bytecode));
     memset(&decoded, 0, sizeof(decoded));
     memset(&encoded, 0, sizeof(encoded));

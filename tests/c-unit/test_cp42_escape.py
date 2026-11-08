@@ -29,7 +29,7 @@ run("format", [TOOL, "fmt", SOURCE, "--check"], out=b"", err=b"")
 expected = []
 for file, start, end in (("counter/counter.my", 52, 94), ("main_test.my", 109, 121)):
     path = (SOURCE / file).resolve()
-    expected.append({"file": str(path), "startByte": start, "endByte": end,
+    expected.append({"file": path.as_posix(), "startByte": start, "endByte": end,
                      "snapshot": "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()})
 baseline = {}
 for style in ("human", "json"):
@@ -72,7 +72,8 @@ for style in ("human", "json"):
 
 # Warning in an imported package cannot mask a later real type error or permit
 # an artifact. Error and warning observations must agree across all front doors.
-(SOURCE / "main.my").write_text((SOURCE / "main.my").read_text().replace("return 0;", 'return "wrong";'))
+source = SOURCE / "main.my"
+source.write_bytes(source.read_bytes().replace(b"return 0;", b'return "wrong";'))
 artifact = WORK / "must-not-exist"
 artifact.unlink(missing_ok=True)
 failed = None
@@ -88,5 +89,6 @@ for command in ("check", "run", "build", "test"):
     if failed is None:
         failed = comparable
     assert comparable == failed and not artifact.exists(), diagnostics
-(WORK / "report.json").write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n")
+(WORK / "report.json").write_bytes(
+    (json.dumps(records, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
 print(f"escape warning: {len(records)} exact process observations passed")

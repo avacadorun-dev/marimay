@@ -132,6 +132,7 @@ static bool mmay_fuzz_list_kind(MarimaySyntaxKind kind) {
         || kind == MMAY_SYNTAX_ENUM_VARIANT
         || kind == MMAY_SYNTAX_MATCH_EXPRESSION
         || kind == MMAY_SYNTAX_NAMED_PAYLOAD
+        || kind == MMAY_SYNTAX_POSITIONAL_PAYLOAD
         || kind == MMAY_SYNTAX_RECORD_DECL
         || kind == MMAY_SYNTAX_RECORD_EXPRESSION
         || kind == MMAY_SYNTAX_RECORD_FIELDS
@@ -145,19 +146,46 @@ static bool mmay_fuzz_list_kind(MarimaySyntaxKind kind) {
         || kind == MMAY_SYNTAX_PATTERN_FIELDS;
 }
 
+static bool mmay_fuzz_optional_type_comma(const MarimayAstNode *parent, size_t index) {
+    const MarimayAstElement *first = mmay_ast_child(parent, 0);
+    const MarimayAstElement *element = mmay_ast_child(parent, index);
+    const MarimayAstElement *next = mmay_ast_child(parent, index + 1);
+    size_t child = 0;
+    if (parent->kind != MMAY_SYNTAX_TYPE || first == NULL || element == NULL
+        || next == NULL || first->kind != MMAY_AST_ELEMENT_TOKEN
+        || first->as.token.kind != MMAY_TOKEN_LEFT_PAREN
+        || element->kind != MMAY_AST_ELEMENT_TOKEN
+        || element->as.token.kind != MMAY_TOKEN_COMMA
+        || next->kind != MMAY_AST_ELEMENT_TOKEN
+        || next->as.token.kind != MMAY_TOKEN_RIGHT_PAREN) return false;
+    /* D071: retain a singleton tuple's required comma. Only a function's
+       parameter separator or a later tuple separator is optional. */
+    for (child = 0; child < parent->child_count; child += 1) {
+        const MarimayAstElement *item = mmay_ast_child(parent, child);
+        if (item != NULL && item->kind == MMAY_AST_ELEMENT_TOKEN
+            && ((child < index && item->as.token.kind == MMAY_TOKEN_COMMA)
+                || (child > index + 1 && item->as.token.kind == MMAY_TOKEN_FAT_ARROW))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool mmay_fuzz_trailing_comma(
     const MarimayAstNode *parent,
     size_t index
 ) {
     const MarimayAstElement *element = mmay_ast_child(parent, index);
     const MarimayAstElement *next = mmay_ast_child(parent, index + 1);
+    if (mmay_fuzz_optional_type_comma(parent, index)) return true;
     if (!mmay_fuzz_list_kind(parent->kind) || element == NULL
         || element->kind != MMAY_AST_ELEMENT_TOKEN
         || element->as.token.kind != MMAY_TOKEN_COMMA) {
         return false;
     }
     if ((parent->kind == MMAY_SYNTAX_PATTERN_LIST
-            || parent->kind == MMAY_SYNTAX_PATTERN_FIELDS)
+            || parent->kind == MMAY_SYNTAX_PATTERN_FIELDS
+            || parent->kind == MMAY_SYNTAX_ENUM_VARIANT)
         && index + 1 == parent->child_count) {
         return true;
     }
