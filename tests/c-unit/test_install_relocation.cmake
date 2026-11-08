@@ -86,6 +86,21 @@ endfunction()
 mmay_cp13_build(debug "${debug_output}")
 mmay_cp13_build(release "${release_output}")
 
+execute_process(
+  COMMAND "${MMAY_TEST_PYTHON}"
+    "${CMAKE_CURRENT_LIST_DIR}/test_native_build_outputs.py"
+    "${tool}" "${relocated}/native output regression"
+  RESULT_VARIABLE concurrent_result
+  OUTPUT_VARIABLE concurrent_stdout
+  ERROR_VARIABLE concurrent_stderr
+)
+if(NOT concurrent_result EQUAL 0 OR NOT concurrent_stdout STREQUAL ""
+    OR NOT concurrent_stderr STREQUAL "")
+  message(FATAL_ERROR
+    "cp13 concurrent native outputs failed (${concurrent_result})\n${concurrent_stdout}${concurrent_stderr}"
+  )
+endif()
+
 if(WIN32)
   set(path_separator ";")
 else()

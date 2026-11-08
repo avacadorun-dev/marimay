@@ -20,13 +20,12 @@ execute_process(COMMAND "${MMAY_TEST_TOOL}" build "${MMAY_TEST_SOURCE}"
 if(NOT status EQUAL 0)
   message(FATAL_ERROR "frequency build: ${error}")
 endif()
-function(replay name input expected_status expected_output)
-  file(WRITE "${root}/input" "${input}")
+function(replay name input_path expected_status expected_output)
   execute_process(COMMAND "${MMAY_TEST_TOOL}" run "${MMAY_TEST_SOURCE}" -- ${ARGN}
-    INPUT_FILE "${root}/input" RESULT_VARIABLE vm_status
+    INPUT_FILE "${input_path}" RESULT_VARIABLE vm_status
     OUTPUT_VARIABLE vm_output ERROR_VARIABLE vm_error)
   execute_process(COMMAND "${root}/frequency" ${ARGN}
-    INPUT_FILE "${root}/input" RESULT_VARIABLE native_status
+    INPUT_FILE "${input_path}" RESULT_VARIABLE native_status
     OUTPUT_VARIABLE native_output ERROR_VARIABLE native_error)
   if(NOT vm_status EQUAL expected_status OR NOT native_status EQUAL expected_status
       OR NOT vm_output STREQUAL expected_output OR NOT native_output STREQUAL expected_output
@@ -34,9 +33,12 @@ function(replay name input expected_status expected_output)
     message(FATAL_ERROR "frequency ${name}: VM=${vm_status}/${vm_output}/${vm_error}; native=${native_status}/${native_output}/${native_error}")
   endif()
 endfunction()
-replay(empty "" 0 "{}\n")
-replay(unicode "чай\r\ncoffee\nчай\n" 0 "{\"чай\":2,\"coffee\":1}\n")
-replay(trim " tea \n\ttea\n\n" 0 "{\"tea\":2,\"\":1}\n" --trim)
-replay(unknown "" 1 "" --unknown)
+file(CONFIGURE OUTPUT "${root}/empty.input" CONTENT "" @ONLY NEWLINE_STYLE LF)
+file(CONFIGURE OUTPUT "${root}/trim.input" CONTENT " tea \n\ttea\n\n" @ONLY NEWLINE_STYLE LF)
+replay(empty "${root}/empty.input" 0 "{}\n")
+replay(unicode "${CMAKE_CURRENT_LIST_DIR}/fixtures/frequency-unicode.input" 0 "{\"чай\":2,\"coffee\":1}\n")
+replay(trim "${root}/trim.input" 0 "{\"tea\":2,\"\":1}\n" --trim)
+replay(unknown "${root}/empty.input" 1 "" --unknown)
 string(REPEAT "x" 65537 too_long)
-replay(long_line "${too_long}\n" 1 "")
+file(CONFIGURE OUTPUT "${root}/long.input" CONTENT "${too_long}\n" @ONLY NEWLINE_STYLE LF)
+replay(long_line "${root}/long.input" 1 "")

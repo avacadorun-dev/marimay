@@ -365,11 +365,13 @@ function(mmay_prepare_c_unit_working_directory destination)
     "${CMAKE_CURRENT_SOURCE_DIR}/snapshots/version.json.in"
     "${destination}/snapshots/version.json"
     @ONLY
+    NEWLINE_STYLE LF
   )
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/snapshots/version.txt.in"
     "${destination}/snapshots/version.txt"
     @ONLY
+    NEWLINE_STYLE LF
   )
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md"
@@ -499,6 +501,7 @@ mmay_add_focused_checkpoint_test(cp39 1)
 add_test(
   NAME mmay_install_relocation
   COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_PYTHON=${Python3_EXECUTABLE}"
     "-DMMAY_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
     "-DMMAY_TEST_CONFIG=$<CONFIG>"
     "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/run/cp9/acceptance.my"

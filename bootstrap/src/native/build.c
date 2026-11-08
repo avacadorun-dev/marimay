@@ -266,6 +266,8 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     char runtime_include[MMAY_NATIVE_BUILD_MAX_PATH + 4];
 #if defined(_WIN32)
     char executable_argument[MMAY_NATIVE_BUILD_MAX_PATH + 5];
+    char object_path[MMAY_NATIVE_BUILD_MAX_PATH + 1];
+    size_t object_path_length = 0;
 #endif
     const char *arguments[32];
     size_t argument_count = 0;
@@ -286,6 +288,10 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     );
     memset(&process, 0, sizeof(process));
 #if defined(_WIN32)
+    written = snprintf(object_path, sizeof(object_path),
+        "%s.obj", (const char *)source_path->data);
+    if (written < 0 || (size_t)written >= sizeof(object_path)) goto limit;
+    object_path_length = (size_t)written;
     written = snprintf(bootstrap_include, sizeof(bootstrap_include),
         "%s", (const char *)runtime->bootstrap_include.data);
     if (written < 0 || (size_t)written >= sizeof(bootstrap_include)) goto limit;
@@ -303,11 +309,16 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     arguments[argument_count++] = request->release ? "/O2" : "/Od";
     if (MMAY_NATIVE_C_SANITIZER_FLAG[0] != 0) {
         arguments[argument_count++] = MMAY_NATIVE_C_SANITIZER_FLAG;
+        /* ASan requires debug metadata under /WX (C5072). Keep it in the
+         * object instead of sharing cl.exe's default compiler PDB. */
+        arguments[argument_count++] = "/Z7";
     }
     arguments[argument_count++] = "/I";
     arguments[argument_count++] = bootstrap_include;
     arguments[argument_count++] = "/I";
     arguments[argument_count++] = runtime_include;
+    arguments[argument_count++] = "/Fo:";
+    arguments[argument_count++] = object_path;
     arguments[argument_count++] = (const char *)source_path->data;
     arguments[argument_count++] = (const char *)runtime->archive.data;
     written = snprintf(executable_argument, sizeof(executable_argument),
@@ -378,6 +389,13 @@ limit:
     status = MMAY_NATIVE_BUILD_LIMIT_REACHED;
 cleanup:
     mmay_process_result_dispose(&process);
+#if defined(_WIN32)
+    if (object_path_length != 0) {
+        mmay_platform_file_ops().remove(
+            NULL, allocator, object_path, object_path_length
+        );
+    }
+#endif
     if (status != MMAY_NATIVE_BUILD_OK) {
         mmay_platform_file_ops().remove(
             NULL, allocator, (const char *)temporary.data, temporary.length

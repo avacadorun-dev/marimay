@@ -89,7 +89,7 @@ if os.name != "nt":
     compare(["echo", link, 1], (1, b"", b"symbolic links are not followed\n"))
 
 denied = {"vm": [compiler, "run", source, "--"], "native": build("lines-denied", ["--release"])}
-compare(["echo", file, 1], (1, b"", f"fs.read capability denied for {file}\n".encode()), selected=denied)
+compare(["echo", file, 1], (1, b"", f"fs.read capability denied for {file.as_posix()}\n".encode()), selected=denied)
 
 pipes = 0
 if os.name != "nt":
@@ -109,5 +109,6 @@ report = {"schema": "marimay.file-lines/1", "compiler_sha256": hashlib.sha256(co
           "cases": cases, "executions": count, "closed_pipes": pipes,
           "large_bytes": len(large), "managed_heap_limit": 16777216,
           "elapsed_seconds": time.monotonic() - started}
-(work / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+(work / "report.json").write_bytes(
+    (json.dumps(report, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
 print(f"file lines: {count} exact process checks; {pipes} closed pipes; {len(large)}-byte stream")

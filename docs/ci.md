@@ -23,6 +23,19 @@ Windows ASan, four sustained fuzz targets, and the explicitly pinned optional
 SLJIT tier with sanitizers both enabled and disabled. Scheduled/manual memory
 checks run Valgrind. A separate workflow checks Git history for secrets.
 
+Generated native MSVC sanitizer builds emit object debug metadata with `/Z7`,
+as required by the compiler's warnings-as-errors ASan profile. This preserves
+the selected `/Od` or `/O2` optimization and avoids a shared compiler PDB;
+it does not add final-executable PDB publication to the native artifact contract.
+The MSVC object path is explicit and local to each generated source cache entry,
+so native builds from distinct cache entries in a shared working directory do
+not overwrite one another's intermediates. Completed compiler attempts remove
+the transient object.
+Removal is best-effort under allocation or filesystem failure; such failures can
+leave an intermediate in its cache entry. Allocation-failure tests require zero
+live allocator counts and validate the executable whenever optional cleanup
+failure leaves the build successful.
+
 ```sh
 cmake --preset debug
 cmake --build --preset debug --parallel
