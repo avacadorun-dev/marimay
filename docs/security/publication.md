@@ -51,6 +51,7 @@ GitHub's temporary test-merge ref to that history scan. Metadata checks apply
 unchanged to submitted commits and real branch/tag history; there is no
 exception for a personal email in those objects. The build workflow separately
 checks the PR merge result. See [CI](../ci.md) for checkout and permission scope.
+
 ## Private experimental implementation payloads
 
 Experimental source snapshots, candidate patch bundles, compressed working

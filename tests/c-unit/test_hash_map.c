@@ -223,9 +223,36 @@ static void mmay_test_map_failures(void) {
     MMAY_EXPECT(reached_success);
 }
 
+static void mmay_test_map_max_alignment(void) {
+    bool completed = false;
+    for (size_t failure = 0; failure < 32; failure += 1) {
+        MarimayFailAllocator state;
+        MarimayMap map;
+        MarimayMaxAlign value;
+        memset(&value, 0x5a, sizeof(value));
+        mmay_fail_allocator_init(&state, mmay_system_allocator(), failure);
+        MMAY_EXPECT(mmay_map_init(&map, mmay_fail_allocator(&state), sizeof(value), 1, 2));
+        completed = mmay_map_put(&map, "aligned", 7, &value);
+        if (completed) {
+            const void *copy = mmay_map_get_const(&map, "aligned", 7);
+            MMAY_EXPECT(copy != NULL);
+            MMAY_EXPECT((uintptr_t)copy % _Alignof(MarimayMaxAlign) == 0);
+            if (copy != NULL) MMAY_EXPECT(memcmp(copy, &value, sizeof(value)) == 0);
+        } else {
+            MMAY_EXPECT(map.length == 0);
+        }
+        mmay_map_dispose(&map);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
+        if (completed) break;
+    }
+    MMAY_EXPECT(completed);
+}
+
 void mmay_test_hash_map(void) {
     mmay_test_hashes();
     mmay_test_siphash_word();
     mmay_test_map_behavior();
     mmay_test_map_failures();
+    mmay_test_map_max_alignment();
 }

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
+# Select per-target MSVC runtime checks before enabling C, when available.
 if(POLICY CMP0184)
   cmake_policy(SET CMP0184 NEW)
 endif()

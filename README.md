@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/marimay-banner.png" alt="Marimay — from source to something solid" width="960" />
+<img src="docs/assets/marimay-banner.png" alt="Marimay — a language I’m building to learn" width="960" />
 
 <p><strong>A little programming language I’m building to learn and have fun.</strong><br />
 A place to try ideas, write algorithms, and see how languages work.</p>
@@ -86,7 +86,10 @@ and desktop support are **target design**, not completed features. The
 
 You need **CMake 3.25+**, a **C17 compiler** (GCC, Clang, AppleClang, or MSVC),
 and **Python 3.10+** for repository checks. The default bootstrap has no fetched
-third-party dependency. Run these commands from the repository root:
+third-party dependency. The first public CI run exposed GCC and MSVC
+portability failures. See [CI and platform evidence](docs/ci.md) for the
+current checks, historical failures, and limits of each verification result.
+Run these commands from the repository root:
 
 <!-- cp29-quick-start:begin -->
 ```sh
@@ -165,8 +168,10 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) before changi
 code. Human and agent contributions follow the same architecture, evidence,
 memory-ownership, and review rules. [Agent workflow](docs/agent-workflow.md)
 explains context loading, handoffs, and reporting checks accurately.
+The [OpenSpec workflow](openspec/README.md) connects change proposals and tasks
+to the existing specifications, decisions, owners, and evidence.
 
-Use [GitHub issues](https://github.com/avacadorun-dev/marimay/issues) for ordinary
+Use [GitHub issues](https://github.com/marimay-lang/marimay/issues) for ordinary
 bugs and design discussion. Report vulnerabilities privately using
 [SECURITY.md](SECURITY.md). Keep reports and logs free of credentials and personal paths.
 

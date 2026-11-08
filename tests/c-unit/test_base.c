@@ -344,4 +344,27 @@ void mmay_test_base(void) {
     mmay_arena_dispose(&arena);
     MMAY_EXPECT(fail_state.live_allocations == 0);
     MMAY_EXPECT(fail_state.live_bytes == 0);
+
+    /* Sweep every block-growth failure while retaining already-owned blocks. */
+    bool completed = false;
+    for (size_t failure = 0; failure < 128; failure += 1) {
+        mmay_fail_allocator_init(&fail_state, system, failure);
+        mmay_arena_init(&arena, mmay_fail_allocator(&fail_state), 32);
+        size_t created = 0;
+        for (; created < 20; created += 1) {
+            MarimayAlignedFixture *fixture = MMAY_ARENA_NEW(&arena, MarimayAlignedFixture);
+            if (fixture == NULL) break;
+            MMAY_EXPECT((uintptr_t)fixture % _Alignof(MarimayMaxAlign) == 0);
+            fixture->value = (int)created;
+        }
+        completed = created == 20;
+        MMAY_EXPECT(mmay_arena_allocate(&arena, 1, 0) == NULL);
+        MMAY_EXPECT(mmay_arena_allocate(&arena, 1, 3) == NULL);
+        MMAY_EXPECT(mmay_arena_allocate(&arena, 1, _Alignof(MarimayMaxAlign) * 2) == NULL);
+        mmay_arena_dispose(&arena);
+        MMAY_EXPECT(fail_state.live_allocations == 0);
+        MMAY_EXPECT(fail_state.live_bytes == 0);
+        if (completed) break;
+    }
+    MMAY_EXPECT(completed);
 }

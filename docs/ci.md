@@ -99,3 +99,25 @@ source; use it only on the clean public checkout. Artifact retention is bounded.
 The first public run provides fresh platform evidence. Migrating a job definition
 or passing a local check does not close any release gate. See
 [SECURITY.md](../SECURITY.md) for trust boundaries and private reporting.
+
+## First public run
+
+The [initial run](https://github.com/marimay-lang/marimay/actions/runs/42408219743)
+passed documentation gates and the fuzz build, but exposed build portability
+failures in the original public-import revision:
+
+- GCC rejected mixed signed/unsigned conditional expressions in the VM fast
+  paths under `-Werror=sign-conversion`.
+- MSVC could not compile that revision's `max_align_t` use in the arena owner.
+  Debug/ASan configuration also carried conflicting `/RTC1` and optimization
+  flags for the release runtime archive.
+
+Assess those historical failures against that revision. Subsequent C17 fixes
+are validated by their focused owner tests and exact-revision CI. The original
+public import excluded the original checkout's unfinished compiler changes.
+
+The migrated optional JIT job initially invoked the container-oriented apt
+helper without privilege on a hosted runner. Its package-install step now uses
+`sudo`; this is a CI migration correction, not a compiler semantic change.
+The [public history security scan](https://github.com/marimay-lang/marimay/actions/runs/42408219806)
+passed. Other jobs provide their own results and must not be inferred to pass.

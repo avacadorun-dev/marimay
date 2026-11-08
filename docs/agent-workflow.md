@@ -34,6 +34,11 @@ change. Resolve conflicting contracts through a decision and specification
 update before implementing them. This workflow uses the existing authority
 order; do not create a second competing specification tree.
 
+The repository's [OpenSpec configuration and workflow](../openspec/README.md)
+use this same map for proposals, designs, and tasks. OpenSpec change records
+link the normative documents and accepted decisions; their planning status
+does not replace the roadmap's evidence requirements.
+
 ## Implement and verify
 
 Follow the semantic-change protocol in AGENTS.md. Include the accepted decision,
