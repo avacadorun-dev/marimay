@@ -21,6 +21,9 @@
 #include "mmay/platform/process.h"
 #include "mmay/session.h"
 
+void mmay_test_native_host_toolchain(void);
+void mmay_test_native_build_cache(void);
+
 static int mmay_cp39_run(
     MarimaySession *session,
     int argument_count,
@@ -355,6 +358,8 @@ static void mmay_cp39_expect_doctor(void) {
 }
 
 void mmay_test_cli_cp39(void) {
+    mmay_test_native_host_toolchain();
+    mmay_test_native_build_cache();
     mmay_cp39_expect_toolchain();
     mmay_cp39_expect_native_arguments();
     mmay_cp39_expect_doctor();

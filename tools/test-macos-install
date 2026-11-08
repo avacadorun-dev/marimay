@@ -1,0 +1,268 @@
+#!/usr/bin/env python3
+"""D114 real Installer gate. System writes require explicit ephemeral Mac CI consent."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import plistlib
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import xml.etree.ElementTree as ET
+
+from macos_payload import (ARCHITECTURES, component, digest, physical,
+                           unpack_archive, verify_checksum, verify_prefix)
+
+
+REPOSITORY = Path(__file__).resolve().parents[1]
+IDENTIFIER = "org.marimay.mmay"
+CHECKS = ("pkgutil-layout", "installer", "doctor-installed", "vm-run", "test-both",
+          "native-debug", "native-release", "archive-relocation",
+          "foreign-command-rejected", "same-version-rejected")
+
+
+def require_ci(allowed: bool) -> None:
+    if (not allowed or os.environ.get("GITHUB_ACTIONS") != "true"
+            or os.environ.get("RUNNER_OS") != "macOS" or platform.system() != "Darwin"):
+        raise ValueError("system installation is restricted to explicitly enabled ephemeral macOS CI")
+
+
+def command(arguments, cwd, expected=0, data=None, timeout=300):
+    result = subprocess.run([str(arg) for arg in arguments], cwd=cwd, input=data,
+                            capture_output=True, timeout=timeout)
+    if expected is None:
+        if result.returncode == 0:
+            raise AssertionError("an installer collision was accepted")
+    elif result.returncode != expected:
+        raise AssertionError("command failed: %r" % result)
+    return result
+
+
+def sudo(arguments, cwd, expected=0, data=None):
+    return command(["/usr/bin/sudo", "-n", *arguments], cwd, expected, data)
+
+
+def launcher(version):
+    component(version)
+    return ("#!/bin/sh\n# Marimay managed launcher; format=1\n"
+            f'exec "/usr/local/lib/marimay/{version}/bin/mmay" "$@"\n').encode("ascii")
+
+
+def asset(path):
+    return {"name": path.name, "sha256": digest(path), "bytes": path.stat().st_size}
+
+
+def inspect_package(package, archive_root, work, version, arch):
+    expanded = work / "expanded package"
+    command(["/usr/sbin/pkgutil", "--expand-full", package, expanded], work)
+    info = ET.parse(expanded / "PackageInfo").getroot()
+    if (info.attrib.get("identifier") != IDENTIFIER or info.attrib.get("version") != version
+            or info.attrib.get("install-location") != f"/usr/local/lib/marimay/{version}"):
+        raise AssertionError("package identity or destination mismatch")
+    if verify_prefix(expanded / "Payload", version, arch) != verify_prefix(archive_root, version, arch):
+        raise AssertionError("package and archive prefixes differ")
+    if (expanded / "Payload/usr/local/bin/mmay").exists():
+        raise AssertionError("package payload must not overwrite the global command")
+    for name in ("preinstall", "postinstall", "installer-common.sh"):
+        path = expanded / "Scripts" / name
+        physical(path)
+        if not path.is_file():
+            raise AssertionError("package is missing an installer script")
+
+
+def write_previous_fixture(root, version):
+    """Synthetic old owned prefix; no old release or retired payload is fetched."""
+    files = {
+        "bin/mmay": b"#!/bin/sh\nprintf 'previous alpha fixture\\n'\n",
+        "include/mmay/runtime/core.h": b"synthetic header\n",
+        f"share/mmay/{version}/mmay-release-metadata.json": b"{}\n",
+    }
+    for profile in ("debug", "release"):
+        base = f"lib/mmay/{version}/native/{profile}"
+        files[f"{base}/libmmay_native_runtime_{profile}.a"] = b"synthetic runtime\n"
+        files[f"{base}/mmay-native-runtime.manifest"] = b"synthetic identity\n"
+    for name, data in files.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        path.chmod(0o755 if name == "bin/mmay" else 0o644)
+    manifest = root / f"share/mmay/{version}/checksums.sha256"
+    manifest.write_bytes("".join(f"{hashlib.sha256(data).hexdigest()}  {name}\n"
+                                 for name, data in sorted(files.items())).encode("utf-8"))
+    # A prior prefix's unrelated content is retained during a version upgrade.
+    (root / "unrelated user note").write_bytes(b"preserve synthetic user content\n")
+
+
+def verify_tool(tool, scratch, version, arch):
+    scratch.mkdir()
+    result = command([tool, "version", "--json"], scratch)
+    if result.stderr:
+        raise AssertionError("installed version wrote stderr")
+    identity = json.loads(result.stdout)
+    if (identity.get("schema") != "marimay.version/2" or identity.get("compiler") != version
+            or identity.get("runtime") != version
+            or identity.get("host") != {"system": "Darwin", "processor": arch}
+            or identity.get("release") != {"channel": "experimental-alpha",
+                "claim": "local-checker-backed-slice", "publicationReady": False}
+            or identity["release"]["publicationReady"] is not False
+            or identity.get("standardLibrary", {}).get("version") != version):
+        raise AssertionError("installed version identity mismatch")
+    result = command([tool, "doctor", "--json"], scratch)
+    doctor = json.loads(result.stdout)
+    if result.stderr or not doctor["ok"] or doctor["layout"] != "installed":
+        raise AssertionError("global or relocated doctor did not use the installed prefix")
+    # The focused native owner checks clean/poisoned compiler environments,
+    # actual local identity, VM output, both native profiles and cache identities.
+    result = command([sys.executable,
+        REPOSITORY / "tests/c-unit/test_native_host_toolchain.py", tool, scratch], scratch)
+    if result.stdout or result.stderr:
+        raise AssertionError("native host toolchain gate was not silent")
+    project = scratch / "alpha project Мир"
+    project.mkdir()
+    (project / "mmay.mod").write_bytes(b'module "release/alpha-smoke"\nlanguage "0.1"\n')
+    (project / "main.my").write_bytes(
+        b'import { Error, println } from "std/io";\n\n'
+        b'fn main(): Result<void, Error> {\n  println("alpha installed")?;\n  return Ok();\n}\n')
+    (project / "main_test.my").write_bytes(
+        b'@test\nfn arithmetic(): void {\n  expect.equal(1 + 2, 3);\n}\n')
+    result = command([tool, "test", project, "--engine", "both"], scratch)
+    if result.stderr or b"1 passed; 0 failed" not in result.stdout:
+        raise AssertionError("installed VM/native test engines failed")
+
+
+def write_evidence(output, version, arch, package, archive, before, checks, source_revision=None):
+    if set(checks) != set(CHECKS) or not all(value is True for value in checks.values()):
+        raise AssertionError("cannot attest incomplete installation checks")
+    after = {"package": asset(package), "archive": asset(archive)}
+    if after != before:
+        raise AssertionError("release assets changed during installation checks")
+    revision = command(["/usr/bin/git", "rev-parse", "HEAD"], REPOSITORY).stdout.decode("ascii").strip()
+    if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+        raise AssertionError("release source revision is not one complete commit ID")
+    if source_revision is not None and revision != source_revision:
+        raise AssertionError("release source revision changed during installation checks")
+    if output.name != f"macos-verification-{arch}.json":
+        raise ValueError("installation evidence basename does not match architecture")
+    physical(output)
+    checksum = output.with_name(output.name + ".sha256")
+    if output.exists() or output.is_symlink() or checksum.exists() or checksum.is_symlink():
+        raise ValueError("installation evidence output already exists")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    record = {"schema": "marimay.macos-install-verification/1", "sourceRevision": revision,
+              "version": version, "arch": arch, **after, "checks": checks}
+    content = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    with tempfile.TemporaryDirectory(prefix=".mmay-evidence-", dir=output.parent) as directory:
+        temporary = Path(directory) / output.name
+        temporary.write_bytes(content)
+        sum_file = temporary.with_name(temporary.name + ".sha256")
+        sum_file.write_bytes(f"{hashlib.sha256(content).hexdigest()}  {output.name}\n".encode("ascii"))
+        os.link(temporary, output)
+        try:
+            os.link(sum_file, checksum)
+        except OSError:
+            if output.samefile(temporary):
+                output.unlink()
+            raise
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--package", type=Path, required=True)
+    parser.add_argument("--archive", type=Path, required=True)
+    parser.add_argument("--version", required=True)
+    parser.add_argument("--arch", choices=ARCHITECTURES, required=True)
+    parser.add_argument("--work", type=Path, required=True)
+    parser.add_argument("--evidence-output", type=Path, required=True)
+    parser.add_argument("--allow-system-install", action="store_true")
+    args = parser.parse_args()
+    require_ci(args.allow_system_install)
+    component(args.version)
+    if platform.machine() != args.arch:
+        raise ValueError("package architecture does not match this Mac runner")
+    package, archive, work = args.package.absolute(), args.archive.absolute(), args.work.absolute()
+    if (package.name != f"marimay-{args.version}-darwin-{args.arch}.pkg"
+            or archive.name != f"marimay-{args.version}-darwin-{args.arch}.tar.gz"):
+        raise ValueError("release asset names do not match the requested identity")
+    verify_checksum(package)
+    verify_checksum(archive)
+    before = {"package": asset(package), "archive": asset(archive)}
+    revision = command(["/usr/bin/git", "rev-parse", "HEAD"], REPOSITORY).stdout.decode("ascii").strip()
+    if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+        raise ValueError("installation gate requires one complete source revision")
+    physical(work)
+    if work.exists():
+        raise ValueError("installation scratch directory already exists")
+    work.mkdir(parents=True)
+    archive_root = work / "archive prefix"
+    unpack_archive(archive, archive_root)
+    verify_prefix(archive_root, args.version, args.arch, expected_revision=revision)
+    checks = dict.fromkeys(CHECKS, False)
+    inspect_package(package, archive_root, work, args.version, args.arch)
+    checks["pkgutil-layout"] = True
+    installed = Path(f"/usr/local/lib/marimay/{args.version}")
+    global_command = Path("/usr/local/bin/mmay")
+    if (installed.exists() or installed.is_symlink()
+            or global_command.exists() or global_command.is_symlink()):
+        raise ValueError("ephemeral runner must have no existing global Marimay command or candidate")
+    sudo(["/bin/mkdir", "-p", global_command.parent], work)
+    foreign = b"Marimay CI foreign command fixture\n"
+    sudo(["/usr/bin/tee", global_command], work, data=foreign)
+    try:
+        sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work, expected=None)
+        if global_command.is_symlink() or global_command.read_bytes() != foreign or installed.exists():
+            raise AssertionError("foreign command refusal changed the command or published a prefix")
+        checks["foreign-command-rejected"] = True
+    finally:
+        if global_command.is_file() and not global_command.is_symlink() and global_command.read_bytes() == foreign:
+            sudo(["/bin/rm", "-f", global_command], work)
+    previous_version = "0.0.0-alpha.ci-" + work.name.encode().hex()[:24]
+    previous = Path(f"/usr/local/lib/marimay/{previous_version}")
+    if previous.exists() or previous.is_symlink():
+        raise ValueError("synthetic previous prefix already exists")
+    previous_source = work / "synthetic previous prefix"
+    write_previous_fixture(previous_source, previous_version)
+    sudo(["/bin/mkdir", "-p", previous.parent], work)
+    sudo(["/bin/cp", "-R", previous_source, previous], work)
+    sudo(["/usr/bin/tee", global_command], work, data=launcher(previous_version))
+    sudo(["/bin/chmod", "755", global_command], work)
+    previous_bytes = {p.relative_to(previous).as_posix(): p.read_bytes()
+                      for p in previous.rglob("*") if p.is_file()}
+    sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work)
+    if global_command.is_symlink() or global_command.read_bytes() != launcher(args.version):
+        raise AssertionError("Installer did not atomically activate the expected wrapper")
+    verify_prefix(installed, args.version, args.arch)
+    receipt = command(["/usr/sbin/pkgutil", "--pkg-info-plist", IDENTIFIER], work)
+    if plistlib.loads(receipt.stdout).get("pkg-version") != args.version:
+        raise AssertionError("Installer receipt identity mismatch")
+    if previous_bytes != {p.relative_to(previous).as_posix(): p.read_bytes()
+                          for p in previous.rglob("*") if p.is_file()}:
+        raise AssertionError("upgrade changed the previously owned prefix or unrelated data")
+    checks["installer"] = True
+    verify_tool(global_command, work / "global command checks", args.version, args.arch)
+    for name in ("doctor-installed", "vm-run", "native-debug", "native-release", "test-both"):
+        checks[name] = True
+    wrapper_before = global_command.read_bytes()
+    prefix_before = verify_prefix(installed, args.version, args.arch)
+    sudo(["/usr/sbin/installer", "-pkg", package, "-target", "/"], work, expected=None)
+    if global_command.read_bytes() != wrapper_before or verify_prefix(installed, args.version, args.arch) != prefix_before:
+        raise AssertionError("same-version refusal changed the installed command or files")
+    checks["same-version-rejected"] = True
+    relocated = work / "relocated complete prefix Мир"
+    archive_root.rename(relocated)
+    verify_prefix(relocated, args.version, args.arch)
+    verify_tool(relocated / "bin/mmay", work / "relocated command checks", args.version, args.arch)
+    checks["archive-relocation"] = True
+    write_evidence(args.evidence_output.absolute(), args.version, args.arch,
+                   package, archive, before, checks, source_revision=revision)
+    print(f"macOS installed package verification passed: {args.arch}")
+
+
+if __name__ == "__main__":
+    main()

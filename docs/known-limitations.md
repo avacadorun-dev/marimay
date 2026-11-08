@@ -2,11 +2,15 @@
 
 Version: `0.1.0-alpha.1`
 
-Channel: `private-preview`
+Channel: `experimental-alpha`
 
 Claim: `local-checker-backed-slice`
 
 Publication ready: `no`
+
+This field records incomplete CLI0/CP40 readiness. The owner separately
+authorized D114's bounded experimental macOS prerelease; neither authorization
+nor publication promotes a product milestone.
 
 Standard library: `0.1.0-alpha.1`, scope `bounded-preview`, compatibility
 `alpha-source`
@@ -19,7 +23,7 @@ The portable C17 Stage 0 provides human/JSON version metadata, task help,
 canonical `fmt`, authoritative local `check`, verified VM-default `run`,
 native `run`, host-native `build`, deterministic `test --engine both`, local
 atomic `init`, and offline human/JSON `doctor` for the current
-checker-backed private-preview corpus. The implemented language slice includes
+checker-backed experimental corpus. The implemented language slice includes
 scalar control flow, checked integer behavior, deterministic `f64`, dynamic
 primitive interpolation, integer parse/format, and `println(string)`, nominal
 records/enums/interfaces, `Option`/`Result`/`?`, lexical `defer`, local packages
@@ -58,9 +62,10 @@ five VM/native differential tests.
   nested contexts such as `Ok(None)`. Positional constructor shorthand and
   annotation-free expression closures are contextual only at compiler-known
   `Result.mapError` in 0.1; they are not general storable function values.
-- Cross compilation, automatic PATH editing, signing, upload, and public
-  installer publication remain outside CP39. Commands shown as staged are not
-  executable promises.
+- Cross compilation, automatic PATH editing, signing and notarization remain
+  absent. D114 separately permits the experimental macOS package and release
+  workflow; this does not establish CP39/CP40 completion. Commands shown as
+  staged are not executable promises.
 - Portable public `.myb`/`mmay exec`, networking and direct-style tasks,
   registry/dependencies, production LSP/test tooling, FFI, cross compilation,
   desktop support, and self-hosting are outside CLI0.
@@ -69,11 +74,19 @@ five VM/native differential tests.
 
 ## Publication blockers
 
-N0 lacks external legal/control/PATH evidence. Full claimed-host architecture,
+N0 lacks external legal/control/PATH evidence. Full broader-release architecture,
 bootstrap, frontend fuzz, VM/native, sanitizer, installer, and performance
-matrices are also incomplete. No public identity, tag, signing operation,
-upload, namespace reservation, installer publication, or release is
-authorized by this candidate metadata.
+acceptance remains incomplete. The experimental binary scope is only macOS 15+
+ARM64/Intel, with compatible Apple Command Line Tools required for native
+compilation. Packages are unsigned/unnotarized and same-version installation
+is deliberately rejected rather than overwriting an existing prefix; see
+[installation and recovery](install-macos.md).
+
+The [D114](design/decisions.md#d114-publish-a-bounded-experimental-macos-alpha)
+owner authorization and verified release workflow permit only that bounded
+experimental prerelease. Candidate metadata alone authorizes no tag, upload,
+signing operation, namespace reservation or release. Broader CLI0/N0/CP40
+requirements remain unchanged.
 
 ## Removal gates
 

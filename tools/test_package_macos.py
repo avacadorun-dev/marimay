@@ -1,0 +1,503 @@
+#!/usr/bin/env python3
+"""D114 package inventory, installer ownership and activation regressions."""
+
+from __future__ import annotations
+
+import hashlib
+import importlib.machinery
+import importlib.util
+import io
+import json
+from pathlib import Path
+import platform
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import unittest
+from unittest import mock
+import xml.etree.ElementTree as ET
+
+from macos_payload import digest, unpack_archive, verify_checksum, verify_prefix
+
+
+TOOL = Path(__file__).resolve().with_name("package-macos")
+LOADER = importlib.machinery.SourceFileLoader("package_macos", str(TOOL))
+SPEC = importlib.util.spec_from_loader(LOADER.name, LOADER)
+PACKAGE = importlib.util.module_from_spec(SPEC)
+LOADER.exec_module(PACKAGE)
+SMOKE_LOADER = importlib.machinery.SourceFileLoader("macos_install_gate", str(TOOL.with_name("test-macos-install")))
+SMOKE_SPEC = importlib.util.spec_from_loader(SMOKE_LOADER.name, SMOKE_LOADER)
+SMOKE = importlib.util.module_from_spec(SMOKE_SPEC)
+SMOKE_LOADER.exec_module(SMOKE)
+VERSION = "0.1.0-alpha.1"
+ARCH = "arm64"
+
+
+def manifest(root, version):
+    path = root / f"share/mmay/{version}/checksums.sha256"
+    lines = []
+    for file in sorted(root.rglob("*")):
+        if file.is_file() and file != path:
+            lines.append(f"{digest(file)}  {file.relative_to(root).as_posix()}\n")
+    path.write_bytes("".join(lines).encode("utf-8"))
+    return path
+
+
+def provenance(root, version, arch):
+    artifacts = {"bin/mmay": digest(root / "bin/mmay")}
+    for profile in ("debug", "release"):
+        artifacts[f"runtime-{profile}"] = digest(root /
+            f"lib/mmay/{version}/native/{profile}/libmmay_native_runtime_{profile}.a")
+    record = {"schema": "marimay.provenance/1", "version": version,
+        "source": {"revision": "1" * 40, "epoch": 0},
+        "host": {"system": "Darwin", "processor": arch},
+        "profile": "debug-and-release", "artifacts": artifacts}
+    (root / f"share/mmay/{version}/provenance.json").write_bytes(json.dumps(record).encode())
+
+
+def prefix(root, version=VERSION, arch=ARCH):
+    files = {
+        "bin/mmay": b"#!/bin/sh\nexit 0\n", "include/mmay/runtime/core.h": b"header\n",
+        f"share/mmay/{version}/std/io/io.my": b"module\n",
+        f"share/mmay/{version}/provenance.json": b"{}\n",
+        f"share/mmay/{version}/sbom.spdx.json": b'{"spdxVersion":"SPDX-2.3"}\n',
+    }
+    for profile in ("debug", "release"):
+        base = f"lib/mmay/{version}/native/{profile}"
+        files[f"{base}/libmmay_native_runtime_{profile}.a"] = b"runtime\n"
+        files[f"{base}/mmay-native-runtime.manifest"] = b"runtime identity\n"
+    metadata = {"schema": "marimay.version/2", "compiler": version, "runtime": version,
+        "host": {"system": "Darwin", "processor": arch},
+        "standardLibrary": {"version": version},
+        "release": {"channel": "experimental-alpha", "claim": "local-checker-backed-slice",
+                    "publicationReady": False}}
+    files[f"share/mmay/{version}/mmay-release-metadata.json"] = (
+        json.dumps(metadata, separators=(",", ":")) + "\n").encode()
+    for name, data in files.items():
+        file = root / name
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_bytes(data)
+        file.chmod(0o755 if name == "bin/mmay" else 0o644)
+    provenance(root, version, arch)
+    return manifest(root, version)
+
+
+class PackageTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="mmay package проверка ")
+        self.addCleanup(self.temporary.cleanup)
+        self.work = Path(self.temporary.name).resolve()
+        self.root = self.work / "source prefix"
+        prefix(self.root)
+
+    def fake_run(self, arguments, **kwargs):
+        if arguments[0] == "/usr/bin/lipo":
+            return subprocess.CompletedProcess(arguments, 0, (ARCH + "\n").encode(), b"")
+        self.assertEqual(arguments[0], "/usr/bin/pkgbuild")
+        payload = Path(arguments[arguments.index("--root") + 1])
+        self.assertEqual(verify_prefix(payload, VERSION, ARCH), verify_prefix(self.root, VERSION, ARCH))
+        self.assertFalse((payload / "usr/local/bin/mmay").exists())
+        self.assertEqual(arguments[arguments.index("--install-location") + 1],
+                         f"/usr/local/lib/marimay/{VERSION}")
+        self.assertEqual(arguments[arguments.index("--identifier") + 1], "org.marimay.mmay")
+        self.assertEqual(arguments[arguments.index("--ownership") + 1], "recommended")
+        self.assertEqual(arguments[arguments.index("--filter") + 1], "^$")
+        scripts = Path(arguments[arguments.index("--scripts") + 1])
+        self.assertEqual({p.name for p in scripts.iterdir()},
+                         {"preinstall", "postinstall", "installer-common.sh"})
+        for name in ("preinstall", "postinstall"):
+            self.assertEqual((scripts / name).stat().st_mode & 0o7777, 0o755)
+        self.assertEqual((payload / "bin/mmay").stat().st_mode & 0o7777, 0o755)
+        Path(arguments[-1]).write_bytes(b"synthetic native package\n")
+        return subprocess.CompletedProcess(arguments, 0, b"", b"")
+
+    def test_package_is_complete_and_source_is_unchanged(self):
+        (self.root / "bin/mmay").chmod(0o4755)
+        before = {p.relative_to(self.root).as_posix(): (p.read_bytes(), p.stat().st_mode)
+                  for p in self.root.rglob("*") if p.is_file()}
+        with mock.patch.object(PACKAGE.platform, "system", return_value="Darwin"), \
+                mock.patch.object(PACKAGE.subprocess, "run", side_effect=self.fake_run):
+            output = PACKAGE.build_package(self.root, self.work / "output", VERSION, ARCH)
+        verify_checksum(output)
+        self.assertEqual(output.name, f"marimay-{VERSION}-darwin-{ARCH}.pkg")
+        self.assertEqual(before, {p.relative_to(self.root).as_posix(): (p.read_bytes(), p.stat().st_mode)
+                                 for p in self.root.rglob("*") if p.is_file()})
+        with self.assertRaisesRegex(ValueError, "already exists"), \
+                mock.patch.object(PACKAGE.platform, "system", return_value="Darwin"), \
+                mock.patch.object(PACKAGE.subprocess, "run", side_effect=self.fake_run):
+            PACKAGE.build_package(self.root, output.parent, VERSION, ARCH)
+
+    def test_bad_inventory_is_rejected_before_output(self):
+        for case in ("tampered", "missing", "unlisted", "directory", "duplicate", "unsafe", "self"):
+            with self.subTest(case=case):
+                root = self.work / case
+                shutil.copytree(self.root, root)
+                path = root / f"share/mmay/{VERSION}/checksums.sha256"
+                if case == "tampered": (root / "bin/mmay").write_bytes(b"changed")
+                elif case == "missing": (root / "include/mmay/runtime/core.h").unlink()
+                elif case == "unlisted": (root / "unlisted").write_bytes(b"unowned")
+                elif case == "directory": (root / "unowned empty directory").mkdir()
+                elif case == "duplicate": path.write_bytes(path.read_bytes() + path.read_bytes().splitlines()[0] + b"\n")
+                elif case == "unsafe": path.write_bytes(b"0" * 64 + b"  ../escape\n")
+                else: path.write_bytes(b"0" * 64 + f"  share/mmay/{VERSION}/checksums.sha256\n".encode())
+                with self.assertRaises(ValueError):
+                    PACKAGE.build_package(root, self.work / (case + " output"), VERSION, ARCH)
+                self.assertFalse((self.work / (case + " output")).exists())
+
+    def test_linked_roots_and_members_fail(self):
+        linked = self.work / "linked root"
+        linked.symlink_to(self.root, target_is_directory=True)
+        with self.assertRaises(ValueError): verify_prefix(linked, VERSION, ARCH)
+        (self.root / "unexpected link").symlink_to(self.work)
+        with self.assertRaises(ValueError): verify_prefix(self.root, VERSION, ARCH)
+
+    def test_metadata_and_archive_components_fail_closed(self):
+        path = self.root / f"share/mmay/{VERSION}/mmay-release-metadata.json"
+        metadata = json.loads(path.read_bytes())
+        for field, value in (("compiler", "stale"), ("host", {"system": "Darwin", "processor": "x86_64"}),
+                             ("release", {"channel": "private-preview"})):
+            changed = dict(metadata)
+            changed[field] = value
+            path.write_bytes(json.dumps(changed).encode())
+            manifest(self.root, VERSION)
+            with self.assertRaisesRegex(ValueError, "metadata"):
+                verify_prefix(self.root, VERSION, ARCH)
+        for version in ("../escape", "a/b", "a;bad", "", ".", "..", "-option"):
+            with self.subTest(version=version), self.assertRaises(ValueError): PACKAGE.wrapper(version)
+
+    def test_provenance_and_sbom_cannot_disagree_with_payload(self):
+        with self.assertRaisesRegex(ValueError, "provenance"):
+            verify_prefix(self.root, VERSION, ARCH, expected_revision="2" * 40)
+        for kind in ("artifact", "source", "sbom", "boolean"):
+            with self.subTest(kind=kind):
+                root = self.work / kind
+                shutil.copytree(self.root, root)
+                if kind == "sbom":
+                    path = root / f"share/mmay/{VERSION}/sbom.spdx.json"
+                    path.write_bytes(b'{"spdxVersion":"incorrect"}')
+                elif kind == "boolean":
+                    path = root / f"share/mmay/{VERSION}/mmay-release-metadata.json"
+                    data = json.loads(path.read_bytes())
+                    data["release"]["publicationReady"] = 0
+                    path.write_bytes(json.dumps(data).encode())
+                else:
+                    path = root / f"share/mmay/{VERSION}/provenance.json"
+                    data = json.loads(path.read_bytes())
+                    if kind == "artifact": data["artifacts"]["bin/mmay"] = "0" * 64
+                    else: data["source"]["revision"] = "unknown"
+                    path.write_bytes(json.dumps(data).encode())
+                manifest(root, VERSION)
+                with self.assertRaises(ValueError): verify_prefix(root, VERSION, ARCH)
+
+    def test_wrong_binary_or_runtime_architecture_is_rejected(self):
+        for index in range(3):
+            calls = []
+            def run(arguments, **kwargs):
+                calls.append(arguments)
+                data = b"x86_64\n" if len(calls) == index + 1 else b"arm64\n"
+                return subprocess.CompletedProcess(arguments, 0, data, b"")
+            with self.subTest(index=index), self.assertRaises(ValueError), \
+                    mock.patch.object(PACKAGE.subprocess, "run", side_effect=run):
+                PACKAGE.check_architecture(self.root, VERSION, ARCH)
+
+    def test_pkgbuild_failure_never_publishes(self):
+        def run(arguments, **kwargs):
+            if arguments[0] == "/usr/bin/lipo": return self.fake_run(arguments, **kwargs)
+            Path(arguments[-1]).write_bytes(b"partial")
+            raise subprocess.CalledProcessError(1, arguments, b"", b"fixture failure")
+        output = self.work / "failed output"
+        with self.assertRaises(subprocess.CalledProcessError), \
+                mock.patch.object(PACKAGE.platform, "system", return_value="Darwin"), \
+                mock.patch.object(PACKAGE.subprocess, "run", side_effect=run):
+            PACKAGE.build_package(self.root, output, VERSION, ARCH)
+        self.assertEqual(list(output.iterdir()), [])
+
+    def test_concurrently_created_output_is_never_overwritten(self):
+        output = self.work / "concurrent output"
+        def run(arguments, **kwargs):
+            result = self.fake_run(arguments, **kwargs)
+            if arguments[0] == "/usr/bin/pkgbuild":
+                (output / f"marimay-{VERSION}-darwin-{ARCH}.pkg").write_bytes(b"foreign output")
+            return result
+        with self.assertRaises(FileExistsError), \
+                mock.patch.object(PACKAGE.platform, "system", return_value="Darwin"), \
+                mock.patch.object(PACKAGE.subprocess, "run", side_effect=run):
+            PACKAGE.build_package(self.root, output, VERSION, ARCH)
+        self.assertEqual((output / f"marimay-{VERSION}-darwin-{ARCH}.pkg").read_bytes(), b"foreign output")
+        self.assertFalse((output / f"marimay-{VERSION}-darwin-{ARCH}.pkg.sha256").exists())
+
+    @unittest.skipUnless(platform.system() == "Darwin", "native macOS package container gate")
+    def test_real_pkgbuild_and_pkgutil_preserve_the_complete_prefix(self):
+        arch = platform.machine()
+        prefix(self.root, VERSION, arch)
+        source = self.work / "fixture.c"
+        source.write_bytes(b"int main(void) { return 0; }\n")
+        object_file = self.work / "fixture.o"
+        subprocess.run(["/usr/bin/clang", "-arch", arch, "-mmacosx-version-min=15.0",
+                        "-c", str(source), "-o", str(object_file)], check=True, capture_output=True)
+        subprocess.run(["/usr/bin/clang", "-arch", arch, "-mmacosx-version-min=15.0",
+                        str(object_file), "-o", str(self.root / "bin/mmay")], check=True, capture_output=True)
+        for profile in ("debug", "release"):
+            archive = self.root / f"lib/mmay/{VERSION}/native/{profile}/libmmay_native_runtime_{profile}.a"
+            archive.unlink()
+            subprocess.run(["/usr/bin/ar", "rcs", str(archive), str(object_file)],
+                           check=True, capture_output=True)
+        provenance(self.root, VERSION, arch)
+        manifest(self.root, VERSION)
+        output = PACKAGE.build_package(self.root, self.work / "native package", VERSION, arch)
+        verify_checksum(output)
+        expanded = self.work / "expanded package"
+        subprocess.run(["/usr/sbin/pkgutil", "--expand-full", str(output), str(expanded)],
+                       check=True, capture_output=True)
+        info = ET.parse(expanded / "PackageInfo").getroot()
+        self.assertEqual(info.attrib["identifier"], PACKAGE.IDENTIFIER)
+        self.assertEqual(info.attrib["version"], VERSION)
+        self.assertEqual(info.attrib["install-location"], f"/usr/local/lib/marimay/{VERSION}")
+        self.assertEqual(verify_prefix(expanded / "Payload", VERSION, arch),
+                         verify_prefix(self.root, VERSION, arch))
+        self.assertFalse((expanded / "Payload/usr/local/bin/mmay").exists())
+        for script in ("preinstall", "postinstall", "installer-common.sh"):
+            self.assertTrue((expanded / "Scripts" / script).is_file())
+
+
+class InstallerTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="mmay installer Мир ")
+        self.addCleanup(self.temporary.cleanup)
+        self.work = Path(self.temporary.name).resolve()
+        self.volume = self.work / "volume"
+        self.volume.mkdir()
+        self.source = self.work / "source"
+        checksum = prefix(self.source)
+        self.scripts = self.work / "scripts"
+        PACKAGE.render_scripts(self.scripts, VERSION, ARCH, digest(checksum))
+        self.candidate = self.volume / f"usr/local/lib/marimay/{VERSION}"
+        self.command = self.volume / "usr/local/bin/mmay"
+
+    def hook(self, operation, expected=0, prefix_code=""):
+        # Exercise the real installer primitives in an isolated target volume.
+        # Actual host probes and Installer integration run on both Mac CI hosts.
+        code = ('set -eu; . "$1/installer-common.sh"; '
+                'mmay_setup package / "$2"; ' + (prefix_code or ":") + '; mmay_' + operation)
+        result = subprocess.run(["/bin/sh", "-c", code, "test", str(self.scripts), str(self.volume)],
+                                capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, expected, result.stderr)
+        return result
+
+    def publish_candidate(self):
+        self.candidate.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(self.source, self.candidate)
+
+    def old(self, version="0.1.0-alpha.0"):
+        root = self.volume / f"usr/local/lib/marimay/{version}"
+        prefix(root, version)
+        self.command.parent.mkdir(parents=True, exist_ok=True)
+        self.command.write_bytes(PACKAGE.wrapper(version))
+        self.command.chmod(0o755)
+        return root
+
+    def test_install_then_same_version_is_refused_unchanged(self):
+        self.hook("preinstall")
+        self.publish_candidate()
+        self.hook("postinstall")
+        self.assertEqual(self.command.read_bytes(), PACKAGE.wrapper(VERSION))
+        self.assertEqual(self.command.stat().st_mode & 0o7777, 0o755)
+        self.assertEqual(self.command.parent.stat().st_mode & 0o7777, 0o755)
+        before = self.command.read_bytes()
+        self.hook("preinstall", 1)
+        self.assertEqual(self.command.read_bytes(), before)
+
+    def test_upgrade_preserves_old_prefix_and_unrelated_files(self):
+        old = self.old()
+        (old / "user notes").write_bytes(b"preserve")
+        before = {p.relative_to(old).as_posix(): p.read_bytes() for p in old.rglob("*") if p.is_file()}
+        self.hook("preinstall")
+        self.publish_candidate()
+        self.hook("postinstall")
+        self.assertEqual(self.command.read_bytes(), PACKAGE.wrapper(VERSION))
+        self.assertEqual(before, {p.relative_to(old).as_posix(): p.read_bytes()
+                                 for p in old.rglob("*") if p.is_file()})
+
+    def test_foreign_modified_and_linked_commands_are_preserved(self):
+        self.command.parent.mkdir(parents=True)
+        for content in (b"foreign\n", b"foreign" * 300,
+                        PACKAGE.wrapper("0.1.0-alpha.0") + b"# modified\n"):
+            self.command.write_bytes(content)
+            self.hook("preinstall", 1)
+            self.assertEqual(self.command.read_bytes(), content)
+        self.command.unlink()
+        target = self.work / "foreign"
+        target.write_bytes(b"untouched")
+        self.command.symlink_to(target)
+        self.hook("preinstall", 1)
+        self.assertEqual(target.read_bytes(), b"untouched")
+
+    def test_modified_owned_prefix_and_linked_ancestor_are_refused(self):
+        old = self.old()
+        (old / "bin/mmay").write_bytes(b"modified")
+        before = self.command.read_bytes()
+        self.hook("preinstall", 1)
+        self.assertEqual(self.command.read_bytes(), before)
+        shutil.rmtree(self.volume / "usr")
+        outside = self.work / "outside"
+        outside.mkdir()
+        (self.volume / "usr").symlink_to(outside, target_is_directory=True)
+        self.hook("preinstall", 1)
+        self.assertEqual(list(outside.iterdir()), [])
+
+    def test_payload_or_activation_failure_preserves_active_command(self):
+        self.old()
+        before = self.command.read_bytes()
+        self.hook("preinstall")
+        self.publish_candidate()
+        (self.candidate / "bin/mmay").write_bytes(b"corrupt")
+        self.hook("postinstall", 1)
+        self.assertEqual(self.command.read_bytes(), before)
+        shutil.copyfile(self.source / "bin/mmay", self.candidate / "bin/mmay")
+        # Override only mv in this private test shell to force the actual final
+        # rename branch to fail after complete payload/ownership validation.
+        common = self.scripts / "installer-common.sh"
+        common.write_bytes(common.read_bytes().replace(b"/bin/mv -f", b"mmay_test_mv -f"))
+        self.hook("postinstall", 1, "mmay_test_mv() { return 1; }")
+        self.assertEqual(self.command.read_bytes(), before)
+        self.assertEqual(list(self.command.parent.glob(".mmay-activate.*")), [])
+
+    def test_unlisted_or_linked_candidate_entries_never_activate(self):
+        self.old()
+        before = self.command.read_bytes()
+        self.publish_candidate()
+        for kind in ("file", "directory", "link", "newline"):
+            with self.subTest(kind=kind):
+                extra = self.candidate / ("unexpected\n" if kind == "newline" else "unexpected")
+                if kind == "directory": extra.mkdir()
+                elif kind == "link": extra.symlink_to(self.work)
+                else: extra.write_bytes(b"unlisted")
+                self.hook("postinstall", 1)
+                self.assertEqual(self.command.read_bytes(), before)
+                if kind == "directory": extra.rmdir()
+                else: extra.unlink()
+
+    def test_platform_checks_reject_wrong_arch_old_os_and_foreign_host(self):
+        common = self.scripts / "installer-common.sh"
+        for system, arch, version, expected in (("Darwin", ARCH, "15.0", 0),
+                ("Darwin", "x86_64", "15.0", 1), ("Darwin", ARCH, "14.9", 1),
+                ("Linux", ARCH, "99", 1), ("Darwin", ARCH, "garbled", 1)):
+            result = subprocess.run(["/bin/sh", "-c", '. "$1"; mmay_platform_values "$2" "$3" "$4"',
+                                     "test", str(common), system, arch, version], capture_output=True)
+            self.assertEqual(result.returncode, expected, result.stderr)
+
+
+class ArchiveTests(unittest.TestCase):
+    def test_only_bounded_regular_members_are_copied(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory).resolve()
+            for kind in ("valid", "parent", "absolute", "symlink", "hardlink", "fifo", "duplicate"):
+                archive = work / (kind + ".tar.gz")
+                with tarfile.open(archive, "w:gz") as output:
+                    entry = tarfile.TarInfo({"parent": "../escape", "absolute": "/escape"}.get(kind, "bin/mmay"))
+                    entry.size = 1
+                    if kind in ("symlink", "hardlink", "fifo"):
+                        entry.type = {"symlink": tarfile.SYMTYPE, "hardlink": tarfile.LNKTYPE,
+                                      "fifo": tarfile.FIFOTYPE}[kind]
+                        entry.linkname = "../../escape"
+                        entry.size = 0
+                    output.addfile(entry, io.BytesIO(b"x") if entry.isfile() else None)
+                    if kind == "duplicate": output.addfile(entry, io.BytesIO(b"x"))
+                destination = work / (kind + " output")
+                if kind == "valid":
+                    unpack_archive(archive, destination)
+                    self.assertEqual((destination / "bin/mmay").read_bytes(), b"x")
+                else:
+                    with self.assertRaises(ValueError): unpack_archive(archive, destination)
+                    self.assertFalse(destination.exists())
+            self.assertFalse((work / "escape").exists())
+
+
+class InstallGateTests(unittest.TestCase):
+    def test_local_or_incompletely_enabled_execution_is_refused(self):
+        for allowed, environment, host in ((False, {"GITHUB_ACTIONS": "true", "RUNNER_OS": "macOS"}, "Darwin"),
+                (True, {}, "Darwin"), (True, {"GITHUB_ACTIONS": "true", "RUNNER_OS": "macOS"}, "Linux")):
+            with self.subTest(allowed=allowed, environment=environment, host=host), \
+                    mock.patch.dict(SMOKE.os.environ, environment, clear=True), \
+                    mock.patch.object(SMOKE.platform, "system", return_value=host), \
+                    self.assertRaises(ValueError):
+                SMOKE.require_ci(allowed)
+
+    def test_ordinary_cli_execution_stops_before_reading_assets_or_creating_work(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            result = subprocess.run([sys.executable, str(TOOL.with_name("test-macos-install")),
+                "--package", str(root / "missing.pkg"), "--archive", str(root / "missing.tar.gz"),
+                "--version", VERSION, "--arch", ARCH, "--work", str(root / "must not exist"),
+                "--evidence-output", str(root / f"macos-verification-{ARCH}.json")], capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b"restricted to explicitly enabled ephemeral macOS CI", result.stderr)
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_smoke_uses_actual_wrapper_and_rejects_build_tree_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            tool = Path("/usr/local/bin/mmay")
+            identity = {"schema": "marimay.version/2", "compiler": VERSION, "runtime": VERSION,
+                "host": {"system": "Darwin", "processor": ARCH},
+                "standardLibrary": {"version": VERSION},
+                "release": {"channel": "experimental-alpha", "claim": "local-checker-backed-slice",
+                            "publicationReady": False}}
+            doctor = {"ok": True, "layout": "installed"}
+            observed = []
+            def run(arguments, cwd, **kwargs):
+                observed.append(arguments)
+                if arguments[0] == sys.executable:
+                    self.assertEqual(arguments[2], tool)
+                    output = b""
+                elif arguments[1] == "version": output = json.dumps(identity).encode()
+                elif arguments[1] == "doctor": output = json.dumps(doctor).encode()
+                else: output = b"test result: ok. 1 passed; 0 failed\n"
+                return subprocess.CompletedProcess(arguments, 0, output, b"")
+            with mock.patch.object(SMOKE, "command", side_effect=run):
+                SMOKE.verify_tool(tool, root / "good", VERSION, ARCH)
+                self.assertTrue(any(args[1] == "test" for args in observed if args[0] == tool))
+                doctor["layout"] = "build-tree"
+                with self.assertRaisesRegex(AssertionError, "installed prefix"):
+                    SMOKE.verify_tool(tool, root / "bad", VERSION, ARCH)
+
+    def test_evidence_binds_only_completed_checks_and_unchanged_asset_bytes(self):
+        with tempfile.TemporaryDirectory(prefix="mmay evidence ") as directory:
+            root = Path(directory).resolve()
+            package, archive = root / "package.pkg", root / "archive.tar.gz"
+            package.write_bytes(b"synthetic package")
+            archive.write_bytes(b"synthetic archive")
+            before = {"package": SMOKE.asset(package), "archive": SMOKE.asset(archive)}
+            checks = dict.fromkeys(SMOKE.CHECKS, True)
+            output = root / f"macos-verification-{ARCH}.json"
+            revision = "1" * 40
+            result = subprocess.CompletedProcess([], 0, (revision + "\n").encode(), b"")
+            with mock.patch.object(SMOKE, "command", return_value=result):
+                SMOKE.write_evidence(output, VERSION, ARCH, package, archive, before, checks)
+            verify_checksum(output)
+            record = json.loads(output.read_bytes())
+            self.assertEqual(record["schema"], "marimay.macos-install-verification/1")
+            self.assertEqual(record["sourceRevision"], revision)
+            self.assertEqual(record["package"], before["package"])
+            self.assertEqual(record["archive"], before["archive"])
+            self.assertEqual(record["checks"], checks)
+            self.assertNotIn(str(root).encode(), output.read_bytes())
+            output.unlink()
+            output.with_name(output.name + ".sha256").unlink()
+            with self.assertRaises(AssertionError):
+                SMOKE.write_evidence(output, VERSION, ARCH, package, archive, before,
+                                     {**checks, "installer": False})
+            with self.assertRaises(AssertionError):
+                SMOKE.write_evidence(output, VERSION, ARCH, package, archive, before,
+                                     {**checks, "installer": 1})
+            self.assertFalse(output.exists())
+            package.write_bytes(b"changed package")
+            with self.assertRaises(AssertionError):
+                SMOKE.write_evidence(output, VERSION, ARCH, package, archive, before, checks)
+            self.assertFalse(output.exists())
+
+
+if __name__ == "__main__":
+    unittest.main()

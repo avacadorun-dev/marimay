@@ -4,7 +4,7 @@
 
 #include "mmay/build_config.h"
 #include "mmay/native/runtime_artifact.h"
-#include "mmay/native/toolchain.h"
+#include "mmay/native/host_toolchain.h"
 
 typedef struct MarimayCliDoctorState {
     MarimayNativeRuntimeArtifact debug;
@@ -12,6 +12,7 @@ typedef struct MarimayCliDoctorState {
     MarimayNativeRuntimeArtifactStatus debug_status;
     MarimayNativeRuntimeArtifactStatus release_status;
     MarimayNativeToolchainStatus compiler_status;
+    MarimayNativeHostToolchain compiler;
     MarimayOwnedBytes compiler_output;
     const char *layout;
     bool ok;
@@ -90,16 +91,22 @@ static bool mmay_cli_doctor_write_json(
             "\"},\"layout\":")
         && mmay_cli_doctor_json_string(writer, state->layout)
         && mmay_writer_write_cstr(writer, ",\"compiler\":{\"path\":")
-        && mmay_cli_doctor_json_string(writer, MMAY_NATIVE_C_COMPILER)
+        && mmay_cli_doctor_json_string(writer, state->compiler.path)
         && mmay_writer_write_cstr(writer, ",\"id\":")
-        && mmay_cli_doctor_json_string(writer, MMAY_NATIVE_C_COMPILER_ID)
+        && mmay_cli_doctor_json_string(writer, state->compiler.id)
         && mmay_writer_write_cstr(writer, ",\"version\":")
-        && mmay_cli_doctor_json_string(writer, MMAY_NATIVE_C_COMPILER_VERSION)
+        && mmay_cli_doctor_json_string(writer, state->compiler.version)
         && mmay_writer_write_cstr(writer, ",\"available\":")
         && mmay_writer_write_cstr(
             writer, state->compiler_status == MMAY_NATIVE_TOOLCHAIN_OK
                 ? "true" : "false"
-        ) && mmay_writer_write_cstr(writer, "},\"runtimes\":{\"debug\":")
+        ) && mmay_writer_write_cstr(writer, ",\"policy\":")
+        && mmay_cli_doctor_json_string(writer, state->compiler.policy)
+        && mmay_writer_write_cstr(writer, ",\"build\":")
+        && mmay_cli_doctor_json_string(writer, state->compiler.build)
+        && mmay_writer_write_cstr(writer, ",\"target\":")
+        && mmay_cli_doctor_json_string(writer, state->compiler.target)
+        && mmay_writer_write_cstr(writer, "},\"runtimes\":{\"debug\":")
         && mmay_cli_doctor_json_runtime(
             writer, state->debug_status, &state->debug
         ) && mmay_writer_write_cstr(writer, ",\"release\":")
@@ -138,9 +145,18 @@ static bool mmay_cli_doctor_write_human(
         && mmay_writer_write_cstr(
             writer, state->compiler_status == MMAY_NATIVE_TOOLCHAIN_OK
                 ? "ok " : "missing "
-        ) && mmay_writer_write_cstr(writer, MMAY_NATIVE_C_COMPILER)
-        && mmay_writer_write_cstr(writer, " (" MMAY_NATIVE_C_COMPILER_ID " "
-            MMAY_NATIVE_C_COMPILER_VERSION ")\n")
+        ) && mmay_writer_write_cstr(writer, state->compiler.path)
+        && mmay_writer_write_cstr(writer, " (")
+        && mmay_writer_write_cstr(writer, state->compiler.id)
+        && mmay_writer_write_cstr(writer, " ")
+        && mmay_writer_write_cstr(writer, state->compiler.version)
+        && mmay_writer_write_cstr(writer, "; ")
+        && mmay_writer_write_cstr(writer, state->compiler.policy)
+        && mmay_writer_write_cstr(writer, state->compiler.portable_macos ? "; " : "")
+        && mmay_writer_write_cstr(writer, state->compiler.build)
+        && mmay_writer_write_cstr(writer, state->compiler.portable_macos ? "; " : "")
+        && mmay_writer_write_cstr(writer, state->compiler.target)
+        && mmay_writer_write_cstr(writer, ")\n")
         && mmay_cli_doctor_human_runtime(
             writer, "runtime-debug", state->debug_status, &state->debug
         ) && mmay_cli_doctor_human_runtime(
@@ -158,9 +174,11 @@ int mmay_cli_doctor(
     MarimayCliDoctorState state;
     bool written;
     memset(&state, 0, sizeof(state));
-    state.compiler_status = mmay_native_toolchain_probe(
-        session->allocator, MMAY_NATIVE_C_COMPILER,
-        MMAY_NATIVE_C_COMPILER_VERSION, &state.compiler_output
+    state.layout = mmay_native_host_toolchain_is_installed(options->tool_executable_path)
+        ? "installed" : "build-tree";
+    state.compiler_status = mmay_native_host_toolchain_probe(
+        session->allocator, options->tool_executable_path, NULL,
+        &state.compiler, &state.compiler_output
     );
     state.debug_status = mmay_native_runtime_artifact_select(
         session->allocator, MMAY_NATIVE_RUNTIME_DEBUG,
@@ -178,9 +196,6 @@ int mmay_cli_doctor(
         mmay_owned_bytes_dispose(&state.compiler_output);
         return MMAY_EXIT_INTERNAL;
     }
-    state.layout = strcmp(
-        options->tool_executable_path, MMAY_NATIVE_BUILD_TREE_EXECUTABLE_PATH
-    ) == 0 ? "build-tree" : "installed";
     state.ok = state.compiler_status == MMAY_NATIVE_TOOLCHAIN_OK
         && state.debug_status == MMAY_NATIVE_RUNTIME_ARTIFACT_OK
         && state.release_status == MMAY_NATIVE_RUNTIME_ARTIFACT_OK;

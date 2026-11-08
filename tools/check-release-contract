@@ -54,7 +54,7 @@ EXPECTED = {
     "MMAY_STANDARD_LIBRARY_SCOPE": "bounded-preview",
     "MMAY_STANDARD_LIBRARY_COMPATIBILITY": "alpha-source",
     "MMAY_VERSION_SCHEMA": "marimay.version/2",
-    "MMAY_RELEASE_CHANNEL": "private-preview",
+    "MMAY_RELEASE_CHANNEL": "experimental-alpha",
     "MMAY_RELEASE_CLAIM": "local-checker-backed-slice",
     "MMAY_RELEASE_PUBLICATION_READY_JSON": "false",
 }
@@ -223,7 +223,7 @@ def validate_release_files() -> list[str]:
     candidate = read(CANDIDATE)
     required_doc_text = (
         "Version: `0.1.0-alpha.1`",
-        "Channel: `private-preview`",
+        "Channel: `experimental-alpha`",
         "Claim: `local-checker-backed-slice`",
         "Publication ready: `no`",
         "Bytecode: `unavailable`, compatibility `none`",
@@ -231,7 +231,10 @@ def validate_release_files() -> list[str]:
     for needle in required_doc_text:
         if needle not in limitations:
             findings.append(f"docs/known-limitations.md: missing {needle!r}")
-    for needle in ("0.1.0-alpha.1", "private-preview", "marimay.version/2", "not a published release"):
+    for needle in (
+        "0.1.0-alpha.1", "experimental-alpha", "marimay.version/2",
+        "Publication ready: `no`", "D114", "CLI0", "CP40", "unsigned", "unnotarized",
+    ):
         if needle not in candidate:
             findings.append(f"docs/releases/0.1.0-alpha.1.md: missing {needle!r}")
 

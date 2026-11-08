@@ -2,7 +2,7 @@
 
 Status: normative design baseline.
 
-The identity mapping is normative: the language/product name is **Marimay**, the toolchain executable is `mmay`, source files use `.my`, bytecode bundles use `.myb`, module/workspace/lock files are `mmay.mod`, `mmay.work`, and `mmay.lock`, and local tool state uses `.mmay/`. The former `ma`/`.ma`/`ma.*`/`.mab`/`.ma/` names are historical and are not compatibility aliases. D001 records this as a semantics-neutral pre-release rename. Under D112, a public MIT source repository may host the personal learning project without claiming release readiness. N0 still blocks toolchain release distribution until legal review, domains, public accounts, package/registry namespaces, signing identity, and command/PATH coexistence have direct evidence; this specification does not claim that any such external identity is available or controlled.
+The identity mapping is normative: the language/product name is **Marimay**, the toolchain executable is `mmay`, source files use `.my`, bytecode bundles use `.myb`, module/workspace/lock files are `mmay.mod`, `mmay.work`, and `mmay.lock`, and local tool state uses `.mmay/`. The former `ma`/`.ma`/`ma.*`/`.mab`/`.ma/` names are historical and are not compatibility aliases. D001 records this as a semantics-neutral pre-release rename. Under D112, a public MIT source repository may host the personal learning project without claiming release readiness. D114 separately authorizes a bounded experimental macOS prerelease under section 9.2. N0 still blocks the broader CLI0/supported toolchain release until legal review, domains, public accounts, package/registry namespaces, signing identity, and command/PATH coexistence have direct evidence; the experimental prerelease does not claim that any such external identity is available or controlled.
 
 Installing Marimay installs one user-facing executable named `mmay`. The formatter, test runner, compiler, VM, package resolver, documentation generator, vet checks, fuzz driver, and bootstrap metadata are versioned together.
 
@@ -573,6 +573,10 @@ public-entry translation unit and performs no compiler invocation. These paths
 never access the network or read a project-selected `CC` value.
 
 The distribution-selected compiler is preflighted before C generation.
+Under D114, an explicitly enabled portable installed macOS distribution uses
+the local system Apple toolchain policy in section 6.4. Other/default policies
+retain their build-time compiler pin. This selection never changes the exact
+producer checks on shipped runtime manifests and archive markers.
 Unavailable tooling is `B0002`; compiler-owned C emission failure is `B0003`;
 host rejection of generated C is `B0004`; cache/output publication failure is
 `B0005`; and an unsupported semantic host is `B0006`. Raw compiler/linker
@@ -606,11 +610,32 @@ mmay doctor --json
 
 `doctor` is project-independent and offline. It resolves the running `mmay`
 executable, classifies its layout as `build-tree` or `installed`, starts the
-distribution-pinned host C compiler with its harmless identity probe, and
+distribution-selected host C compiler with its harmless identity probe, and
 validates both debug and release runtime manifests, embedded markers, archives,
 headers, and common version/host/compiler identities. It does not create
 `.mmay`, emit C, link, read a module, inspect `CC`, search `PATH` for a different
 compiler, or contact a network.
+
+D114's explicit portable installed macOS mode invokes probes and compilation
+through the fixed command prefix
+`/usr/bin/env -i PATH=/usr/bin:/bin:/usr/sbin:/sbin LC_ALL=C /usr/bin/clang`.
+The package architecture (`arm64` or `x86_64`) and macOS 15.0 deployment target
+are explicit. Only AppleClang 16 or newer with a bounded valid numeric identity
+and compatible Apple/macOS target is accepted. System Apple developer tools
+must be installed and configured; missing, foreign, malformed, old, failing
+or target-incompatible tools fail without an environment-selected fallback.
+The cleared child environment excludes user compiler/SDK overrides and keeps
+the system's configured developer-tool selection platform-owned.
+
+This mode is explicitly enabled for a macOS distribution and active only for
+installed lookup. Build-tree and default Linux/Windows/macOS lookup retain
+their exact configured compiler path/version. Installed runtime validation
+continues to compare the exact producer compiler identity, runtime version,
+profile, manifests and embedded markers. It does not compare that producer
+version to a compatible newer local compiler. Doctor reports the actual local
+selection; native cache identity includes its actual version/build, target and
+selection policy alongside the unchanged runtime-content identities. A local
+toolchain change cannot silently reuse a producer-only cache identity.
 
 Human output contains the fixed ordered rows `toolchain`, `host`, `layout`,
 `compiler`, `runtime-debug`, and `runtime-release`, followed by `doctor: ok` or
@@ -622,13 +647,20 @@ fails. `--json` writes one compact object and LF with this required shape:
  "toolchain":{"compiler":"V","runtime":"V"},
  "host":{"system":"S","processor":"P"},
  "layout":"build-tree|installed",
- "compiler":{"path":"...","id":"...","version":"...","available":BOOL},
+ "compiler":{"path":"...","id":"...","version":"...","available":BOOL,
+             "policy":"pinned|macos-system-clang-v1","build":"...","target":"..."},
  "runtimes":{"debug":{"status":"ok|missing|incompatible","path":"..."},
              "release":{"status":"ok|missing|incompatible","path":"..."}}}
 ```
 
 Strings use JSON escaping and paths are the exact bounded UTF-8 paths selected
-by the distribution. Healthy output exits `0`; a missing or incompatible
+by the distribution. Portable mode reports `/usr/bin/clang`, `AppleClang`, the
+actual numeric `major.minor.patch` version, complete Apple build tag, and
+validated target triple. Its failed probe reports empty version/build/target
+instead of the producer's identity. Pinned mode preserves its configured
+path/id/version and reports empty build/target. These additive selection fields
+retain the `marimay.doctor/1` schema. Healthy output exits `0`; a missing or
+incompatible
 compiler/runtime/header layout exits `1`; invalid options exit `2`; allocation,
 path-discovery, or output failure exits `70`. Human wording can improve, but
 the schema name, fields, enum spellings, booleans, and exit classes are stable
@@ -778,7 +810,50 @@ profiles or `PATH`. A foreign existing `bin/mmay`, read-only destination,
 interruption, incomplete archive, or checksum mismatch fails without publishing
 a partial installed version.
 
-The following commands are the minimum project release gate:
+### 9.2 Owner-authorized experimental macOS prerelease
+
+D114 authorizes the first `v0.1.0-alpha.1` GitHub prerelease for macOS 15+ on
+Apple Silicon and Intel. Its claim is the checker-backed local slice, not
+CLI0 completion or production support. `publicationReady: false` continues to
+record incomplete CLI0/CP40 readiness; it does not revoke the owner's separate
+authorization to distribute this experimental preview. The release is unsigned
+and unnotarized. Native builds require compatible installed Apple Command Line
+Tools under section 6.4; no registry, portable bytecode, cross-compilation,
+networking/tasks, LSP, FFI, self-hosting or performance-parity claim is added.
+
+Each architecture has `marimay-V-darwin-ARCH.tar.gz` and
+`marimay-V-darwin-ARCH.pkg` with lowercase SHA-256 siblings. The archive is the
+complete section 9.1 prefix. The standard macOS package installs a candidate
+prefix at `/usr/local/lib/marimay/V`, validates the complete payload and
+ownership, then atomically activates an owned POSIX wrapper at
+`/usr/local/bin/mmay` that executes the absolute real binary. It creates no
+executable symlink and edits neither shell profiles nor PATH. The package
+requires the matching host architecture and macOS 15 or newer.
+
+Preinstall refuses every existing candidate version prefix, including a
+same-version reinstall or incomplete prior attempt, without modifying it.
+Upgrades use a fresh version slot. Foreign or modified command collisions fail
+without replacing the active command. The new wrapper is activated last by
+atomic rename only after validation; failure preserves the old active command.
+This is atomic command activation, not atomic file-by-file Installer payload
+installation. Installer manages receipts and inactive payloads; cleanup of a
+failed slot is an explicit user recovery action after ownership inspection.
+No failed install may automatically delete unrelated or modified files.
+
+Tag and manual publication resolve the exact alpha tag to one immutable main
+commit. Complete repository CI and security, both architecture full suites,
+installed VM/native debug/release checks, package/archive inventory and
+checksums must pass for that commit before upload/publication. Only the
+publishing job has repository write permission. It revalidates tag and asset
+identity, uploads to a draft, and publishes the complete validated draft as a
+prerelease. Existing published assets cannot be overwritten; a correction
+requires a new alpha sequence. Failure or identity mismatch leaves the public
+release unpublished. Full-history publication and secret checks retain all
+their rules. This publication changes no roadmap gate state; all broader
+CLI0, CP40 and N0 evidence requirements remain in force.
+
+The following commands are the minimum broader project release gate; staged
+commands are not experimental-alpha availability promises:
 
 ```sh
 mmay fmt --check
@@ -808,14 +883,18 @@ Under D064, compiler, runtime, and standard library share the
 `0.1.0-alpha.N` line. `N` is a positive decimal sequence without leading
 zeroes. Version is not publication state: the required `release` object also
 contains the channel, bounded claim, and `publicationReady` boolean. The
-closed pre-1.0 channels are `private-preview`, `cli-alpha`,
+closed pre-1.0 channels are `private-preview`, `experimental-alpha`, `cli-alpha`,
 `concurrency-pilot`, `ecosystem-alpha`, `beta`, and `rc`.
 
-The Stage 0 CP29 candidate is channel `private-preview`, claim
-`local-checker-backed-slice`, and `publicationReady: false`. Its available
-commands are exactly `build`, `check`, `fmt`, `help`, `run`, `test`, and
-`version`. Every other recognized command is staged and fails with `U0003` if
-invoked. Staged commands are not everyday workflow promises. In particular,
+The current Stage 0 D114 candidate is channel `experimental-alpha`, claim
+`local-checker-backed-slice`, and `publicationReady: false`. The historical
+CP29 channel was `private-preview`; D114 adds an explicitly authorized
+experimental distribution without closing CLI0/CP40. The readiness boolean
+records that broader audit, not whether an experimental upload was authorized.
+Available commands are exactly `build`, `check`, `doctor`, `fmt`, `help`, `init`,
+`run`, `test`, and `version`. Every other recognized command is staged and
+fails with `U0003` if invoked. Staged commands are not everyday workflow
+promises. In particular,
 `explain` remains staged under I8 until its installed offline reference owner
 exists.
 

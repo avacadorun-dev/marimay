@@ -357,7 +357,9 @@ Evidence: [rebaseline](evidence/cp28-release-rebaseline-2026-08-22.md) and
 CP29–CP40 deliver a bounded local CLI alpha, not P0. Networking, I6 tasks,
 registry/dependency workflows, production LSP/test tooling, FFI, public
 portable bytecode, cross compilation, desktop support, and self-hosting are
-excluded. N0 and claimed platform evidence still block publication. CP28→CP29
+excluded. N0 and claimed platform evidence still block completed CLI0
+publication. D114 separately authorizes an experimental macOS preview without
+closing these gates or changing checkpoint states. CP28→CP29
 is the explicit transition from the completed algorithm foundation to product
 alpha work. CP41 changes no CLI0 source surface; it is the separate I4
 performance prerequisite inserted between CP38 and CP39.
@@ -1332,7 +1334,8 @@ distribution decision with install layout, relocatability, upgrade/uninstall,
 host-toolchain ownership, `mmay init`, human/JSON `mmay doctor`, native-run
 cache/arguments/capabilities, artifact names, installed std/offline docs,
 source/per-host archives, checksums, provenance, and SBOM. N0 must be ready for
-closure but publication remains CP40 and user-authorized.
+closure but completed CLI0 publication remains CP40 and user-authorized.
+D114's separate experimental preview does not verify this checkpoint.
 
 ### In scope
 

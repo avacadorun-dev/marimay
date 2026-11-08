@@ -142,6 +142,8 @@ add_executable(mmay_c_unit
   test_cli_cp18_array_spelling.c
   test_cli_cp20_algorithm_corpus.c
   test_cli_cp39.c
+  test_native_host_toolchain.c
+  test_native_build_cache.c
   test_compiler_service.c
   test_compiler_service_array_types.c
   test_compiler_service_incremental.c
@@ -282,6 +284,7 @@ target_include_directories(mmay_c_unit PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/../fuzz"
   "${CMAKE_SOURCE_DIR}/bootstrap/src/cli"
   "${CMAKE_SOURCE_DIR}/bootstrap/src/bytecode"
+  "${CMAKE_SOURCE_DIR}/bootstrap/src/native"
 )
 target_compile_definitions(mmay_c_unit PRIVATE
   MMAY_TEST_C_COMPILER="${CMAKE_C_COMPILER}"
@@ -501,6 +504,7 @@ mmay_add_focused_checkpoint_test(cp39 1)
 add_test(
   NAME mmay_install_relocation
   COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_PORTABLE_MACOS_TOOLCHAIN=${MMAY_PORTABLE_MACOS_TOOLCHAIN}"
     "-DMMAY_TEST_PYTHON=${Python3_EXECUTABLE}"
     "-DMMAY_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
     "-DMMAY_TEST_CONFIG=$<CONFIG>"

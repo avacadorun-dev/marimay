@@ -86,6 +86,23 @@ endfunction()
 mmay_cp13_build(debug "${debug_output}")
 mmay_cp13_build(release "${release_output}")
 
+if(APPLE AND MMAY_TEST_PORTABLE_MACOS_TOOLCHAIN)
+  execute_process(
+    COMMAND "${MMAY_TEST_PYTHON}"
+      "${CMAKE_CURRENT_LIST_DIR}/test_native_host_toolchain.py"
+      "${tool}" "${relocated}/host policy regression"
+    RESULT_VARIABLE host_policy_result
+    OUTPUT_VARIABLE host_policy_stdout
+    ERROR_VARIABLE host_policy_stderr
+  )
+  if(NOT host_policy_result EQUAL 0 OR NOT host_policy_stdout STREQUAL ""
+      OR NOT host_policy_stderr STREQUAL "")
+    message(FATAL_ERROR
+      "cp13 portable host policy failed (${host_policy_result})\n${host_policy_stdout}${host_policy_stderr}"
+    )
+  endif()
+endif()
+
 execute_process(
   COMMAND "${MMAY_TEST_PYTHON}"
     "${CMAKE_CURRENT_LIST_DIR}/test_native_build_outputs.py"

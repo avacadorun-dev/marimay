@@ -1,4 +1,4 @@
-#include "mmay/native/build.h"
+#include "build_internal.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -7,6 +7,7 @@
 #include "mmay/base/hash.h"
 #include "mmay/build_config.h"
 #include "mmay/native/c_emitter.h"
+#include "mmay/native/host_toolchain.h"
 #include "mmay/native/toolchain.h"
 #include "mmay/platform/directory.h"
 #include "mmay/platform/file.h"
@@ -147,13 +148,14 @@ cleanup:
     return status;
 }
 
-static bool mmay_native_build_hash(
+bool mmay_native_build_hash(
     const MarimayOwnedBytes *source,
     const MarimayNativeBuildRequest *request,
     const MarimayNativeRuntimeArtifact *runtime,
+    const MarimayNativeHostToolchain *toolchain,
     char output[65]
 ) {
-    static const char contract[] = "mmay-native-build-cache-v5";
+    static const char contract[] = "mmay-native-build-cache-v6";
     static const char emit_only[] = "emit-c-without-linked-runtime";
     MarimaySha256 hash;
     unsigned char digest[32];
@@ -170,6 +172,9 @@ static bool mmay_native_build_hash(
             sizeof(MMAY_NATIVE_C_COMPILER_ID) - 1)
         || !mmay_sha256_update(&hash, MMAY_NATIVE_C_COMPILER_VERSION,
             sizeof(MMAY_NATIVE_C_COMPILER_VERSION) - 1)
+        || !mmay_sha256_update(&hash,
+            toolchain != NULL ? toolchain->fingerprint : "emit-c-without-host-toolchain",
+            toolchain != NULL ? 64 : sizeof("emit-c-without-host-toolchain") - 1)
         || !mmay_sha256_update(&hash, MMAY_HOST_SYSTEM,
             sizeof(MMAY_HOST_SYSTEM) - 1)
         || !mmay_sha256_update(&hash, MMAY_HOST_PROCESSOR,
@@ -255,12 +260,11 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     MarimayAllocator allocator,
     const MarimayNativeBuildRequest *request,
     const MarimayNativeRuntimeArtifact *runtime,
+    const MarimayNativeHostToolchain *toolchain,
     const MarimayOwnedBytes *source_path,
     const char *destination,
     MarimayOwnedBytes *tool_output
 ) {
-    const char *compiler = request->compiler_path != NULL
-        ? request->compiler_path : MMAY_NATIVE_C_COMPILER;
     MarimayOwnedBytes temporary = {0};
     char bootstrap_include[MMAY_NATIVE_BUILD_MAX_PATH + 4];
     char runtime_include[MMAY_NATIVE_BUILD_MAX_PATH + 4];
@@ -269,7 +273,7 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     char object_path[MMAY_NATIVE_BUILD_MAX_PATH + 1];
     size_t object_path_length = 0;
 #endif
-    const char *arguments[32];
+    const char *arguments[40];
     size_t argument_count = 0;
     int written = 0;
     MarimayProcessResult process;
@@ -287,6 +291,10 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
         NULL, allocator, (const char *)temporary.data, temporary.length
     );
     memset(&process, 0, sizeof(process));
+    argument_count = mmay_native_host_toolchain_command(
+        toolchain, arguments, sizeof(arguments) / sizeof(arguments[0])
+    );
+    if (argument_count == 0) goto limit;
 #if defined(_WIN32)
     written = snprintf(object_path, sizeof(object_path),
         "%s.obj", (const char *)source_path->data);
@@ -298,7 +306,6 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     written = snprintf(runtime_include, sizeof(runtime_include),
         "%s", (const char *)runtime->runtime_include.data);
     if (written < 0 || (size_t)written >= sizeof(runtime_include)) goto limit;
-    arguments[argument_count++] = compiler;
     arguments[argument_count++] = "/nologo";
     arguments[argument_count++] = "/std:c17";
     arguments[argument_count++] = "/utf-8";
@@ -333,7 +340,6 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     written = snprintf(runtime_include, sizeof(runtime_include),
         "-I%s", (const char *)runtime->runtime_include.data);
     if (written < 0 || (size_t)written >= sizeof(runtime_include)) goto limit;
-    arguments[argument_count++] = compiler;
     arguments[argument_count++] = "-std=c17";
     arguments[argument_count++] = request->release ? "-O2" : "-O0";
     arguments[argument_count++] = "-Wall";
@@ -435,6 +441,7 @@ MarimayNativeBuildStatus mmay_native_build(
     MarimayNativeCEmitOptions emit_options;
     MarimayNativeCEmitStatus emit_status;
     MarimayNativeRuntimeArtifact runtime = {0};
+    MarimayNativeHostToolchain toolchain = {0};
     MarimayNativeRuntimeArtifactStatus runtime_status;
     MarimayOwnedBytes source = {0};
     MarimayOwnedBytes directory = {0};
@@ -466,11 +473,9 @@ MarimayNativeBuildStatus mmay_native_build(
         }
         {
             MarimayNativeToolchainStatus toolchain_status =
-                mmay_native_toolchain_probe(
-                    allocator,
-                    request->compiler_path != NULL
-                        ? request->compiler_path : MMAY_NATIVE_C_COMPILER,
-                    MMAY_NATIVE_C_COMPILER_VERSION,
+                mmay_native_host_toolchain_probe(
+                    allocator, request->tool_executable_path, request->compiler_path,
+                    &toolchain,
                     &result->tool_output
                 );
             if (toolchain_status != MMAY_NATIVE_TOOLCHAIN_OK) {
@@ -520,7 +525,8 @@ MarimayNativeBuildStatus mmay_native_build(
         goto cleanup;
     }
     if (!mmay_native_build_hash(
-            &source, request, request->emit_c ? NULL : &runtime, hash
+            &source, request, request->emit_c ? NULL : &runtime,
+            request->emit_c ? NULL : &toolchain, hash
         )) {
         status = MMAY_NATIVE_BUILD_LIMIT_REACHED;
         goto cleanup;
@@ -584,14 +590,14 @@ MarimayNativeBuildStatus mmay_native_build(
         goto cleanup;
     } else {
         status = mmay_native_build_compile(
-            allocator, request, &runtime, &source_path,
+            allocator, request, &runtime, &toolchain, &source_path,
             (const char *)cache_artifact.data, &result->tool_output
         );
         if (status != MMAY_NATIVE_BUILD_OK) goto cleanup;
     }
     if (request->output_path != NULL) {
         status = mmay_native_build_compile(
-            allocator, request, &runtime, &source_path, request->output_path,
+            allocator, request, &runtime, &toolchain, &source_path, request->output_path,
             &result->tool_output
         );
         if (status != MMAY_NATIVE_BUILD_OK) goto cleanup;

@@ -1,0 +1,199 @@
+# D114 installer primitives. Sourced only by this package's pre/post scripts.
+MMAY_VERSION='@VERSION@'
+MMAY_ARCH='@ARCH@'
+MMAY_MANIFEST_SHA256='@MANIFEST_SHA256@'
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+LC_ALL=C
+export PATH LC_ALL
+umask 077
+
+mmay_die() { printf '%s\n' "Marimay installer: $*" >&2; exit 1; }
+
+mmay_component() {
+    case "$1" in ''|.|..|*[!A-Za-z0-9._-]*) return 1;; esac
+    case "$1" in [A-Za-z0-9]*) return 0;; *) return 1;; esac
+}
+
+mmay_physical() {
+    case "$1" in /*) ;; *) mmay_die 'destination must be absolute';; esac
+    mmay_rest=${1#/}
+    mmay_cursor=
+    while [ -n "$mmay_rest" ]; do
+        case "$mmay_rest" in
+            */*) mmay_part=${mmay_rest%%/*}; mmay_rest=${mmay_rest#*/};;
+            *) mmay_part=$mmay_rest; mmay_rest=;;
+        esac
+        case "$mmay_part" in ''|.|..) mmay_die 'noncanonical destination';; esac
+        mmay_cursor=$mmay_cursor/$mmay_part
+        [ ! -L "$mmay_cursor" ] || mmay_die 'destination contains a symbolic link'
+        if [ -n "$mmay_rest" ] && [ -e "$mmay_cursor" ] && [ ! -d "$mmay_cursor" ]; then
+            mmay_die 'destination ancestor is not a directory'
+        fi
+    done
+}
+
+mmay_platform_values() {
+    [ "$1" = Darwin ] || mmay_die 'package requires macOS'
+    [ "$2" = "$MMAY_ARCH" ] || mmay_die 'package architecture does not match this Mac'
+    mmay_major=${3%%.*}
+    case "$mmay_major" in ''|*[!0-9]*) mmay_die 'cannot determine macOS version';; esac
+    [ "$mmay_major" -ge 15 ] || mmay_die 'package requires macOS 15 or newer'
+}
+
+mmay_platform() {
+    mmay_platform_values "$(/usr/bin/uname -s)" "$(/usr/bin/uname -m)" \
+        "$(/usr/bin/sw_vers -productVersion)"
+}
+
+mmay_directories() {
+    mmay_physical "$1"
+    mmay_rest=${1#/}
+    mmay_cursor=
+    while [ -n "$mmay_rest" ]; do
+        case "$mmay_rest" in
+            */*) mmay_part=${mmay_rest%%/*}; mmay_rest=${mmay_rest#*/};;
+            *) mmay_part=$mmay_rest; mmay_rest=;;
+        esac
+        mmay_cursor=$mmay_cursor/$mmay_part
+        if [ -e "$mmay_cursor" ]; then
+            [ -d "$mmay_cursor" ] || mmay_die 'command ancestor is not a directory'
+        else
+            /bin/mkdir -m 755 "$mmay_cursor" || mmay_die 'cannot create command directory'
+        fi
+    done
+}
+
+mmay_setup() {
+    [ "$#" -ge 3 ] || mmay_die 'Installer target arguments are missing'
+    mmay_volume=${3%/}
+    [ -n "$mmay_volume" ] || mmay_volume=
+    case "$3" in /*) ;; *) mmay_die 'Installer target volume must be absolute';; esac
+    mmay_physical "${mmay_volume}/usr/local/lib/marimay/$MMAY_VERSION"
+    mmay_physical "${mmay_volume}/usr/local/bin/mmay"
+    MMAY_BASE=${mmay_volume}/usr/local/lib/marimay
+    MMAY_CANDIDATE=$MMAY_BASE/$MMAY_VERSION
+    MMAY_COMMAND=${mmay_volume}/usr/local/bin/mmay
+    MMAY_WORK=$(/usr/bin/mktemp -d /tmp/mmay-installer.XXXXXX) || mmay_die 'cannot create private workspace'
+    MMAY_WRAPPER_TEMP=
+    trap 'if [ -n "$MMAY_WRAPPER_TEMP" ]; then /bin/rm -f "$MMAY_WRAPPER_TEMP"; fi; /bin/rm -rf "$MMAY_WORK"' 0
+    trap 'exit 1' 1 2 3 15
+}
+
+mmay_wrapper() {
+    printf '#!/bin/sh\n# Marimay managed launcher; format=1\nexec "/usr/local/lib/marimay/%s/bin/mmay" "$@"\n' "$1"
+}
+
+mmay_verify_prefix() {
+    mmay_root=$1
+    mmay_version=$2
+    mmay_exact=$3
+    mmay_physical "$mmay_root"
+    [ -d "$mmay_root" ] || mmay_die 'owned prefix is missing'
+    mmay_manifest_relative=share/mmay/$mmay_version/checksums.sha256
+    mmay_manifest=$mmay_root/$mmay_manifest_relative
+    mmay_physical "$mmay_manifest"
+    [ -f "$mmay_manifest" ] || mmay_die 'owned checksum manifest is missing'
+    mmay_files=$MMAY_WORK/files
+    mmay_paths=$MMAY_WORK/paths
+    : > "$mmay_files"
+    printf '%s\n' "$mmay_manifest_relative" > "$mmay_paths"
+    mmay_count=0
+    while IFS= read -r mmay_line || [ -n "$mmay_line" ]; do
+        case "$mmay_line" in *'  '*) ;; *) mmay_die 'malformed checksum manifest';; esac
+        mmay_hash=${mmay_line%%  *}
+        mmay_relative=${mmay_line#*  }
+        [ "${#mmay_hash}" -eq 64 ] || mmay_die 'malformed checksum digest'
+        case "$mmay_hash" in *[!0-9a-f]*) mmay_die 'malformed checksum digest';; esac
+        case "$mmay_relative" in
+            ''|.|..|/*|./*|../*|*/.|*/..|*/./*|*/../*|*//*|*\\*|*';'*|[A-Za-z]:*)
+                mmay_die 'unsafe checksum path';;
+        esac
+        if printf '%s' "$mmay_relative" | /usr/bin/grep -q '[[:cntrl:]]'; then
+            mmay_die 'control byte in checksum path'
+        fi
+        [ "$mmay_relative" != "$mmay_manifest_relative" ] || mmay_die 'self-referencing checksum manifest'
+        mmay_physical "$mmay_root/$mmay_relative"
+        [ -f "$mmay_root/$mmay_relative" ] || mmay_die 'owned file is missing'
+        mmay_actual=$(/usr/bin/shasum -a 256 "$mmay_root/$mmay_relative") || mmay_die 'cannot checksum owned file'
+        [ "${mmay_actual%% *}" = "$mmay_hash" ] || mmay_die 'owned file was modified'
+        printf '%s\n' "$mmay_relative" >> "$mmay_files"
+        printf '%s\n' "$mmay_relative" >> "$mmay_paths"
+        mmay_count=$((mmay_count + 1))
+    done < "$mmay_manifest"
+    [ "$mmay_count" -gt 0 ] || mmay_die 'empty checksum manifest'
+    /usr/bin/sort "$mmay_files" > "$MMAY_WORK/sorted-files"
+    [ -z "$(/usr/bin/uniq -d "$MMAY_WORK/sorted-files")" ] || mmay_die 'duplicate checksum path'
+    for mmay_required in bin/mmay include/mmay/runtime/core.h \
+        "lib/mmay/$mmay_version/native/debug/libmmay_native_runtime_debug.a" \
+        "lib/mmay/$mmay_version/native/release/libmmay_native_runtime_release.a" \
+        "lib/mmay/$mmay_version/native/debug/mmay-native-runtime.manifest" \
+        "lib/mmay/$mmay_version/native/release/mmay-native-runtime.manifest" \
+        "share/mmay/$mmay_version/mmay-release-metadata.json"; do
+        /usr/bin/grep -F -x -q "$mmay_required" "$mmay_files" || mmay_die 'required owned file is not inventoried'
+    done
+    [ -f "$mmay_root/bin/mmay" ] && [ -x "$mmay_root/bin/mmay" ] || mmay_die 'owned command is missing'
+    if [ "$mmay_exact" = yes ]; then
+        while IFS= read -r mmay_relative; do
+            mmay_parent=$mmay_relative
+            while [ "${mmay_parent%/*}" != "$mmay_parent" ]; do
+                mmay_parent=${mmay_parent%/*}
+                printf '%s\n' "$mmay_parent" >> "$mmay_paths"
+            done
+        done < "$mmay_files"
+        mmay_parent=$mmay_manifest_relative
+        while [ "${mmay_parent%/*}" != "$mmay_parent" ]; do
+            mmay_parent=${mmay_parent%/*}
+            printf '%s\n' "$mmay_parent" >> "$mmay_paths"
+        done
+        /usr/bin/sort -u "$mmay_paths" > "$MMAY_WORK/expected"
+        /usr/bin/find "$mmay_root" -mindepth 1 -print > "$MMAY_WORK/absolute-paths"
+        : > "$MMAY_WORK/actual-paths"
+        while IFS= read -r mmay_entry; do
+            case "$mmay_entry" in "$mmay_root"/*) ;; *) mmay_die 'invalid installed path';; esac
+            printf '%s\n' "${mmay_entry#"$mmay_root"/}" >> "$MMAY_WORK/actual-paths"
+        done < "$MMAY_WORK/absolute-paths"
+        /usr/bin/sort "$MMAY_WORK/actual-paths" > "$MMAY_WORK/actual"
+        /usr/bin/cmp -s "$MMAY_WORK/expected" "$MMAY_WORK/actual" || mmay_die 'candidate contains unlisted entries'
+    fi
+}
+
+mmay_command_owner() {
+    mmay_physical "$MMAY_COMMAND"
+    if [ ! -e "$MMAY_COMMAND" ]; then return; fi
+    [ -f "$MMAY_COMMAND" ] || mmay_die 'global command is foreign'
+    mmay_size=$(/usr/bin/wc -c < "$MMAY_COMMAND")
+    [ "$mmay_size" -le 1024 ] || mmay_die 'global command is foreign'
+    mmay_line=$(/usr/bin/sed -n '3{p;q;}' "$MMAY_COMMAND")
+    mmay_start='exec "/usr/local/lib/marimay/'
+    mmay_end='/bin/mmay" "$@"'
+    case "$mmay_line" in "$mmay_start"*"$mmay_end") ;; *) mmay_die 'global command is foreign';; esac
+    mmay_old=${mmay_line#"$mmay_start"}
+    mmay_old=${mmay_old%"$mmay_end"}
+    mmay_component "$mmay_old" || mmay_die 'global command has an unsafe version'
+    mmay_wrapper "$mmay_old" > "$MMAY_WORK/owned-wrapper"
+    /usr/bin/cmp -s "$MMAY_WORK/owned-wrapper" "$MMAY_COMMAND" || mmay_die 'global command was modified'
+    mmay_verify_prefix "$MMAY_BASE/$mmay_old" "$mmay_old" no
+}
+
+mmay_preinstall() {
+    [ ! -e "$MMAY_CANDIDATE" ] && [ ! -L "$MMAY_CANDIDATE" ] || \
+        mmay_die 'candidate version prefix already exists; inspect it before retrying'
+    mmay_command_owner
+}
+
+mmay_postinstall() {
+    mmay_manifest=$MMAY_CANDIDATE/share/mmay/$MMAY_VERSION/checksums.sha256
+    mmay_physical "$mmay_manifest"
+    [ -f "$mmay_manifest" ] || mmay_die 'candidate checksum manifest is missing'
+    mmay_actual=$(/usr/bin/shasum -a 256 "$mmay_manifest") || mmay_die 'cannot checksum candidate manifest'
+    [ "${mmay_actual%% *}" = "$MMAY_MANIFEST_SHA256" ] || mmay_die 'candidate checksum manifest changed'
+    mmay_verify_prefix "$MMAY_CANDIDATE" "$MMAY_VERSION" yes
+    mmay_command_owner
+    mmay_physical "$MMAY_COMMAND"
+    mmay_directories "${MMAY_COMMAND%/*}"
+    MMAY_WRAPPER_TEMP=$(/usr/bin/mktemp "${MMAY_COMMAND%/*}/.mmay-activate.XXXXXX") || mmay_die 'cannot stage global command'
+    mmay_wrapper "$MMAY_VERSION" > "$MMAY_WRAPPER_TEMP"
+    /bin/chmod 755 "$MMAY_WRAPPER_TEMP"
+    /bin/mv -f "$MMAY_WRAPPER_TEMP" "$MMAY_COMMAND" || mmay_die 'cannot activate global command'
+    MMAY_WRAPPER_TEMP=
+}

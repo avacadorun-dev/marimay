@@ -22,6 +22,27 @@ option(MMAY_ENABLE_ADDRESS_SANITIZER "Enable AddressSanitizer" OFF)
 option(MMAY_ENABLE_UNDEFINED_SANITIZER "Enable UndefinedBehaviorSanitizer" OFF)
 option(MMAY_ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
 option(MMAY_BUILD_FUZZERS "Build Clang libFuzzer frontend targets" OFF)
+option(MMAY_PORTABLE_MACOS_TOOLCHAIN
+  "Use the D114 system AppleClang policy for installed macOS tools" OFF)
+
+if(MMAY_PORTABLE_MACOS_TOOLCHAIN)
+  if(NOT APPLE OR NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    message(FATAL_ERROR "Portable macOS tooling requires a Darwin host")
+  endif()
+  if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|x86_64)$")
+    message(FATAL_ERROR "Portable macOS tooling requires arm64 or x86_64")
+  endif()
+  if(CMAKE_OSX_ARCHITECTURES AND
+      NOT CMAKE_OSX_ARCHITECTURES STREQUAL CMAKE_SYSTEM_PROCESSOR)
+    message(FATAL_ERROR "Portable macOS distributions use one native host architecture")
+  endif()
+  if(CMAKE_OSX_DEPLOYMENT_TARGET AND
+      NOT CMAKE_OSX_DEPLOYMENT_TARGET VERSION_EQUAL "15.0")
+    message(FATAL_ERROR "Portable macOS distributions require deployment target 15.0")
+  endif()
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0" CACHE STRING
+    "Minimum supported macOS version for the experimental distribution" FORCE)
+endif()
 
 mmay_configure_msvc_runtime_checks()
 
@@ -98,7 +119,7 @@ set(MMAY_STANDARD_LIBRARY_VERSION "0.1.0-alpha.1")
 set(MMAY_STANDARD_LIBRARY_SCOPE "bounded-preview")
 set(MMAY_STANDARD_LIBRARY_COMPATIBILITY "alpha-source")
 set(MMAY_VERSION_SCHEMA "marimay.version/2")
-set(MMAY_RELEASE_CHANNEL "private-preview")
+set(MMAY_RELEASE_CHANNEL "experimental-alpha")
 set(MMAY_RELEASE_CLAIM "local-checker-backed-slice")
 set(MMAY_RELEASE_PUBLICATION_READY_JSON "false")
 set(MMAY_AVAILABLE_COMMANDS_JSON
@@ -649,6 +670,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/native/build.c
   bootstrap/src/native/runtime_artifact.c
   bootstrap/src/native/toolchain.c
+  bootstrap/src/native/host_toolchain.c
   bootstrap/src/native/c_emitter.c
   bootstrap/src/native/c_emitter_array_fill.c
   bootstrap/src/native/c_emitter_bounds.c
@@ -835,6 +857,8 @@ install(DIRECTORY cmake tools
   USE_SOURCE_PERMISSIONS
   FILES_MATCHING
     PATTERN "package-distribution"
+    PATTERN "package-macos"
+    PATTERN "test-macos-install"
     PATTERN "check-*"
     PATTERN "generate-*"
     PATTERN "*.cmake"
@@ -901,6 +925,18 @@ if(BUILD_TESTING)
   add_subdirectory(tests/c-unit)
   find_package(Python3 COMPONENTS Interpreter QUIET)
   if(Python3_Interpreter_FOUND)
+    if(APPLE)
+      add_test(
+        NAME mmay_macos_package
+        COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+          -s "${CMAKE_CURRENT_SOURCE_DIR}/tools" -p test_package_macos.py
+      )
+      set_tests_properties(mmay_macos_package PROPERTIES
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        TIMEOUT 180 LABELS "distribution"
+        ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
+      )
+    endif()
     if(UNIX)
       add_test(
         NAME mmay_ci_diagnostics

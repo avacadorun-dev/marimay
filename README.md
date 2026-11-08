@@ -28,9 +28,12 @@ compilation through C17. Building both paths is part of the learning exercise.
 
 **Development status:** this is an experimental, publicly available source
 repository. The compiler identifies itself as `0.1.0-alpha.1` on the
-`private-preview` channel. That historical channel name describes its bounded
-implementation contract; this repository is not a published alpha release.
-Language compatibility, performance parity, and all-platform release acceptance
+`experimental-alpha` channel with the `local-checker-backed-slice` claim.
+The first binary prerelease targets macOS 15+ on Apple Silicon and Intel;
+see [macOS installation](docs/install-macos.md) and [GitHub Releases](https://github.com/marimay-lang/marimay/releases).
+It is unsigned and unnotarized. Native builds require Apple Command Line Tools.
+`publicationReady: false` records the unfinished broader CLI0/CP40 audit.
+Language compatibility, performance parity, and broader release acceptance
 remain open. See [known limitations](docs/known-limitations.md), the
 [release contract](docs/releases/0.1.0-alpha.1.md), and the
 [source publication policy](docs/security/publication.md).

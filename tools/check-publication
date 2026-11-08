@@ -119,22 +119,72 @@ def history():
             raise RuntimeError("git cat-file failed")
 
 
+def workflow_issues(text, label):
+    issues = []
+    for word in ("pull_request_target", "self-hosted", "secrets."):
+        if word in text:
+            issues.append(f"{label}: prohibited privileged trigger, runner, or secret context")
+    if not re.search(r"^permissions:\n  contents: read\n", text, re.M):
+        issues.append(f"{label}: explicit read-only contents permission required")
+    jobs = dict(re.findall(r"^  ([a-zA-Z0-9_-]+):\n(.*?)(?=^  [a-zA-Z0-9_-]+:|\Z)",
+                           text.split("\njobs:\n", 1)[-1], re.M | re.S))
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        permission = re.fullmatch(r"( *)permissions:(.*)", line)
+        if not permission:
+            continue
+        if permission[2].strip():
+            issues.append(f"{label}: permissions must use an explicit block mapping")
+            continue
+        indent = len(permission[1])
+        values = {}
+        for child in lines[index + 1:]:
+            if not child.strip() or child.lstrip().startswith("#"):
+                continue
+            child_indent = len(child) - len(child.lstrip(" "))
+            if child_indent <= indent:
+                break
+            entry = re.fullmatch(r" {" + str(indent + 2) + r"}([a-z-]+): (read|write|none)", child)
+            if not entry or entry[1] in values:
+                issues.append(f"{label}: ambiguous permission declaration")
+                continue
+            values[entry[1]] = entry[2]
+        writes = {key for key, value in values.items() if value == "write"}
+        if not writes:
+            continue
+        publish = jobs.get("publish", "")
+        gates = re.findall(r"^    (needs|if): (.+)$", publish, re.M)
+        expected_gates = [("needs", "[prepare, security, build, verified-ci]"),
+                          ("if", "github.event_name != 'pull_request' && needs.prepare.outputs.publish == 'true'")]
+        allowed = (label == ".github/workflows/release.yml" and indent == 4
+                   and values == {"contents": "write", "actions": "read"}
+                   and sorted(gates) == sorted(expected_gates)
+                   and "always()" not in publish and "continue-on-error" not in publish)
+        # Find this exact block's owning job; another job cannot borrow the
+        # approved publish declaration merely because publish also exists.
+        owner = None
+        for previous in lines[:index]:
+            match = re.fullmatch(r"  ([a-zA-Z0-9_-]+):", previous)
+            if match:
+                owner = match[1]
+        if not allowed or owner != "publish":
+            issues.append(f"{label}: write permission is restricted to the gated release publisher")
+    for match in re.finditer(r"uses:\s*([^\s#]+)", text):
+        local_security = (label == ".github/workflows/release.yml"
+                          and match[1] == "./.github/workflows/security.yml")
+        if not local_security and not re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", match[1]):
+            issues.append(f"{label}: action must be pinned to a full commit")
+    for block in text.split("uses: actions/checkout@")[1:]:
+        if "persist-credentials: false" not in block.split("      - name:", 1)[0]:
+            issues.append(f"{label}: checkout must not persist credentials")
+    return issues
+
+
 def workflows():
     issues = []
     for path in (ROOT / ".github/workflows").glob("*.yml"):
-        text = path.read_text()
         label = str(path.relative_to(ROOT))
-        for word in ("pull_request_target", "self-hosted", "secrets."):
-            if word in text:
-                issues.append(f"{label}: prohibited privileged trigger, runner, or secret context")
-        if "permissions:\n  contents: read\n" not in text:
-            issues.append(f"{label}: explicit read-only contents permission required")
-        for match in re.finditer(r"uses:\s*([^\s#]+)", text):
-            if not re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", match[1]):
-                issues.append(f"{label}: action must be pinned to a full commit")
-        for block in text.split("uses: actions/checkout@")[1:]:
-            if "persist-credentials: false" not in block.split("      - name:", 1)[0]:
-                issues.append(f"{label}: checkout must not persist credentials")
+        issues.extend(workflow_issues(path.read_text(), label))
     return issues
 
 

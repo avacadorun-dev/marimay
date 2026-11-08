@@ -11,8 +11,10 @@ gate, an acceptance command or manual evidence action, platform scope, and the
 largest claim that may eventually use the result.
 
 This matrix assigns work; it does not close a product gate. Until the named
-owner and CP40 audit pass, the current permitted claim is still only the
-private checker-backed preview. `excluded-from-cli0` rows remain product-gate
+owner and CP40 audit pass, the current permitted implementation claim is still
+only the checker-backed local slice. D114 separately authorizes publishing
+that slice as an experimental macOS prerelease; it does not complete this
+matrix or the `cli-alpha` gate. `excluded-from-cli0` rows remain product-gate
 work and cannot be pulled into the bounded alpha by documentation wording.
 
 The [baseline audit](evidence/cli0-baseline-audit-2026-09-07.md) reconciles all
@@ -42,7 +44,9 @@ previous bounded scope; they do not certify a fresh all-host result.
 - CP18/D054 left no `Array<T>` compatibility window. The alpha surface starts
   with `[]T`; the old spelling is neither an alias nor a staged migration.
 - CP29 does not mark N0 or I0–I5 verified. N0 and claimed-host evidence still
-  block any public alpha even after the bounded implementation cards land.
+  block the completed CLI0/`cli-alpha` claim even after bounded implementation
+  cards land. D114's explicitly experimental publication is a separate scope;
+  no owner, platform obligation or missing criterion is waived by it.
 - Acceptance commands in rows are the focused minimum. Each owner also runs
   the common validation tail and its card-specific sanitizer/fuzz/platform
   gates.

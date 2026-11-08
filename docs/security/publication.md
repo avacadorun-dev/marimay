@@ -9,6 +9,18 @@ product/platform release gates stay open. Public source availability does not
 clear trademarks, registries, domains, signing identities, PATH coexistence,
 alpha readiness, performance parity, or the target language feature set.
 
+The owner separately authorized the first experimental macOS prerelease under
+[D114](../design/decisions.md#d114-publish-a-bounded-experimental-macos-alpha).
+Its `experimental-alpha` metadata keeps the `local-checker-backed-slice` claim
+and `publicationReady: false`, which records incomplete CLI0/CP40 acceptance.
+That limited authorization does not close N0 or permit a supported `cli-alpha`
+claim, registry publication, signing, notarization or namespace reservation.
+The [release contract](../releases/0.1.0-alpha.1.md) and
+[CI gates](../ci.md#experimental-macos-release-flow) require exact-revision
+security, build/test/install and immutable-asset validation before release.
+Release checks preserve all source/history scanner rules. A failing metadata
+check is repaired at its source rather than accepted through an allowlist.
+
 ## History and privacy
 
 The initial public import preserves the committed `main` lineage, parent

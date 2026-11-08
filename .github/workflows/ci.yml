@@ -2,6 +2,7 @@ name: C17 bootstrap
 
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 
@@ -47,6 +48,8 @@ jobs:
           python3 -m unittest discover -s tools/ci-diagnostics -p 'test_*.py'
           python3 -m unittest discover -s tools/cli-acceptance -p 'test_*.py'
           python3 -m unittest discover -s tools/publication -p 'test_*.py'
+          python3 -m unittest discover -s tools/release -p 'test_*.py'
+          python3 -m unittest discover -s tools -p 'test_package_macos.py'
 
   c17:
     name: ${{ matrix.target.name }} / ${{ matrix.configuration }}

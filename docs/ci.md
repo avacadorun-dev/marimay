@@ -77,11 +77,13 @@ currently recognizes POSIX native-compiler paths.
 
 ## Permissions and outputs
 
-Actions are pinned to full commit IDs; Dependabot proposes updates. Workflows
-use `contents: read`, `persist-credentials: false`, bounded job timeouts, and no
-privileged pull-request trigger. Public forks run without secrets. No job
-publishes a release, deploys a site, writes a package registry, or contacts
-private development infrastructure.
+Actions are pinned to full commit IDs; Dependabot proposes updates. Validation
+jobs use `contents: read`, `persist-credentials: false`, bounded job timeouts,
+and no privileged pull-request trigger. Public forks run without secrets.
+Ordinary C17/source-security CI does not publish releases. The separately
+authorized experimental release flow grants `contents: write` only to its
+publishing job after validation. No workflow deploys a site, writes a package
+registry, or contacts private development infrastructure.
 
 The pinned Gitleaks archive uses GitHub's public release-asset API with bounded
 download retries and timeouts. Its SHA-256 is verified before extraction.
@@ -102,6 +104,50 @@ source; use it only on the clean public checkout. Artifact retention is bounded.
 The first public run provides fresh platform evidence. Migrating a job definition
 or passing a local check does not close any release gate. See
 [SECURITY.md](../SECURITY.md) for trust boundaries and private reporting.
+
+## Experimental macOS release flow
+
+[D114](design/decisions.md#d114-publish-a-bounded-experimental-macos-alpha)
+defines the owner-authorized `experimental-alpha` scope. A push of the exact
+`v0.1.0-alpha.1` tag or a manual request for that tag resolves one source commit
+on main through the [release workflow](../.github/workflows/release.yml).
+Pull requests exercise validation/build/package gates without publication.
+Before publication, the release flow requires complete successful C17
+CI and security for that exact commit, full ARM64 and Intel macOS suites,
+installed VM/native debug/release smoke checks, and complete checksummed
+package/archive inventories. A configured gate or an earlier revision's pass
+does not establish the current candidate's result.
+
+Read-only jobs build complete macOS 15+ prefixes with the explicit portable
+system-AppleClang policy and generate unsigned, unnotarized `.pkg` and `.tar.gz`
+artifacts. Test installation uses standard Installer and verifies the real
+global wrapper from outside the checkout; no shell-profile change or symlink
+is used. Same-version prefix collisions must fail without changing the active
+command; new versions activate their validated wrapper last.
+
+Only the publishing job receives repository write permission. It validates
+the tag/commit and downloaded asset identities again, uploads to a draft, and
+publishes the complete validated draft as a prerelease. Published assets are
+immutable. Failed validation cannot publish a public release. SHA-256,
+provenance and SBOM describe artifacts; they do not claim Developer ID signing
+or Apple notarization. Exact results belong in revision-scoped release
+evidence. Publication does not mark N0, CLI0 or CP40 verified, and metadata
+continues to report `publicationReady: false`.
+
+See [release contract](releases/0.1.0-alpha.1.md) and
+[macOS installation](install-macos.md) for availability, prerequisites and
+the bounded user workflow.
+
+After the authorized tag exists, an operator can request the same tagged
+candidate without moving the tag:
+
+```sh
+gh workflow run release.yml --ref main -f tag=v0.1.0-alpha.1
+```
+
+The dispatch input is validated data, not permission to choose an arbitrary
+source ref or bypass a failing check. A rerun must preserve published assets;
+it is not a way to replace an already published alpha's bytes.
 
 ## First public run
 

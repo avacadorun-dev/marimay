@@ -865,7 +865,7 @@ bootstrap/src/bytecode/    model/builders, codec, verifier orchestration,
 bootstrap/src/native/      C-emission coordinators and focused instruction/
                            descriptor owners; native build orchestration;
                            profile-specific runtime artifact discovery,
-                           validation, content identity, and pinned compiler
+                           validation, content identity, and selected compiler
                            preflight
 bootstrap/src/cli/         dispatch/options/help, format actions, target
                            discovery/traversal, checked native build/run,
@@ -875,6 +875,22 @@ bootstrap/src/manifest/    public result lifecycle, parser, and formatter
 runtime/common/            managed heap core and focused object families
 tests/c-unit/              focused suites mirroring those production owners
 ```
+
+Under D114, `native/host_toolchain.c` owns distribution policy selection,
+bounded Apple compiler identity/target parsing, the shared probe/compile command
+prefix and local-identity fingerprint. The existing `native/toolchain.c` keeps
+the strict configured-compiler probe for pinned policies. Build orchestration
+hashes the selected fingerprint; doctor reports that same selection. Neither
+owner weakens the runtime producer/manifest checks in `runtime_artifact.c`.
+`test_native_host_toolchain.c` owns hostile identity/target, process failure,
+command-prefix and allocation-failure checks; `test_native_host_toolchain.py`
+owns installed doctor, poisoned-environment exclusion, native cache replay and
+VM/native debug/release output comparison. `test_native_build_cache.c` checks
+the actual build-key operation against version, build, target, policy and
+runtime-content changes while preserving complete-prefix relocation identity.
+Portable installed Mac commands use
+the fixed cleared-environment prefix; default and build-tree policies remain
+pinned and do not inherit a source-selected compiler.
 
 D059 assigns the generated-C/runtime array boundary specifically to
 `bootstrap/src/native/c_emitter_range.c`,

@@ -25,6 +25,11 @@ For continuation context, see the dated
 [CLI-alpha agent handoff](docs/implementation/agent-handoff-cli-alpha-2026-09-07.md).
 It is a snapshot and reading guide, not a replacement for the authorities above.
 
+The owner-authorized [experimental macOS alpha](docs/releases/0.1.0-alpha.1.md)
+is a separate bounded publication scope under D114. Its exact-revision release
+checks do not promote N0, CLI0, CP39, CP40, CP41 or CP42; metadata keeps
+`publicationReady: false` until the broader readiness audit is complete.
+
 Latest local runtime evidence: [managed VM string lifetimes and the catalogue
 regression matrix](docs/implementation/evidence/cp42-vm-string-lifetime-2026-09-09.md).
 This fixes the report-concat defect; release-gate states remain unchanged.

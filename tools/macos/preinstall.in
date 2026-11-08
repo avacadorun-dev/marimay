@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+MMAY_SCRIPT_DIR=$(CDPATH= cd -P -- "$(/usr/bin/dirname "$0")" && /bin/pwd -P)
+. "$MMAY_SCRIPT_DIR/installer-common.sh"
+mmay_platform
+mmay_setup "$@"
+mmay_preinstall

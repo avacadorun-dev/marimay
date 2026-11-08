@@ -60,7 +60,7 @@ cache-independence, and VM/native process gates are verified.
 - Bounded explicit typed JSON is verified; reflection, derive syntax, an
   unbounded DOM, and dynamic `any` remain outside the language contract.
 - Native `mmay run`, `mmay init`, `mmay doctor`, and distribution lifecycle
-  implementations are present in the private preview. Their complete CP39
+  implementations are present in the experimental preview. Their complete CP39
   acceptance and the CP40 publication audit remain open; command availability
   must not be read as checkpoint verification.
 - Portable public `.myb`, untrusted `mmay exec`, dependency resolution,
@@ -68,8 +68,10 @@ cache-independence, and VM/native process gates are verified.
   compilation are not part of CLI0.
 - I6 task suspension, scheduler, cancellation, non-blocking I/O, DNS/TCP/HTTP,
   channels, race/select, and isolates are not implemented.
-- N0 lacks external legal/control/PATH evidence. No public identity, package,
-  namespace, signing key, installer, tag, or release is authorized here.
+- N0 lacks external legal/control/PATH evidence. This roadmap does not authorize
+  public identities, registries, namespaces, signing keys or supported releases.
+  D114 separately authorizes the experimental macOS prerelease and installer;
+  its publication does not close N0, CLI0 or CP39–CP42.
 - Full Tier 1, sanitizer, installer, sustained fuzz, compatibility, bootstrap,
   external-pilot, and production-service evidence required by later gates is
   not complete.
@@ -156,6 +158,7 @@ dashboard cells.
 | Stage | Allowed claim | Additional release gate |
 |---|---|---|
 | Private preview | Checker-backed local/private C17 bootstrap slices work at named revisions. | No public identity or compatibility claim. |
+| Experimental macOS alpha (`D114`) | A checksummed download of the checker-backed local slice for macOS 15+ ARM64/Intel, with explicit prerequisites and exclusions. | Owner authorization plus exact-revision repository CI/security, both full macOS suites, installed VM/native smoke, and artifact validation. `publicationReady: false`; no CLI0/CP40/N0 promotion, signing or notarization claim. |
 | Bounded CLI alpha (`CLI0`) | Small local CLI programs using the bounded CLI surface on explicitly verified hosts. | N0, CP42 external-application acceptance, CP41, claimed Tier 1 matrices, CP40 audit, and user authorization. No I6/network/registry/FFI/public-bytecode/self-hosting claim. |
 | Concurrency/service pilot (`I6` + `E0`) | Working direct-style concurrent I/O prototype evaluated by external developers. | I6 deterministic prototype plus verified E0 findings. |
 | Ecosystem alpha (`P0`) | Broader packages/platform/service-oriented alpha using public APIs. | N0, E0, I7–I9, public package/workload evidence. |

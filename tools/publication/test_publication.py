@@ -22,6 +22,28 @@ def png(kind, payload):
 
 
 class PublicationTest(unittest.TestCase):
+    def test_release_permission_requires_real_complete_gates(self):
+        root = Path(__file__).resolve().parents[2]
+        workflow = (root / '.github/workflows/release.yml').read_text()
+        label = '.github/workflows/release.yml'
+        self.assertEqual(publication.workflow_issues(workflow, label), [])
+        needs = '    needs: [prepare, security, build, verified-ci]'
+        condition = "    if: github.event_name != 'pull_request' && needs.prepare.outputs.publish == 'true'"
+        mutations = [
+            workflow.replace(needs, '    needs: [prepare]\n    # ' + needs),
+            workflow.replace(condition, '    if: true\n    # ' + condition),
+            workflow.replace(condition, condition + '\n    if: true'),
+            workflow.replace('permissions:\n  contents: read', '# permissions:\n  contents: read', 1),
+            workflow.replace('      contents: read', '      contents: write', 1),
+            workflow.replace('    permissions:\n      contents: write\n      actions: read', '    permissions: write-all'),
+            workflow.replace('      actions: read', '      actions: write'),
+            workflow.replace('    if: github.event_name', '    if: always() && github.event_name'),
+        ]
+        for number, changed in enumerate(mutations):
+            with self.subTest(case=number):
+                self.assertTrue(publication.workflow_issues(changed, label))
+        self.assertTrue(publication.workflow_issues(workflow, '.github/workflows/unrelated.yml'))
+
     def test_synthetic_and_no_reply_addresses(self):
         for domain in ('example.invalid', 'service.example', 'users.noreply.github.com'):
             self.assertEqual(publication.inspect(('fixture' + '@' + domain).encode(), 'fixture'), [])

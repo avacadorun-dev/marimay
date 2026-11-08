@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""Build the D114 unsigned macOS package from a verified CP39 prefix."""
+
+from __future__ import annotations
+
+import argparse
+import os
+from pathlib import Path
+import platform
+import re
+import shutil
+import subprocess
+import tempfile
+
+from macos_payload import ARCHITECTURES, component, digest, physical, verify_prefix
+
+
+IDENTIFIER = "org.marimay.mmay"
+TEMPLATES = Path(__file__).resolve().parent / "macos"
+
+
+def wrapper(version: str) -> bytes:
+    component(version)
+    return ("#!/bin/sh\n# Marimay managed launcher; format=1\n"
+            f'exec "/usr/local/lib/marimay/{version}/bin/mmay" "$@"\n').encode("ascii")
+
+
+def render_scripts(destination: Path, version: str, arch: str, manifest_hash: str) -> None:
+    component(version)
+    if arch not in ARCHITECTURES or re.fullmatch(r"[0-9a-f]{64}", manifest_hash) is None:
+        raise ValueError("installer script identity is invalid")
+    destination.mkdir()
+    for template, name in (("installer-common.sh.in", "installer-common.sh"),
+                           ("preinstall.in", "preinstall"), ("postinstall.in", "postinstall")):
+        content = (TEMPLATES / template).read_text(encoding="utf-8")
+        content = content.replace("@VERSION@", version).replace("@ARCH@", arch)
+        content = content.replace("@MANIFEST_SHA256@", manifest_hash)
+        path = destination / name
+        path.write_bytes(content.encode("utf-8"))
+        path.chmod(0o755 if name in ("preinstall", "postinstall") else 0o644)
+
+
+def check_architecture(root: Path, version: str, arch: str) -> None:
+    paths = [root / "bin/mmay"] + [root / f"lib/mmay/{version}/native/{profile}/"
+        f"libmmay_native_runtime_{profile}.a" for profile in ("debug", "release")]
+    for path in paths:
+        result = subprocess.run(["/usr/bin/lipo", "-archs", str(path)],
+                                capture_output=True, check=True)
+        if result.stdout.decode("ascii").strip().split() != [arch] or result.stderr:
+            raise ValueError("compiler/runtime Mach-O architecture does not match package")
+
+
+def build_package(root: Path, output: Path, version: str, arch: str) -> Path:
+    component(version)
+    verify_prefix(root, version, arch)
+    if platform.system() != "Darwin":
+        raise ValueError("macOS packages must be built on macOS")
+    check_architecture(root, version, arch)
+    physical(output)
+    output.mkdir(parents=True, exist_ok=True)
+    name = f"marimay-{version}-darwin-{arch}.pkg"
+    final = output / name
+    checksum = final.with_name(name + ".sha256")
+    if final.exists() or final.is_symlink() or checksum.exists() or checksum.is_symlink():
+        raise ValueError("package output already exists")
+    with tempfile.TemporaryDirectory(prefix=".mmay-pkg-", dir=output) as temporary:
+        work = Path(temporary)
+        payload = work / "payload"
+        shutil.copytree(root, payload)
+        payload.chmod(0o755)
+        for entry in payload.rglob("*"):
+            entry.chmod(0o755 if entry.is_dir() or entry.stat().st_mode & 0o100 else 0o644)
+        verify_prefix(payload, version, arch)
+        scripts = work / "scripts"
+        manifest_hash = digest(payload / f"share/mmay/{version}/checksums.sha256")
+        render_scripts(scripts, version, arch, manifest_hash)
+        package = work / name
+        subprocess.run([
+            "/usr/bin/pkgbuild", "--root", str(payload),
+            "--install-location", f"/usr/local/lib/marimay/{version}",
+            "--identifier", IDENTIFIER, "--version", version,
+            "--ownership", "recommended", "--min-os-version", "15.0",
+            "--filter", "^$", "--scripts", str(scripts), str(package),
+        ], check=True, capture_output=True)
+        if not package.is_file() or package.is_symlink():
+            raise ValueError("pkgbuild did not produce a physical package")
+        checksum_temporary = work / (name + ".sha256")
+        checksum_temporary.write_bytes(f"{digest(package)}  {name}\n".encode("ascii"))
+        # Validate all source inputs again before publishing either output.
+        verify_prefix(root, version, arch)
+        os.link(package, final)
+        try:
+            os.link(checksum_temporary, checksum)
+        except OSError:
+            if final.samefile(package):
+                final.unlink()
+            raise
+    return final
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--install-root", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--version", required=True)
+    parser.add_argument("--arch", choices=ARCHITECTURES, required=True)
+    args = parser.parse_args()
+    try:
+        package = build_package(args.install_root.absolute(), args.output_dir.absolute(),
+                                args.version, args.arch)
+    except (ValueError, OSError, UnicodeError, subprocess.CalledProcessError) as error:
+        parser.exit(1, f"macOS package: {error}\n")
+    print(package)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

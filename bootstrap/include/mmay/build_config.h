@@ -11,10 +11,12 @@
 #define MMAY_STANDARD_LIBRARY_SCOPE "bounded-preview"
 #define MMAY_STANDARD_LIBRARY_COMPATIBILITY "alpha-source"
 #define MMAY_VERSION_SCHEMA "marimay.version/2"
-#define MMAY_RELEASE_CHANNEL "private-preview"
+#define MMAY_RELEASE_CHANNEL "experimental-alpha"
 #define MMAY_RELEASE_CLAIM "local-checker-backed-slice"
 #define MMAY_RELEASE_PUBLICATION_READY_JSON "false"
 #define MMAY_BOOTSTRAP_STAGE 0
+#define MMAY_PORTABLE_MACOS_TOOLCHAIN 0
+#define MMAY_NATIVE_MACOS_DEPLOYMENT_TARGET "15.0"
 
 #if defined(_WIN32)
 #define MMAY_HOST_SYSTEM "Windows"
