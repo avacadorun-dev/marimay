@@ -301,3 +301,110 @@ uint64_t mmay_hash_sip24_word(uint64_t word, uint64_t key0, uint64_t key1) {
 }
 
 #undef MMAY_SIP_ROUND
+
+#define MMAY_HASH_P1 UINT64_C(0x9e3779b185ebca87)
+#define MMAY_HASH_P2 UINT64_C(0xc2b2ae3d27d4eb4f)
+#define MMAY_HASH_P3 UINT64_C(0x165667b19e3779f9)
+#define MMAY_HASH_P4 UINT64_C(0x85ebca77c2b2ae63)
+#define MMAY_HASH_P5 UINT64_C(0x27d4eb2f165667c5)
+
+static uint64_t mmay_hash_round(uint64_t accumulator, uint64_t lane) {
+    accumulator += lane * MMAY_HASH_P2;
+    accumulator = mmay_rotate_left64(accumulator, 31);
+    accumulator *= MMAY_HASH_P1;
+    return accumulator;
+}
+
+static uint64_t mmay_hash_merge_accumulator(uint64_t hash, uint64_t accumulator) {
+    hash ^= mmay_hash_round(0, accumulator);
+    hash = hash * MMAY_HASH_P1 + MMAY_HASH_P4;
+    return hash;
+}
+
+static uint32_t mmay_load_little32(const unsigned char *bytes) {
+    return (uint32_t)bytes[0]
+        | ((uint32_t)bytes[1] << 8)
+        | ((uint32_t)bytes[2] << 16)
+        | ((uint32_t)bytes[3] << 24);
+}
+
+static uint64_t mmay_hash_avalanche(uint64_t hash) {
+    hash ^= hash >> 33;
+    hash *= MMAY_HASH_P2;
+    hash ^= hash >> 29;
+    hash *= MMAY_HASH_P3;
+    hash ^= hash >> 32;
+    return hash;
+}
+
+uint64_t mmay_hash_seeded(
+    const void *bytes,
+    size_t length,
+    uint64_t seed0,
+    uint64_t seed1
+) {
+    const unsigned char *input = bytes;
+    size_t offset = 0;
+    uint64_t hash = 0;
+    const uint64_t seed = seed0 ^ mmay_rotate_left64(seed1, 32);
+    if (input == NULL && length != 0) {
+        return 0;
+    }
+    if (length >= 32) {
+        uint64_t accumulator1 = seed + MMAY_HASH_P1 + MMAY_HASH_P2;
+        uint64_t accumulator2 = seed + MMAY_HASH_P2;
+        uint64_t accumulator3 = seed;
+        uint64_t accumulator4 = seed - MMAY_HASH_P1;
+        while (length - offset >= 32) {
+            accumulator1 = mmay_hash_round(
+                accumulator1, mmay_load_little64(input + offset));
+            accumulator2 = mmay_hash_round(
+                accumulator2, mmay_load_little64(input + offset + 8));
+            accumulator3 = mmay_hash_round(
+                accumulator3, mmay_load_little64(input + offset + 16));
+            accumulator4 = mmay_hash_round(
+                accumulator4, mmay_load_little64(input + offset + 24));
+            offset += 32;
+        }
+        hash = mmay_rotate_left64(accumulator1, 1)
+            + mmay_rotate_left64(accumulator2, 7)
+            + mmay_rotate_left64(accumulator3, 12)
+            + mmay_rotate_left64(accumulator4, 18);
+        hash = mmay_hash_merge_accumulator(hash, accumulator1);
+        hash = mmay_hash_merge_accumulator(hash, accumulator2);
+        hash = mmay_hash_merge_accumulator(hash, accumulator3);
+        hash = mmay_hash_merge_accumulator(hash, accumulator4);
+    } else {
+        hash = seed + MMAY_HASH_P5;
+    }
+    hash += length;
+    while (length - offset >= 8) {
+        uint64_t lane = mmay_hash_round(0, mmay_load_little64(input + offset));
+        hash ^= lane;
+        hash = mmay_rotate_left64(hash, 27) * MMAY_HASH_P1 + MMAY_HASH_P4;
+        offset += 8;
+    }
+    if (length - offset >= 4) {
+        hash ^= (uint64_t)mmay_load_little32(input + offset) * MMAY_HASH_P1;
+        hash = mmay_rotate_left64(hash, 23) * MMAY_HASH_P2 + MMAY_HASH_P3;
+        offset += 4;
+    }
+    while (offset < length) {
+        hash ^= (uint64_t)input[offset] * MMAY_HASH_P5;
+        hash = mmay_rotate_left64(hash, 11) * MMAY_HASH_P1;
+        offset += 1;
+    }
+    return mmay_hash_avalanche(hash);
+}
+
+uint64_t mmay_hash_seeded_word(uint64_t word, uint64_t seed0, uint64_t seed1) {
+    /* Preserve the generic routine's byte order on every C17 host. Compilers
+     * fold this native-word load without a variable-length byte/tail loop. */
+    const uint64_t message = mmay_load_little64((const unsigned char *)&word);
+    uint64_t hash = (seed0 ^ mmay_rotate_left64(seed1, 32)) + MMAY_HASH_P5
+        + sizeof(word);
+    uint64_t lane = mmay_hash_round(0, message);
+    hash ^= lane;
+    hash = mmay_rotate_left64(hash, 27) * MMAY_HASH_P1 + MMAY_HASH_P4;
+    return mmay_hash_avalanche(hash);
+}
