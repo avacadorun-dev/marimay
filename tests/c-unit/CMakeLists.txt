@@ -405,13 +405,17 @@ add_test(NAME mmay_lsp_unit
 add_test(NAME mmay_lsp_editor_unit
   COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --editor-features
 )
+# These suites sweep every deterministic allocation-failure index of full LSP
+# analyses (roughly 10k instrumented runs per suite). Release completes them in
+# under a minute; TSan and Windows Debug/ASan need 18-20 minutes, so the timeout
+# covers sanitizer instrumentation without dropping any failure index.
 set_tests_properties(mmay_lsp_editor_unit PROPERTIES
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  TIMEOUT 600 LABELS "lsp;allocation;editor"
+  TIMEOUT 1800 LABELS "lsp;allocation;editor"
 )
 set_tests_properties(mmay_lsp_unit PROPERTIES
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  TIMEOUT 600 LABELS "lsp;allocation"
+  TIMEOUT 1800 LABELS "lsp;allocation"
 )
 
 math(EXPR MMAY_C_UNIT_LAST_SHARD "${MMAY_C_UNIT_SHARD_COUNT} - 1")
