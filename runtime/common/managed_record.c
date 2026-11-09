@@ -72,17 +72,17 @@ MarimayManagedStatus mmay_managed_record_new(
         || !mmay_size_add(sizeof(*record), field_bytes, &object_bytes)) {
         return MMAY_MANAGED_LIMIT_REACHED;
     }
-    record = mmay_allocate(&heap->allocator, sizeof(*record));
+    record = mmay_allocate(&heap->allocator, object_bytes);
     if (record == NULL) {
-        return mmay_managed_resource_host_failure(heap, sizeof(*record));
+        return mmay_managed_resource_host_failure(heap, object_bytes);
     }
     memset(record, 0, sizeof(*record));
     if (field_bytes != 0) {
-        record->fields = mmay_allocate(&heap->allocator, field_bytes);
-        if (record->fields == NULL) {
-            mmay_deallocate(&heap->allocator, record, sizeof(*record));
-            return mmay_managed_resource_host_failure(heap, field_bytes);
-        }
+        /* D055 already budgets header and fields as one object; store them
+         * in one allocation so the physical layout matches the budget. */
+        record->fields = (MarimayManagedCell *)(void *)(
+            (unsigned char *)record + sizeof(*record)
+        );
         memcpy(record->fields, fields, field_bytes);
     }
     record->descriptor = descriptor;
@@ -91,12 +91,13 @@ MarimayManagedStatus mmay_managed_record_new(
             descriptor->fields,
             field_count
         );
+        MarimayManagedReference local_roots[8];
+        MarimayManagedReference *roots = local_roots;
         size_t root_bytes = 0;
-        MarimayManagedReference *roots = NULL;
-        if (root_count != 0
+        if (root_count > sizeof(local_roots) / sizeof(*local_roots)
             && mmay_size_multiply(
                 root_count,
-                sizeof(MarimayManagedReference),
+                sizeof(*roots),
                 &root_bytes
             )) {
             roots = mmay_allocate(&heap->allocator, root_bytes);
@@ -110,9 +111,13 @@ MarimayManagedStatus mmay_managed_record_new(
                     root_count,
                     &root_count
                 ))) {
-            mmay_deallocate(&heap->allocator, roots, root_bytes);
+            if (roots != local_roots) {
+                mmay_deallocate(&heap->allocator, roots, root_bytes);
+            }
             mmay_managed_record_dispose(heap, record);
-            return mmay_managed_resource_host_failure(heap, root_bytes);
+            return mmay_managed_resource_host_failure(
+                heap, roots == NULL ? root_bytes : 0
+            );
         }
         status = mmay_managed_publish_object(
             heap,
@@ -125,7 +130,9 @@ MarimayManagedStatus mmay_managed_record_new(
             0,
             result
         );
-        mmay_deallocate(&heap->allocator, roots, root_bytes);
+        if (roots != local_roots) {
+            mmay_deallocate(&heap->allocator, roots, root_bytes);
+        }
     }
     if (status != MMAY_MANAGED_OK) {
         mmay_managed_record_dispose(heap, record);
