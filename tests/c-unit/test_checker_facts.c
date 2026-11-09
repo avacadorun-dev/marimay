@@ -229,7 +229,14 @@ static void mmay_checker_facts_expect_symbol(
     size_t start,
     MarimayCheckerFactsExpected *expected
 ) {
-    const MarimayCheckedSymbol *symbol = mmay_checked_symbol(checked, index);
+    const MarimayCheckedSymbol *symbol = NULL;
+    size_t fact_index = 0, top_index = 0;
+    for (fact_index = 0; checked != NULL && fact_index < checked->symbols.length;
+        fact_index += 1) {
+        const MarimayCheckedSymbol *candidate = mmay_checked_symbol(checked, fact_index);
+        if (candidate->kind > MMAY_CHECKED_SYMBOL_INTERFACE) continue;
+        if (top_index++ == index) { symbol = candidate; break; }
+    }
     MarimayTypeId artifact_type = MMAY_TYPE_INVALID;
     size_t end = start + strlen(name);
     MMAY_EXPECT(symbol != NULL);
@@ -278,10 +285,18 @@ static void mmay_checker_facts_expect_canonical(
     const MarimayCheckerFactsExpected *expected,
     size_t expected_count
 ) {
-    size_t index = 0;
-    MMAY_EXPECT(checked != NULL && checked->symbols.length == expected_count);
-    for (index = 0; index < expected_count; index += 1) {
+    size_t index = 0, fact_index = 0, top_level_count = 0;
+    for (index = 0; checked != NULL && index < checked->symbols.length; index += 1) {
         const MarimayCheckedSymbol *symbol = mmay_checked_symbol(checked, index);
+        if (symbol->kind <= MMAY_CHECKED_SYMBOL_INTERFACE) top_level_count += 1;
+    }
+    MMAY_EXPECT(checked != NULL && top_level_count == expected_count);
+    for (index = 0; index < expected_count; index += 1) {
+        const MarimayCheckedSymbol *symbol = NULL;
+        while (checked != NULL && fact_index < checked->symbols.length) {
+            const MarimayCheckedSymbol *candidate = mmay_checked_symbol(checked, fact_index++);
+            if (candidate->kind <= MMAY_CHECKED_SYMBOL_INTERFACE) { symbol = candidate; break; }
+        }
         MarimayTypeId artifact_type = MMAY_TYPE_INVALID;
         MMAY_EXPECT(symbol != NULL);
         if (symbol != NULL) {
@@ -778,7 +793,8 @@ static void mmay_test_checker_facts_allocation_failure(void) {
             reached_success = true;
             MMAY_EXPECT(checked.initialized);
             MMAY_EXPECT(checked.diagnostics.length == 0);
-            MMAY_EXPECT(checked.symbols.length == 6);
+            /* Six package declarations plus first(value)'s parameter fact. */
+            MMAY_EXPECT(checked.symbols.length == 7);
             mmay_check_result_dispose(&checked);
         } else {
             MMAY_EXPECT(status == MMAY_CHECK_ALLOCATION_FAILED);

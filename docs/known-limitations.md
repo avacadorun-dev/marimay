@@ -72,6 +72,14 @@ five VM/native differential tests.
 - `Array<T>` is not a compatibility spelling. The only managed-array spelling
   in the alpha line is `[]T`.
 
+- The experimental `mmay lsp` supports diagnostics, navigation for top-level
+  symbols/locals/record fields and standard-library source/API views, completion,
+  validated rename and formatting. Current analyses are cached; fresh checking
+  and unfinished-expression completion remain synchronous.
+  Generic-local specializations, enum payload identities, complex call/index
+  receiver completion, semantic tokens, background indexing and asynchronous
+  cancellation remain unavailable. See [editor support](editor-support.md).
+
 ## Publication blockers
 
 N0 lacks external legal/control/PATH evidence. Full broader-release architecture,

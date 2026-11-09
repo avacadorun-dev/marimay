@@ -75,6 +75,7 @@ if(WIN32)
     runtime/platform/windows/file.c
     runtime/platform/windows/program_arguments.c
     runtime/platform/windows/process.c
+    runtime/platform/windows/stdio.c
   )
   set(MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE
     runtime/platform/windows/program_arguments.c
@@ -94,6 +95,7 @@ elseif(UNIX)
     runtime/platform/posix/file.c
     runtime/platform/posix/program_arguments.c
     runtime/platform/posix/process.c
+    runtime/platform/posix/stdio.c
   )
   set(MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE
     runtime/platform/posix/program_arguments.c
@@ -123,7 +125,7 @@ set(MMAY_RELEASE_CHANNEL "experimental-alpha")
 set(MMAY_RELEASE_CLAIM "local-checker-backed-slice")
 set(MMAY_RELEASE_PUBLICATION_READY_JSON "false")
 set(MMAY_AVAILABLE_COMMANDS_JSON
-  "[\"build\",\"check\",\"doctor\",\"fmt\",\"help\",\"init\",\"run\",\"test\",\"version\"]"
+  "[\"build\",\"check\",\"doctor\",\"fmt\",\"help\",\"init\",\"lsp\",\"run\",\"test\",\"version\"]"
 )
 set(MMAY_STAGED_COMMANDS_JSON
   "[\"add\",\"audit\",\"bench\",\"doc\",\"exec\",\"explain\",\"fix\",\"fuzz\",\"generate\",\"list\",\"outdated\",\"remove\",\"update\",\"vendor\",\"vet\",\"why\"]"
@@ -539,6 +541,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_expr_json.c
   bootstrap/src/check/json_intrinsics.c
   bootstrap/src/check/intrinsic_completions.c
+  bootstrap/src/check/intrinsic_calls.c
   bootstrap/src/check/checker_json_types.c
   bootstrap/src/check/checker_json_mir.c
   bootstrap/src/check/checker_json_decode.c
@@ -590,6 +593,8 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/result.c
   bootstrap/src/check/service.c
   bootstrap/src/check/service_queries.c
+  bootstrap/src/check/editor_facts.c
+  bootstrap/src/check/visible_symbols.c
   bootstrap/src/check/type_spelling.c
   bootstrap/src/cli/cli.c
   bootstrap/src/cli/cli_release.c
@@ -619,6 +624,21 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/cli/cli_standard_json_package.c
   bootstrap/src/cli/cli_format.c
   bootstrap/src/cli/cli_format_targets.c
+  bootstrap/src/lsp/server.c
+  bootstrap/src/lsp/json.c
+  bootstrap/src/lsp/transport.c
+  bootstrap/src/lsp/output.c
+  bootstrap/src/lsp/positions.c
+  bootstrap/src/lsp/workspace.c
+  bootstrap/src/lsp/analysis_overrides.c
+  bootstrap/src/lsp/analysis_cache.c
+  bootstrap/src/lsp/source_locations.c
+  bootstrap/src/lsp/intrinsic_queries.c
+  bootstrap/src/lsp/diagnostics.c
+  bootstrap/src/lsp/queries.c
+  bootstrap/src/lsp/rename.c
+  bootstrap/src/lsp/completion.c
+  bootstrap/src/lsp/completion_probe.c
   bootstrap/src/diagnostic/diagnostic.c
   bootstrap/src/format/document.c
   bootstrap/src/format/formatter.c
@@ -952,6 +972,37 @@ if(BUILD_TESTING)
       NAME mmay_cli_acceptance_driver
       COMMAND "${Python3_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/tools/cli-acceptance/test_driver.py"
+    )
+    add_test(NAME mmay_lsp_integration
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/lsp/test_server.py" "$<TARGET_FILE:mmay>"
+    )
+    set_tests_properties(mmay_lsp_integration PROPERTIES TIMEOUT 60 LABELS "lsp;integration")
+    add_test(NAME mmay_lsp_editing_integration
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/lsp/test_editing.py" "$<TARGET_FILE:mmay>"
+    )
+    set_tests_properties(mmay_lsp_editing_integration PROPERTIES TIMEOUT 90 LABELS "lsp;integration;editor")
+    add_test(NAME mmay_lsp_navigation_integration
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/lsp/test_navigation.py" "$<TARGET_FILE:mmay>"
+    )
+    add_test(NAME mmay_lsp_diagnostics_integration
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/lsp/test_diagnostics.py" "$<TARGET_FILE:mmay>"
+    )
+    add_test(NAME mmay_lsp_cache_integration
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/lsp/test_cache.py" "$<TARGET_FILE:mmay>"
+    )
+    add_test(NAME mmay_lsp_intrinsics_integration
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/lsp/test_intrinsics.py" "$<TARGET_FILE:mmay>"
+    )
+    set_tests_properties(mmay_lsp_navigation_integration mmay_lsp_diagnostics_integration mmay_lsp_cache_integration mmay_lsp_intrinsics_integration
+      PROPERTIES TIMEOUT 60 LABELS "lsp;integration;editor"
+    )
+    add_test(NAME mmay_lsp_editor_differential
+      COMMAND "$<TARGET_FILE:mmay>" test
+        "${CMAKE_SOURCE_DIR}/tests/lsp/fixtures/editor_features_test.my" --engine both
+    )
+    set_tests_properties(mmay_lsp_editor_differential PROPERTIES
+      TIMEOUT 60 LABELS "lsp;editor;differential"
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
     )
     set_tests_properties(mmay_cli_acceptance_driver PROPERTIES
       TIMEOUT 30 LABELS "cli;acceptance-harness"

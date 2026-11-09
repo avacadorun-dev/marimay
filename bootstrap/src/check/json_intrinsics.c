@@ -27,6 +27,10 @@ const MarimayIntrinsicSignature *mmay_json_intrinsic_at(size_t index) {
         ? &mmay_json_intrinsics[index] : NULL;
 }
 
+const MarimayIntrinsicSignature *mmay_intrinsic_signature(size_t index) {
+    return mmay_json_intrinsic_at(index);
+}
+
 const MarimayIntrinsicSignature *mmay_json_intrinsic_find(
     const unsigned char *package, size_t package_length,
     const unsigned char *name, size_t name_length

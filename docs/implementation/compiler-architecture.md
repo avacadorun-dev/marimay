@@ -362,8 +362,8 @@ orders current documents by exact path, and owns lex/parse/AST/check teardown.
 subtrees from one exact versioned edit, polls cooperative cancellation between
 bounded phases, and still rechecks the whole semantic package. It introduces
 no persistent semantic cache and does not duplicate semantic lookup.
-Successful diagnostic-free checks publish bounded, result-owned top-level
-definition facts and references to that stable symbol universe in canonical
+Successful diagnostic-free checks publish bounded, result-owned top-level,
+local/parameter and nominal-field definition facts and references in canonical
 source order. `facts.c` owns publication, occurrence canonicalization, and
 cross-fact validation; `queries.c` owns allocation-free result-scoped
 definition-from-reference, byte-prefix package-symbol search, and completion
@@ -427,13 +427,51 @@ and teardown delegate intrinsic spelling cleanup to its owner. The focused
 limits, cancellation and every allocation-failure index independently of the
 real JSON execution corpus.
 
-The present occurrence universe covers stable top-level type, constant, and
-resolved call references. Local bindings, record fields, enum variants,
-generic instantiations, effect metadata, and production indexing/LSP transport
-remain later I2/I8 work. Public `mmay check` now owns fresh disk-snapshot target
+The occurrence universe covers stable top-level type, constant and resolved
+call references plus D119 local/parameter reads/writes and nominal record field
+access/construction/pattern labels. `editor_facts.c` owns their identities and
+scope metadata; binding, lvalue, capture and record owners supply actual resolved
+sites. `visible_symbols.c` publishes exact current-file spellings from the
+checker's package/import environment. Generic local specializations, enum
+variants, effect metadata and production indexing remain later I2/I8 work.
+Public `mmay check` owns fresh disk-snapshot target
 discovery and delegates the authoritative selected graph to this service; it
 reports an internal failure instead of success for a checker-incomplete
 accepted construct.
+
+D113 adds the experimental `lsp` transport owner above this same service:
+`json.c` owns bounded JSON decoding and escaping; `transport.c` owns byte
+framing; `workspace.c` owns open text and fresh disk-graph/overlay analysis;
+`positions.c` owns file-URI and UTF-16 conversion; `diagnostics.c` maps compiler
+diagnostics; `queries.c` maps checked facts and built-in formatting;
+`output.c` owns bounded response construction; and `server.c` coordinates
+lifecycle and dispatch. These owners do not infer source semantics. Their
+private headers expose only request-scoped data needed by adjacent owners.
+Focused protocol, workspace, and server C tests cover allocation failure and
+teardown; subprocess tests exercise the public stdio command. The basic server
+does not close production I8 or expand the checked occurrence universe.
+
+D119 extends that slice with `completion.c` (candidate presentation from checked
+facts), `completion_probe.c` (bounded request-local syntax repair), `rename.c`
+(binding-preserving workspace edits), and `analysis_overrides.c` (isolated source
+replacements before authoritative analysis). A rename rechecks the full local
+module and compares unchanged as well as edited reference bindings. No tool
+owner duplicates type checking or mutates source files. Completion probes do
+not relax successful semantic publication or become executable results.
+
+D120 adds `analysis_cache.c` for four bounded, input-validated retained graphs and
+`source_locations.c` for exact content-addressed standard source views. Open view
+files never become compilation inputs. `server.c` negotiates file watchers and
+invalidates discovery; `diagnostics.c` preserves dependency/manifest error locations.
+`intrinsic_calls.c` owns bounded, deduplicated actual JSON call metadata recorded
+by the resolution/lowering owner; it does not manufacture function symbols.
+Standard primitive lowering owners preserve their exact resolved callable
+occurrences, including stream, conversion, text/bytes, filesystem and context calls.
+`intrinsic_queries.c` presents registry API interfaces from checker-recorded JSON
+intrinsic calls, without inventing ordinary symbols or executable implementations.
+All cached results, ordinary snapshots and API-view snapshots share analysis
+teardown. Request-local completion repairs and rename checks remain independently
+owned and cannot mutate the retained result.
 
 ### Test owners
 

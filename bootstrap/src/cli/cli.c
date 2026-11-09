@@ -2,6 +2,7 @@
 #include "cli_doctor.h"
 #include "cli_init.h"
 #include "cli_release.h"
+#include "../lsp/server.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -783,6 +784,12 @@ int mmay_cli_run(
         return mmay_cli_init_project(
             session, &options, standard_output, standard_error
         );
+    }
+    if (strcmp(task->name, "lsp") == 0) {
+        if (options.target != NULL) return mmay_cli_plain_error(standard_error,
+            options.diagnostic_style, MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
+            "mmay lsp takes no target; the editor supplies document URIs", MMAY_EXIT_USAGE);
+        return mmay_lsp_run(session, standard_input, standard_output, standard_error);
     }
     if (strcmp(task->name, "fmt") == 0 && options.format_stdin) {
         if (options.format_check || options.format_diff) {

@@ -1,5 +1,6 @@
 #include "checker_json_internal.h"
 #include "checker_intrinsics_api.h"
+#include "intrinsic_calls.h"
 
 #include "checker_core_api.h"
 #include "checker_generic_types_api.h"
@@ -7,7 +8,8 @@
 #include "checker_lookup_api.h"
 
 static bool mmay_json_select(MarimayJsonExpansion *json,
-    const MarimayAstNode *node, const MarimayIntrinsicSignature **intrinsic
+    const MarimayAstNode *node, const MarimayIntrinsicSignature **intrinsic,
+    MarimayMirSpan *call_span
 ) {
     MarimayChecker *checker = json->function->checker;
     const MarimayAstNode *callee = mmay_checker_private_check_child_node(
@@ -44,6 +46,9 @@ static bool mmay_json_select(MarimayJsonExpansion *json,
         length = namespaced ? member_token->end - member_token->start : binding->original_length;
         *intrinsic = mmay_json_intrinsic_find(surface->path, surface->path_length, name, length);
         if (*intrinsic == NULL) return false;
+        *call_span = namespaced
+            ? (MarimayMirSpan){member_token->start, member_token->end}
+            : (MarimayMirSpan){token->start, token->end};
         json->surface = surface;
         return true;
     }
@@ -86,13 +91,14 @@ bool mmay_checker_compile_json(MarimayFunctionChecker *function,
     const MarimayIntrinsicSignature *intrinsic = NULL;
     MarimayTypeId type, bytes_type;
     MarimayExpressionValue values[2], limits, decoded, unused, output;
+    MarimayMirSpan call_span = {0};
     size_t count = 0, index = 0;
     bool decode = false, explicit_limits = false;
     memset(&json, 0, sizeof(json));
     memset(values, 0, sizeof(values));
     json.function = function;
     json.span = (MarimayMirSpan){node->start, node->end};
-    *resolved = mmay_json_select(&json, node, &intrinsic);
+    *resolved = mmay_json_select(&json, node, &intrinsic, &call_span);
     if (!*resolved) return true;
     decode = intrinsic->kind == MMAY_INTRINSIC_JSON_DECODE
         || intrinsic->kind == MMAY_INTRINSIC_JSON_DECODE_WITH_LIMITS;
@@ -155,5 +161,7 @@ bool mmay_checker_compile_json(MarimayFunctionChecker *function,
     }
     mmay_json_enter(&json, json.done);
     *result = json.result;
-    return mmay_checker_private_function_ensure_nominal_layouts(function);
+    return mmay_checker_private_function_ensure_nominal_layouts(function)
+        && mmay_check_record_intrinsic_call(function->checker, intrinsic,
+            call_span.start, call_span.end);
 }

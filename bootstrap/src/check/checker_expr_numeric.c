@@ -612,6 +612,9 @@ bool mmay_checker_private_compile_convert_format_call(
     const MarimayCheckImportBinding *binding;
     const MarimayAstNode *argument_nodes[1] = {NULL};
     const char *format_name = NULL;
+    MarimayCheckName imported_namespace = {0};
+    MarimayCheckName function_name;
+    MarimayCheckCallable callable = {0};
     MarimayExpressionValue source;
     MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
     MarimayMirInstruction instruction;
@@ -721,5 +724,17 @@ bool mmay_checker_private_compile_convert_format_call(
     result->type = MMAY_TYPE_STRING;
     result->register_id = target;
     result->valid = true;
-    return true;
+    function_name = (MarimayCheckName){
+        function->checker->ast->snapshot, name_token->start, name_token->end
+    };
+    if (namespace_token != NULL) imported_namespace = (MarimayCheckName){
+        function->checker->ast->snapshot, namespace_token->start, namespace_token->end
+    };
+    if (mmay_check_resolve_imported_call(function->checker, imported_namespace,
+            namespace_token != NULL, function_name, false, MMAY_TYPE_INVALID,
+            &callable) != MMAY_CHECK_CALL_FOUND) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
+        return false;
+    }
+    return mmay_check_record_occurrence(function->checker, function_name, callable.symbol);
 }

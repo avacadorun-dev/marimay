@@ -7,6 +7,7 @@
 #include "checker_generic_types_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
+#include "editor_facts.h"
 
 bool mmay_checker_private_analyze_enum_match_alternative(
     MarimayFunctionChecker *function,
@@ -76,7 +77,8 @@ bool mmay_checker_private_record_match_validate_named(
     local.scope_depth = function->scope_depth;
     local.mutable_binding = mutable_binding;
     local.initialized = initialized;
-    if (!mmay_closure_prepare_local(function, &local)
+    if (!mmay_check_editor_local(function, &local, false)
+        || !mmay_closure_prepare_local(function, &local)
         || !mmay_escape_local(function, &local)) return false;
     if (!mmay_vector_push(&function->locals, &local)) {
         mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);
@@ -662,6 +664,8 @@ cleanup:
             );
             goto cleanup;
         }
+        if (!mmay_check_editor_field_occurrence(function->checker,
+                record->symbol, field_name)) goto cleanup;
         if (seen == NULL || field_index >= record->fields.length) {
             mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;

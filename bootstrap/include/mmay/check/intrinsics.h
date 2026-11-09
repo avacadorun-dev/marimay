@@ -30,6 +30,21 @@ typedef struct MarimayCheckedIntrinsicCompletion {
     MarimayOwnedBytes spelling;
 } MarimayCheckedIntrinsicCompletion;
 
+/* Actual resolved direct-call sites, without an invented function symbol/type. */
+typedef struct MarimayCheckedIntrinsicCall {
+    const MarimayIntrinsicSignature *intrinsic;
+    const MarimaySourceSnapshot *snapshot;
+    size_t start;
+    size_t end;
+} MarimayCheckedIntrinsicCall;
+
+const MarimayIntrinsicSignature *mmay_intrinsic_signature(size_t index);
+const MarimayCheckedIntrinsicCall *mmay_checked_intrinsic_call(
+    const MarimayCheckResult *result, size_t index);
+const MarimayCheckedIntrinsicCall *mmay_checked_intrinsic_call_at(
+    const MarimayCheckResult *result, const MarimaySourceSnapshot *snapshot,
+    size_t offset);
+
 /* Borrowed, allocation-free exact byte-prefix queries, ordered by spelling. */
 size_t mmay_checked_intrinsic_completion_count(
     const MarimayCheckResult *result, const MarimaySourceSnapshot *snapshot,

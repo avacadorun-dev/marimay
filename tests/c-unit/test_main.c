@@ -70,6 +70,20 @@ void mmay_test_cli_cp17_array_mutation(void);
 void mmay_test_cli_cp18_array_spelling(void);
 void mmay_test_cli_cp20_algorithm_corpus(void);
 void mmay_test_compiler_service(void);
+void mmay_test_lsp_protocol(void);
+void mmay_test_lsp_workspace(void);
+void mmay_test_lsp_cache(void);
+void mmay_test_lsp_source_locations(void);
+void mmay_test_lsp_diagnostics(void);
+void mmay_test_lsp_overrides(void);
+void mmay_test_lsp_rename(void);
+void mmay_test_lsp_editing(void);
+void mmay_test_compiler_visible_symbols(void);
+void mmay_test_checker_editor_facts(void);
+void mmay_test_checker_intrinsic_facts(void);
+void mmay_test_checker_builtin_facts(void);
+void mmay_test_intrinsic_calls(void);
+void mmay_test_lsp_server(void);
 void mmay_test_compiler_service_array_types(void);
 void mmay_test_compiler_service_incremental(void);
 void mmay_test_compiler_service_queries(void);
@@ -176,6 +190,11 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_utf8();
         break;
     case 1:
+        mmay_test_checker_editor_facts();
+        mmay_test_checker_intrinsic_facts();
+        mmay_test_checker_builtin_facts();
+        mmay_test_intrinsic_calls();
+        mmay_test_compiler_visible_symbols();
         mmay_test_cp30_checker();
         mmay_test_checker();
         mmay_test_checker_arrays();
@@ -250,6 +269,15 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_final_preview();
         break;
     case 7:
+        mmay_test_lsp_cache();
+        mmay_test_lsp_source_locations();
+        mmay_test_lsp_diagnostics();
+        mmay_test_lsp_editing();
+        mmay_test_lsp_rename();
+        mmay_test_lsp_overrides();
+        mmay_test_lsp_protocol();
+        mmay_test_lsp_workspace();
+        mmay_test_lsp_server();
         mmay_test_cli();
         mmay_test_cli_release_metadata();
         break;
@@ -346,6 +374,32 @@ static void mmay_test_run_cp39(void) {
 }
 
 int main(int argument_count, char **arguments) {
+    if (argument_count == 3 && strcmp(arguments[2], "--editor-features") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_lsp_overrides();
+        mmay_test_compiler_visible_symbols();
+        mmay_test_checker_editor_facts();
+        mmay_test_checker_intrinsic_facts();
+        mmay_test_checker_builtin_facts();
+        mmay_test_intrinsic_calls();
+        mmay_test_lsp_rename();
+        mmay_test_lsp_editing();
+        if (mmay_test_failure_count() != 0) return 1;
+        printf("mmay_editor_features: ok\n");
+        return 0;
+    }
+    if (argument_count == 3 && strcmp(arguments[2], "--lsp") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_lsp_cache();
+        mmay_test_lsp_source_locations();
+        mmay_test_lsp_diagnostics();
+        mmay_test_lsp_protocol();
+        mmay_test_lsp_workspace();
+        mmay_test_lsp_server();
+        if (mmay_test_failure_count() != 0) return 1;
+        printf("mmay_lsp_unit: ok\n");
+        return 0;
+    }
     if (argument_count == 3 && strcmp(arguments[2], "--intrinsic-metadata") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
         mmay_test_compiler_service_intrinsics();

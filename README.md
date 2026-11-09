@@ -76,7 +76,8 @@ pattern matching exhaustive.
 - **A VM and a native path.** A shared typed MIR, verified bytecode, a VM,
   and native C17 emission with differential tests.
 - **Everyday tooling.** Built-in formatting, checking, testing, local project
-  initialization, and offline installation diagnostics.
+  initialization, and offline installation diagnostics, plus a
+  [basic language server for Zed](docs/editor-support.md).
 - **Bootstrapping.** A portable C17 Stage 0 bootstrap; later
   self-hosting remains part of the design.
 

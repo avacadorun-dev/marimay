@@ -3882,6 +3882,36 @@ claimed. See [publication policy](../security/publication.md).
 
 No source-language, runtime, or command semantics change.
 
+## D113 — Expose the existing compiler service through a bounded basic LSP
+
+Status: accepted (repository-owner request, 2026-11-08).
+
+`mmay lsp` runs an experimental LSP 3.17 JSON-RPC server over standard input
+and output. It consumes the existing compiler service and formatter; it does
+not introduce a second parser, checker, lookup engine, or source semantics.
+The initial surface is versioned full-document synchronization, push
+diagnostics, top-level definition and reference navigation, checked type hover,
+document/package symbol search, and whole-document formatting.
+
+D116 supersedes the original per-request analysis lifetime described here.
+
+Each analysis rebuilds a bounded disk package graph and applies current open
+document overlays before checking it. Results and snapshots are disposed
+together after the request, so editing does not accumulate historical
+snapshots indefinitely. File URIs are decoded exactly and positions use
+zero-based UTF-16 units. Old document versions cannot replace newer text.
+
+Navigation exposes only facts the compiler publishes. Local bindings, fields,
+variants, generic instantiation occurrences, completion, rename, semantic
+tokens, background indexing and cancellable asynchronous checking remain
+future work. Errors that suppress fact publication can also suppress navigation;
+the server must never infer definitions by matching identifier spelling.
+
+This is a local editor slice, not completion of I8 or all-platform release
+verification. No language syntax, VM/native behavior, or formatter syntax
+changes; language differential fixtures are therefore unchanged. See
+[editor support](../editor-support.md) and [toolchain contract](../spec/toolchain.md).
+
 ## D114 — Publish a bounded experimental macOS alpha
 
 Status: accepted (repository-owner direction, 2026-11-08).
@@ -3967,6 +3997,7 @@ CLI0 audit or target language as complete. Separate publication authorization,
 bounded artifact validation and product-gate readiness make that distinction
 inspectable. No source-language or VM/native observable semantics change.
 
+
 ## D115 — Seeded non-cryptographic hash for managed collection keys
 
 Status: accepted.
@@ -4017,3 +4048,81 @@ notarization, trademark, registry, namespace or performance-parity claim
 follows. The release workflow contract, portable installed macOS policy,
 package layout, receipt identity rules and security review obligations
 are unchanged from D114.
+
+## D119 — Checked local and field identities, completion, and validated rename
+
+Status: accepted (repository-owner request, 2026-11-08). Extends D113.
+
+Editor facts include ordinary local bindings, parameters and nominal record
+fields. The checker records definitions and read/write references when its
+existing binding and field-resolution owners accept them. Local identities
+include the owning source function and declaration location; field identities
+include the nominal record and field name. Lexical scope, visibility start and
+ownership metadata distinguish shadowed bindings and same-named fields. Captured
+variables retain their original identity. Record shorthand can carry both a
+field role and a local role at one token. Package symbol search retains its
+top-level-only surface; local and field facts are queried by source position.
+
+The checker also publishes file-visible package names and exact imported
+spellings from its actual import environment. Completion consumes those facts,
+lexically visible local types, nominal field metadata and existing dot-call and
+intrinsic candidates. A request-local syntax probe may replace an unfinished
+identifier/member expression with `panic("")` to obtain a checked candidate
+set in value contexts. It neither mutates editor text nor publishes executable
+semantics from the probe. Unsupported/error contexts yield no speculative
+semantic matches. General call/index receiver inference remains future work.
+
+Rename validates a complete identifier with the lexer, stages exact definition
+and reference edits across the local module, then rechecks all packages and
+compares mapped declaration/reference bindings, including unchanged references.
+A clean check alone is insufficient: a rename that captures a different binding
+must be rejected. Constructor and record-pattern shorthand may expand to an
+explicit field/value pair to preserve both identities. Ambiguous, incomplete,
+unindexed or resource-limited cases are refused. The server returns versioned
+workspace edits for the editor to apply; it does not write files itself.
+
+Generic local specializations, enum payload identities and cross-module
+indexing are not claimed. Diagnostic-free publication remains required for
+semantic facts. No source syntax, execution behavior or formatter syntax
+changes. Focused checker/service/LSP tests, deterministic allocation failures,
+and a VM/native behavioral fixture validate the added metadata and tool actions;
+I8 and all-platform release gates remain independently open.
+
+## D120 — Responsive editor analysis and openable standard API views
+
+Status: accepted (repository-owner request, 2026-11-08). Extends D113 and D119.
+
+The experimental server retains up to four bounded analysis graphs. Queries and
+open-document diagnostics reuse the same immutable checked result while its
+inputs remain current. Accepted compilation-input document changes, open/close, save and watched
+source/configuration changes invalidate retained graphs. Cache hits compare
+closed source and manifest bytes; newly created/deleted files require discovery
+invalidation through watcher events, opening/saving a document or restarting the
+server. Clients supporting dynamic registration receive source/manifest watchers.
+Private completion repairs and rename staging remain separate analyses and never
+replace the current diagnostic result. A clean completion can use current facts
+directly. Resource failures remain retryable rather than becoming cached errors.
+
+Definitions in compiler-embedded standard packages open exact content-addressed
+source views under `.mmay/lsp/stdlib/`. Their bytes and selection ranges come from
+the checked compiler snapshot, never from a guessed checkout or matching name.
+Viewed files retain their standard-package identity; opening/changing a reading
+view does not invalidate compilation inputs. Editing a derived view does
+not modify the embedded library or inject a package into the user's module; the
+server explains that the view is for reading and refuses stale position queries.
+Standard stream, conversion, text/bytes, filesystem and environment/process
+operations retain their actual resolved external declaration identity.
+
+JSON convenience intrinsics have registry signatures rather than ordinary source
+implementations. Their checker-recorded successful call sites may navigate to an
+explicitly labelled generated API interface containing those exact signatures.
+That view is not executable implementation source and does not create ordinary
+function symbols or type identities. Hover and references use the selected
+intrinsic descriptor, including its actual import alias, rather than guessing a
+binding from its spelling. Rename does not offer edits to built-in API views.
+
+Diagnostics preserve compiler codes and messages. When an error in another file
+blocks checking, the open document receives an explanation with the exact related
+file/range. Invalid module manifests expose their real compiler diagnostic rather
+than an unexplained generic analysis failure. No language syntax, execution,
+formatter semantics, or all-platform I8 acceptance changes are implied.

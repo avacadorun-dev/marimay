@@ -145,6 +145,20 @@ add_executable(mmay_c_unit
   test_native_host_toolchain.c
   test_native_build_cache.c
   test_compiler_service.c
+  test_lsp_protocol.c
+  test_lsp_workspace.c
+  test_lsp_cache.c
+  test_lsp_source_locations.c
+  test_lsp_diagnostics.c
+  test_lsp_overrides.c
+  test_lsp_rename.c
+  test_lsp_editing.c
+  test_compiler_visible_symbols.c
+  test_checker_editor_facts.c
+  test_checker_intrinsic_facts.c
+  test_checker_builtin_facts.c
+  test_intrinsic_calls.c
+  test_lsp_server.c
   test_compiler_service_array_types.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
@@ -384,6 +398,25 @@ function(mmay_prepare_c_unit_working_directory destination)
 endfunction()
 
 mmay_prepare_c_unit_working_directory("${CMAKE_CURRENT_BINARY_DIR}")
+
+add_test(NAME mmay_lsp_unit
+  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --lsp
+)
+add_test(NAME mmay_lsp_editor_unit
+  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --editor-features
+)
+# These suites sweep every deterministic allocation-failure index of full LSP
+# analyses (roughly 10k instrumented runs per suite). Release completes them in
+# under a minute; TSan and Windows Debug/ASan need 18-20 minutes, so the timeout
+# covers sanitizer instrumentation without dropping any failure index.
+set_tests_properties(mmay_lsp_editor_unit PROPERTIES
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  TIMEOUT 1800 LABELS "lsp;allocation;editor"
+)
+set_tests_properties(mmay_lsp_unit PROPERTIES
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  TIMEOUT 1800 LABELS "lsp;allocation"
+)
 
 math(EXPR MMAY_C_UNIT_LAST_SHARD "${MMAY_C_UNIT_SHARD_COUNT} - 1")
 set(MMAY_C_UNIT_SHARD_NAMES

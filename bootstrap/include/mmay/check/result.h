@@ -11,6 +11,7 @@
 #include "mmay/check/facts.h"
 #include "mmay/check/model.h"
 #include "mmay/check/nominal.h"
+#include "mmay/check/visible_symbols.h"
 #include "mmay/types/type.h"
 
 typedef struct MarimayCheckResult {
@@ -32,6 +33,8 @@ typedef struct MarimayCheckResult {
     MarimayVector occurrences;
     MarimayVector completions;
     MarimayVector intrinsic_completions;
+    MarimayVector intrinsic_calls;
+    MarimayVector visible_symbols;
     MarimayMap function_index;
     MarimayMap symbol_index;
     bool initialized;

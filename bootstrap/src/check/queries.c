@@ -53,7 +53,8 @@ static bool mmay_checked_symbol_matches_prefix(
     const void *prefix,
     size_t prefix_length
 ) {
-    return symbol != NULL && prefix_length <= symbol->name.length
+    return symbol != NULL && symbol->kind <= MMAY_CHECKED_SYMBOL_INTERFACE
+        && prefix_length <= symbol->name.length
         && (prefix_length == 0
             || memcmp(symbol->name.data, prefix, prefix_length) == 0);
 }

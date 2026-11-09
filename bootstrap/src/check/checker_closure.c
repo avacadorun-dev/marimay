@@ -5,6 +5,7 @@
 #include "checker_expression_api.h"
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
+#include "editor_facts.h"
 
 static bool compile_closure(MarimayFunctionChecker *function, const MarimayAstNode *node,
     MarimayTypeId expected, MarimayTypeId contextual_parameter, MarimayTypeId contextual_result,
@@ -91,7 +92,8 @@ static bool compile_closure(MarimayFunctionChecker *function, const MarimayAstNo
         local.name = *(const MarimayCheckName *)mmay_vector_at_const(&names, i);
         local.type = *(const MarimayTypeId *)mmay_vector_at_const(&parameters, i + 1);
         local.register_id = (MarimayMirRegister)(i + 1); local.initialized = true;
-        if (!mmay_vector_push(&body.locals, &local)) goto allocation;
+        if (!mmay_check_editor_local(&body, &local, true)
+            || !mmay_vector_push(&body.locals, &local)) goto allocation;
     }
     if (block != NULL) {
         if (!mmay_checker_private_compile_block(&body, block)) goto cleanup;
