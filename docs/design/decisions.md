@@ -4000,3 +4000,20 @@ controlled executions keep deterministic behavior and the documented security
 review obligation for attacker-controlled map keys is unchanged. Collision
 resistance claims for this hobby runtime are not strengthened or weakened by
 this record; no DoS-resistance parity with SipHash is asserted.
+
+## D116 — Publish the second experimental macOS alpha
+
+Status: accepted (repository-owner direction, 2026-11-09).
+
+The owner authorizes the next GitHub prerelease `v0.1.0-alpha.2` in the
+D114 experimental-alpha sequence. Compiler, runtime and shipped
+standard-library versions move from `0.1.0-alpha.1` to `0.1.0-alpha.2`;
+the channel remains `experimental-alpha`, the claim remains
+`local-checker-backed-slice`, and `publicationReady` remains `false`.
+Published `v0.1.0-alpha.1` assets stay immutable per D114; this alpha
+publishes the D115 managed-collection hashing change (PR #4) with its
+recorded local evidence. No stable-language, production, signing,
+notarization, trademark, registry, namespace or performance-parity claim
+follows. The release workflow contract, portable installed macOS policy,
+package layout, receipt identity rules and security review obligations
+are unchanged from D114.
