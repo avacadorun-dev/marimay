@@ -12,6 +12,7 @@ static inline void mmay_managed_root_push_generated(
 ) {
     frame->locations = locations;
     frame->location_count = location_count;
+    frame->location_stride = 0;
     frame->previous = heap->roots;
     frame->heap_provenance = heap->provenance;
     frame->linked = true;

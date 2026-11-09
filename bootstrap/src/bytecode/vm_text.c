@@ -120,9 +120,7 @@ static MarimayBytecodeRunStatus mmay_vm_text_string_array(
     int64_t signed_count = 0;
     size_t count = 0;
     size_t cell_bytes = 0;
-    size_t location_bytes = 0;
     MarimayManagedCell *cells = NULL;
-    MarimayManagedReference **locations = NULL;
     MarimayManagedRootFrame roots = {0};
     MarimayManagedStatus managed_status;
     MarimayBytecodeRunStatus status;
@@ -139,25 +137,18 @@ static MarimayBytecodeRunStatus mmay_vm_text_string_array(
         return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
     count = (size_t)signed_count;
-    if (!mmay_size_multiply(count, sizeof(*cells), &cell_bytes)
-        || !mmay_size_multiply(count, sizeof(*locations), &location_bytes)) {
+    if (!mmay_size_multiply(count, sizeof(*cells), &cell_bytes)) {
         return MMAY_BYTECODE_RUN_LIMIT_REACHED;
     }
     cells = cell_bytes == 0 ? NULL : mmay_allocate(&allocator, cell_bytes);
-    locations = location_bytes == 0
-        ? NULL : mmay_allocate(&allocator, location_bytes);
-    if ((cell_bytes != 0 && cells == NULL)
-        || (location_bytes != 0 && locations == NULL)) {
-        mmay_deallocate(&allocator, locations, location_bytes);
-        mmay_deallocate(&allocator, cells, cell_bytes);
+    if (cell_bytes != 0 && cells == NULL) {
         return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     for (index = 0; index < count; index += 1U) {
         cells[index].reference = mmay_managed_invalid_reference();
-        locations[index] = &cells[index].reference;
     }
-    managed_status = mmay_managed_root_push(
-        &execution->managed_heap, &roots, locations, count
+    managed_status = mmay_managed_root_push_strided(
+        &execution->managed_heap, &roots, cells, sizeof(*cells), count
     );
     for (index = 0; managed_status == MMAY_MANAGED_OK && index < count;
         index += 1U) {
@@ -193,7 +184,6 @@ static MarimayBytecodeRunStatus mmay_vm_text_string_array(
             status = mmay_bytecode_run_managed_status(pop);
         }
     }
-    mmay_deallocate(&allocator, locations, location_bytes);
     mmay_deallocate(&allocator, cells, cell_bytes);
     return status;
 }

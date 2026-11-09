@@ -69,15 +69,14 @@ MarimayManagedStatus mmay_managed_collection_begin(
             goto cleanup;
         }
         for (index = 0; index < frame->location_count; index += 1) {
-            if (frame->locations[index] == NULL) {
-                status = MMAY_MANAGED_INVALID_ARGUMENT;
-                goto cleanup;
-            }
-            status = mmay_managed_mark_reference(
-                heap,
-                *frame->locations[index],
-                &gray_head
-            );
+            const MarimayManagedReference *slot =
+                frame->location_stride != 0
+                ? (const MarimayManagedReference *)(const void *)(
+                    (const unsigned char *)frame->locations
+                    + index * frame->location_stride
+                )
+                : frame->locations[index];
+            status = mmay_managed_mark_reference(heap, *slot, &gray_head);
             if (status != MMAY_MANAGED_OK) {
                 goto cleanup;
             }

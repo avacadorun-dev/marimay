@@ -4017,3 +4017,25 @@ notarization, trademark, registry, namespace or performance-parity claim
 follows. The release workflow contract, portable installed macOS policy,
 package layout, receipt identity rules and security review obligations
 are unchanged from D114.
+
+## D117 — Strided managed root frames
+
+Status: accepted.
+
+The managed root frame gains an optional byte stride between reference
+slots. `mmay_managed_root_push_strided` roots `count` slots at
+`base + index * stride` with the same invalid-or-live validation, reverse
+push order and provenance rules as the classic push; the classic push is
+the stride-equal-to-pointer-size case. `MarimayManagedRootFrame` stores
+the stride alongside its locations pointer; a zero stride is read as the
+classic layout by the collector for defense in depth. The collector and
+the generated inline helper set and honor the same field.
+
+Reason: the split/graphemes text paths built a second raw array of slot
+pointers on every call only to satisfy the pointer-array root contract,
+even though their `MarimayManagedCell` storage already holds the
+reference slots inline at a fixed stride. Strided roots remove that
+temporary indirection allocation from both the generated C and the VM
+path without changing tracing, publication, D055 accounting or any
+observable behavior. No allocation-capable API is added and no source,
+MIR, bytecode or formatter surface changes.

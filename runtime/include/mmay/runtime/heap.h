@@ -42,13 +42,18 @@ struct MarimayManagedEnumDescriptor;
 
 /*
  * Caller-owned exact root frame. Each entry points to one live reference
- * location; scalar locations must not be included. Frames must be popped in
- * strict reverse push order and their locations must outlive the linked frame.
- * A frame is zero-initialized before its first push.
+ * location; scalar locations must not be included. Entries are either an
+ * array of slot pointers (classic push) or a strided range of inline
+ * reference slots (strided push); slot contents must outlive the linked
+ * frame. Frames must be popped in strict reverse push order. A frame is
+ * zero-initialized before its first push.
  */
 typedef struct MarimayManagedRootFrame {
     MarimayManagedReference *const *locations;
     size_t location_count;
+    /* Byte stride between consecutive reference slots; zero means the
+     * classic pointer-array layout (sizeof(slot pointer)). */
+    size_t location_stride;
     struct MarimayManagedRootFrame *previous;
     uint64_t heap_provenance;
     bool linked;
@@ -107,6 +112,15 @@ MarimayManagedStatus mmay_managed_root_push(
     MarimayManagedHeap *heap,
     MarimayManagedRootFrame *frame,
     MarimayManagedReference *const *locations,
+    size_t location_count
+);
+/* Roots count reference slots at base + index * stride bytes. Every slot
+ * must be invalid or a live reference, exactly like the classic push. */
+MarimayManagedStatus mmay_managed_root_push_strided(
+    MarimayManagedHeap *heap,
+    MarimayManagedRootFrame *frame,
+    const void *base,
+    size_t stride,
     size_t location_count
 );
 MarimayManagedStatus mmay_managed_root_pop(

@@ -195,6 +195,86 @@ static void mmay_test_managed_roots_and_nested_edges(void) {
     mmay_managed_heap_dispose(&heap);
 }
 
+static void mmay_test_managed_strided_roots(void) {
+    MarimayManagedHeap heap;
+    MarimayManagedReference first = mmay_managed_invalid_reference();
+    MarimayManagedReference second = mmay_managed_invalid_reference();
+    MarimayManagedReference third = mmay_managed_invalid_reference();
+    MarimayManagedReference first_identity = mmay_managed_invalid_reference();
+    MarimayManagedReference second_identity = mmay_managed_invalid_reference();
+    MarimayManagedCell cells[3];
+    MarimayManagedRootFrame frame;
+    MarimayManagedRootFrame local_frame;
+    MarimayManagedReference *local_locations[3];
+    const unsigned char *observed_bytes = NULL;
+    size_t index = 0;
+    size_t length = 0;
+    static const unsigned char one[] = {'o', 'n', 'e'};
+    static const unsigned char two[] = {'t', 'w', 'o'};
+    static const unsigned char three[] = {'t', 'h', 'r', 'e', 'e'};
+    memset(&frame, 0, sizeof(frame));
+    memset(&local_frame, 0, sizeof(local_frame));
+    memset(cells, 0, sizeof(cells));
+    for (index = 0; index < 3; index += 1U) {
+        cells[index].reference = mmay_managed_invalid_reference();
+    }
+    MMAY_EXPECT(mmay_test_managed_init(
+        &heap,
+        mmay_system_allocator(),
+        true
+    ));
+    local_locations[0] = &first;
+    local_locations[1] = &second;
+    local_locations[2] = &third;
+    MMAY_EXPECT(mmay_managed_root_push(
+        &heap, &local_frame, local_locations, 3
+    ) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_string_new(&heap, one, sizeof(one), &first)
+        == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_string_new(&heap, two, sizeof(two), &second)
+        == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_string_new(&heap, three, sizeof(three), &third)
+        == MMAY_MANAGED_OK);
+    cells[0].reference = first;
+    cells[2].reference = second;
+    first_identity = first;
+    second_identity = second;
+    first = mmay_managed_invalid_reference();
+    second = mmay_managed_invalid_reference();
+    third = mmay_managed_invalid_reference();
+    MMAY_EXPECT(mmay_managed_root_push_strided(
+        &heap, &frame, cells, sizeof(*cells), 3
+    ) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_heap_collect(&heap) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_heap_live_objects(&heap) == 2);
+    MMAY_EXPECT(mmay_managed_string_bytes(
+        &heap, first_identity, &observed_bytes, &length
+    ) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(length == sizeof(one));
+    MMAY_EXPECT(mmay_managed_string_bytes(
+        &heap, second_identity, &observed_bytes, &length
+    ) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(length == sizeof(two));
+    MMAY_EXPECT(mmay_managed_string_bytes(
+        &heap, third, &observed_bytes, &length
+    ) == MMAY_MANAGED_INVALID_REFERENCE);
+    MMAY_EXPECT(mmay_managed_root_pop(&heap, &frame) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_root_pop(&heap, &frame)
+        == MMAY_MANAGED_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_managed_root_push_strided(&heap, &frame, NULL, sizeof(*cells), 0)
+        == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_root_pop(&heap, &frame) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_root_push_strided(&heap, &frame, cells, 0, 1)
+        == MMAY_MANAGED_INVALID_ARGUMENT);
+    cells[1].reference.slot = UINT32_MAX;
+    cells[1].reference.generation = UINT32_MAX - 1U;
+    MMAY_EXPECT(mmay_managed_root_push_strided(
+        &heap, &frame, cells, sizeof(*cells), 3
+    ) == MMAY_MANAGED_INVALID_REFERENCE);
+    MMAY_EXPECT(mmay_managed_root_pop(&heap, &local_frame) == MMAY_MANAGED_OK);
+    mmay_managed_heap_dispose(&heap);
+}
+
 static void mmay_test_managed_generic_descriptors_and_cycles(void) {
     MarimayManagedHeap heap;
     MarimayManagedReference scalar = mmay_managed_invalid_reference();
@@ -754,6 +834,7 @@ static void mmay_test_managed_nonempty_allocation_sweep(void) {
 void mmay_test_managed(void) {
     mmay_test_managed_reference_safety();
     mmay_test_managed_roots_and_nested_edges();
+    mmay_test_managed_strided_roots();
     mmay_test_managed_generic_descriptors_and_cycles();
     mmay_test_managed_root_discipline();
     mmay_test_managed_access_and_failure_atomicity();
