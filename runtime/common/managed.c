@@ -152,6 +152,39 @@ MarimayManagedStatus mmay_managed_reference_status(
         : MMAY_MANAGED_TYPE_MISMATCH;
 }
 
+MarimayManagedStatus mmay_managed_root_push_strided(
+    MarimayManagedHeap *heap,
+    MarimayManagedRootFrame *frame,
+    const void *base,
+    size_t stride,
+    size_t location_count
+) {
+    size_t index = 0;
+    if (!mmay_managed_heap_valid(heap) || frame == NULL
+        || (base == NULL && location_count != 0) || stride == 0
+        || frame->linked) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
+    }
+    for (index = 0; index < location_count; index += 1) {
+        const MarimayManagedReference *slot =
+            (const MarimayManagedReference *)(const void *)(
+                (const unsigned char *)base + index * stride
+            );
+        if (!mmay_managed_reference_is_invalid(*slot)
+            && !mmay_managed_reference_valid(heap, *slot)) {
+            return MMAY_MANAGED_INVALID_REFERENCE;
+        }
+    }
+    frame->locations = (MarimayManagedReference *const *)base;
+    frame->location_count = location_count;
+    frame->location_stride = stride;
+    frame->previous = heap->roots;
+    frame->heap_provenance = heap->provenance;
+    frame->linked = true;
+    heap->roots = frame;
+    return MMAY_MANAGED_OK;
+}
+
 MarimayManagedStatus mmay_managed_root_push(
     MarimayManagedHeap *heap,
     MarimayManagedRootFrame *frame,
@@ -176,6 +209,7 @@ MarimayManagedStatus mmay_managed_root_push(
     }
     frame->locations = locations;
     frame->location_count = location_count;
+    frame->location_stride = 0;
     frame->previous = heap->roots;
     frame->heap_provenance = heap->provenance;
     frame->linked = true;
