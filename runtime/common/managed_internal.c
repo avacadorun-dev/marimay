@@ -32,12 +32,15 @@ void mmay_managed_record_dispose(
     MarimayManagedHeap *heap,
     MarimayManagedRecord *record
 ) {
-    size_t field_bytes = mmay_managed_record_field_bytes(record);
     if (heap == NULL || record == NULL) {
         return;
     }
-    mmay_deallocate(&heap->allocator, record->fields, field_bytes);
-    mmay_deallocate(&heap->allocator, record, sizeof(*record));
+    /* record_new allocates the header and the fields as one object. */
+    mmay_deallocate(
+        &heap->allocator,
+        record,
+        sizeof(*record) + mmay_managed_record_field_bytes(record)
+    );
 }
 
 size_t mmay_managed_enum_payload_bytes(const MarimayManagedEnum *value) {

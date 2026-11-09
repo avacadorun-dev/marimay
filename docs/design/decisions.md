@@ -4017,3 +4017,27 @@ notarization, trademark, registry, namespace or performance-parity claim
 follows. The release workflow contract, portable installed macOS policy,
 package layout, receipt identity rules and security review obligations
 are unchanged from D114.
+
+## D118 — Coalesced record storage
+
+Status: accepted.
+
+Managed record construction allocates the record header and its field
+cells in one block instead of two, and `MarimayManagedRecord.fields`
+remains a pointer into that block at offset `sizeof(MarimayManagedRecord)`
+with identical lifetime and tracing behavior. Small root sets (up to
+eight reference fields) are collected into a stack buffer instead of a
+heap array; larger sets keep the heap path. Construction still performs
+the same field validation, publication, D055 accounting and
+failure-atomic cleanup; object byte totals, slot bookkeeping and the
+managed-object budget are unchanged — the physical layout now matches
+the coalesced size D055 has always charged. The record view and
+generated-code surfaces are untouched. No source syntax, formatter,
+MIR, bytecode or public C API changes.
+
+Reason: every record previously paid three allocator round trips
+(header, fields, roots) while the budget already charged one object.
+Coalescing removes two deterministic allocation calls per record for
+the common small-record shape, and the stack-buffered roots remove a
+third whenever a record has at most eight reference fields. The change
+is non-semantic and keeps every existing ledger and cleanup contract.
