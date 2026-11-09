@@ -192,7 +192,7 @@ static void lsp_test_allocations(const char *uri, bool analysis_enabled) {
 }
 
 static bool lsp_test_write(const char *path, const char *text) {
-    FILE *file = fopen(path, "wb");
+    FILE *file = mmay_test_open_file(path, "wb");
     bool ok;
     if (file == NULL) return false;
     ok = fwrite(text, 1, strlen(text), file) == strlen(text);
@@ -273,9 +273,9 @@ static void lsp_test_module(const MarimayOwnedBytes *current) {
     lsp_test_allocations((const char *)new_uri.data, true);
     mmay_owned_bytes_dispose(&uri);
     mmay_owned_bytes_dispose(&new_uri);
-    MMAY_EXPECT(remove(caller_path) == 0);
-    MMAY_EXPECT(remove(definition_path) == 0);
-    MMAY_EXPECT(remove(manifest_path) == 0);
+    MMAY_EXPECT(mmay_test_remove_file(caller_path) == 0);
+    MMAY_EXPECT(mmay_test_remove_file(definition_path) == 0);
+    MMAY_EXPECT(mmay_test_remove_file(manifest_path) == 0);
     MMAY_EXPECT(mmay_directory_remove_empty(allocator, nested_directory,
         strlen(nested_directory)) == MMAY_FILE_OK);
     MMAY_EXPECT(mmay_directory_remove_empty(allocator, root, strlen(root)) == MMAY_FILE_OK);

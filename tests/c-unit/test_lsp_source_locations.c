@@ -77,7 +77,7 @@ static void source_fixture_dispose(SourceFixture *fixture) {
 }
 
 static bool source_write(const char *path, const char *text) {
-    FILE *file = fopen(path, "wb");
+    FILE *file = mmay_test_open_file(path, "wb");
     if (file == NULL) return false;
     bool ok = fwrite(text, 1, strlen(text), file) == strlen(text);
     return fclose(file) == 0 && ok;

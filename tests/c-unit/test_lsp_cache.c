@@ -145,7 +145,7 @@ static void cache_closed_allocation_failures(const MarimayOwnedBytes *uri) {
     bool created = false;
     MMAY_EXPECT(ready);
     if (!ready) { mmay_owned_bytes_dispose(&path); return; }
-    file = fopen((const char *)path.data, "wb");
+    file = mmay_test_open_file((const char *)path.data, "wb");
     MMAY_EXPECT(file != NULL);
     if (file == NULL) goto cleanup;
     created = true;
@@ -168,7 +168,7 @@ static void cache_closed_allocation_failures(const MarimayOwnedBytes *uri) {
         }
     }
 cleanup:
-    if (created) MMAY_EXPECT(remove((const char *)path.data) == 0);
+    if (created) MMAY_EXPECT(mmay_test_remove_file((const char *)path.data) == 0);
     mmay_owned_bytes_dispose(&path);
 }
 
