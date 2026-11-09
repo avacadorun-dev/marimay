@@ -12,6 +12,7 @@
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
 #include "checker_generic_types_api.h"
+#include "editor_facts.h"
 
 
 
@@ -754,7 +755,8 @@ cleanup:
         local.scope_depth = function->scope_depth;
         local.mutable_binding = false;
         local.initialized = true;
-        if (!mmay_vector_push(&function->locals, &local)) {
+        if (!mmay_check_editor_local(function, &local, true)
+            || !mmay_vector_push(&function->locals, &local)) {
             mmay_checker_fail(
                 function->checker,
                 MMAY_CHECK_ALLOCATION_FAILED

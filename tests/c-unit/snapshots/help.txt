@@ -10,6 +10,7 @@ Available workflow:
   run       Run a program with the VM or native engine
   build     Build a host-native executable
   init      Create a local canonical module
+  lsp       Start the basic language server over stdio
 
 Available inspection:
   version   Show release contract and build identity

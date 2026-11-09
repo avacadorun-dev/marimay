@@ -102,6 +102,11 @@ static bool mmay_check_publish_symbol(
     fact.end = seed->name.end;
     fact.kind = seed->kind;
     fact.is_public = seed->is_public;
+    fact.owner_symbol = seed->owner_symbol;
+    fact.scope_start = seed->scope_start;
+    fact.scope_end = seed->scope_end;
+    fact.visible_from = seed->visible_from;
+    fact.scope_depth = seed->scope_depth;
     if (!mmay_vector_push(&checker->result->symbols, &fact)) {
         mmay_owned_bytes_dispose(&fact.package_name);
         mmay_owned_bytes_dispose(&fact.name);
@@ -109,6 +114,15 @@ static bool mmay_check_publish_symbol(
         return false;
     }
     return true;
+}
+
+bool mmay_check_append_symbol_seed(MarimayChecker *checker,
+    const MarimayCheckSymbolSeed *seed) {
+    if (checker->result->symbols.length >= checker->options.max_symbols) {
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
+        return false;
+    }
+    return mmay_check_publish_symbol(checker, seed);
 }
 
 static int mmay_check_compare_occurrences(

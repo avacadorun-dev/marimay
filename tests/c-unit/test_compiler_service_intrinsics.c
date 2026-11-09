@@ -158,7 +158,13 @@ static void mmay_metadata_imports_and_signatures(void) {
     for (index = 0; index < result.checked.symbols.length; index += 1) {
         const MarimayCheckedSymbol *symbol = mmay_checked_symbol(&result.checked, index);
         if (strcmp((const char *)symbol->package_name.data, "std/json") == 0) {
-            MMAY_EXPECT(symbol->kind == MMAY_CHECKED_SYMBOL_RECORD);
+            MMAY_EXPECT(symbol->kind == MMAY_CHECKED_SYMBOL_RECORD
+                || symbol->kind == MMAY_CHECKED_SYMBOL_FIELD);
+            if (symbol->kind == MMAY_CHECKED_SYMBOL_FIELD) {
+                const MarimayCheckedSymbol *owner = mmay_checked_symbol_by_id(
+                    &result.checked, symbol->owner_symbol);
+                MMAY_EXPECT(owner != NULL && owner->kind == MMAY_CHECKED_SYMBOL_RECORD);
+            }
         }
     }
     MMAY_EXPECT(result.checked.completions.length == 0);

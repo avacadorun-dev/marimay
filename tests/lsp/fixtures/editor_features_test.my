@@ -1,0 +1,19 @@
+type Box {
+  mutable value: int,
+}
+
+fn process(seed: int): int {
+  let value = seed;
+  const box = Box { value };
+  {
+    const value = 3;
+    box.value += value;
+  }
+  const read = (bonus: int): int => box.value + bonus;
+  return read(value);
+}
+
+@test
+fn editorFactsPreserveBehavior(): void {
+  expect.equal(process(4), 11);
+}

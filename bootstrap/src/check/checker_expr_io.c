@@ -112,6 +112,8 @@ static bool mmay_checker_io_compile_binary_primitive(
         mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
+    if (!mmay_check_record_occurrence(function->checker, check_name,
+            callable.symbol)) return false;
     memset(&value, 0, sizeof(value));
     if (!mmay_compile_expression(
             function, argument_nodes[0], callable.parameter_types[0], &value
@@ -364,6 +366,8 @@ bool mmay_checker_private_compile_io_call(
         mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
+    if (!mmay_check_record_occurrence(function->checker, function_name,
+            callable.symbol)) return false;
     memset(&text, 0, sizeof(text));
     if (takes_text) {
         if (!mmay_compile_expression(

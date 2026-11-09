@@ -2,6 +2,7 @@
 #include "checker_core_api.h"
 #include "checker_expr_nominal_api.h"
 #include "checker_lookup_api.h"
+#include "editor_facts.h"
 
 /* Conservative lexical planning is used only to choose storage. Shadowing may
  * retain an unnecessary cell, but never changes binding resolution/captures. */
@@ -73,6 +74,7 @@ bool mmay_closure_prepare_local(MarimayFunctionChecker *function, MarimayCheckLo
 
 bool mmay_closure_read_local(MarimayFunctionChecker *function, const MarimayCheckLocal *local,
     size_t start, size_t end, MarimayExpressionValue *result) {
+    if (!mmay_check_editor_local_occurrence(function, local, start, end)) return false;
     if (local->cell_type == MMAY_TYPE_INVALID) {
         *result = (MarimayExpressionValue){local->type, local->register_id, true}; return true;
     }

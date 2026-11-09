@@ -5,6 +5,7 @@
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
 #include "checker_generic_types_api.h"
+#include "editor_facts.h"
 
 
 
@@ -300,6 +301,9 @@
             );
             goto cleanup;
         }
+        if (!mmay_check_editor_field_occurrence(function->checker,
+                imported != NULL ? imported->symbol : declaration->symbol,
+                field_name)) goto cleanup;
         if (seen == NULL || arguments == NULL
             || field_index >= declaration->fields.length) {
             mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
@@ -587,6 +591,9 @@ cleanup:
         );
         return false;
     }
+    if (!mmay_check_editor_field_occurrence(function->checker,
+            imported_record != NULL ? imported_record->symbol : (*record_declaration)->symbol,
+            field_name)) return false;
     if (imported_record != NULL) {
         return mmay_checker_private_imported_record_layout(
             function, imported_record, receiver->type, record

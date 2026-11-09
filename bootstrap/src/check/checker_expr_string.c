@@ -297,6 +297,9 @@ bool mmay_checker_private_compile_convert_string_call(
         callee, MMAY_TOKEN_IDENTIFIER, 0
     );
     const MarimayAstNode *argument = NULL;
+    MarimayCheckName namespace_name = {0};
+    MarimayCheckName function_name;
+    MarimayCheckCallable callable = {0};
     MarimayTypeId source_type;
     MarimayExpressionValue source;
     size_t count = 0;
@@ -370,7 +373,20 @@ bool mmay_checker_private_compile_convert_string_call(
         );
         return false;
     }
-    return mmay_checker_string_format_value(function, node, source, result);
+    function_name = (MarimayCheckName){
+        function->checker->ast->snapshot, name_token->start, name_token->end
+    };
+    if (namespace_token != NULL) namespace_name = (MarimayCheckName){
+        function->checker->ast->snapshot, namespace_token->start, namespace_token->end
+    };
+    if (mmay_check_resolve_imported_call(function->checker, namespace_name,
+            namespace_token != NULL, function_name, false, MMAY_TYPE_INVALID,
+            &callable) != MMAY_CHECK_CALL_FOUND) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
+        return false;
+    }
+    return mmay_checker_string_format_value(function, node, source, result)
+        && mmay_check_record_occurrence(function->checker, function_name, callable.symbol);
 }
 
 static const MarimayCheckImportBinding *mmay_checker_parse_binding(
@@ -618,5 +634,5 @@ bool mmay_checker_private_compile_convert_parse_call(
     result->type = callable.result_type;
     result->register_id = target;
     result->valid = true;
-    return true;
+    return mmay_check_record_occurrence(function->checker, function_name, callable.symbol);
 }

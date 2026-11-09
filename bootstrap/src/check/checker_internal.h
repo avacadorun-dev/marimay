@@ -108,6 +108,9 @@ bool mmay_check_publish_symbol_seeds(
     const MarimayCheckSymbolSeed *seeds,
     size_t seed_count
 );
+/* Appends before final publication; final symbol publication builds its index. */
+bool mmay_check_append_symbol_seed(MarimayChecker *checker,
+    const MarimayCheckSymbolSeed *seed);
 bool mmay_check_record_occurrence(
     MarimayChecker *checker,
     MarimayCheckName name,

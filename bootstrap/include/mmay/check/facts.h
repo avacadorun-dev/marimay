@@ -14,7 +14,10 @@ typedef enum MarimayCheckedSymbolKind {
     MMAY_CHECKED_SYMBOL_TYPE_ALIAS,
     MMAY_CHECKED_SYMBOL_RECORD,
     MMAY_CHECKED_SYMBOL_ENUM,
-    MMAY_CHECKED_SYMBOL_INTERFACE
+    MMAY_CHECKED_SYMBOL_INTERFACE,
+    MMAY_CHECKED_SYMBOL_LOCAL,
+    MMAY_CHECKED_SYMBOL_PARAMETER,
+    MMAY_CHECKED_SYMBOL_FIELD
 } MarimayCheckedSymbolKind;
 
 /*
@@ -38,6 +41,11 @@ typedef struct MarimayCheckedSymbol {
     size_t end;
     MarimayCheckedSymbolKind kind;
     bool is_public;
+    /* Lexical locals/parameters and nominal record fields only. Other kinds
+     * have zero metadata. Byte scopes are half-open; locals are available
+     * from visible_from, after the initializer, and nearest depth wins. */
+    MarimaySymbolId owner_symbol;
+    size_t scope_start, scope_end, visible_from, scope_depth;
 } MarimayCheckedSymbol;
 
 /*

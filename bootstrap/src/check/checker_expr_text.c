@@ -242,7 +242,7 @@ bool mmay_checker_private_compile_text_primitive_call(
     }
     if (generation) return mmay_text_checker_generation(
         function, name, node, &callable, values, count, result
-    );
+    ) && mmay_check_record_occurrence(function->checker, check_name, callable.symbol);
     if (!mmay_text_checker_array_layout(
             function, callable.result_type, values, count, &array
         ) || !mmay_function_add_register(
@@ -264,5 +264,5 @@ bool mmay_checker_private_compile_text_primitive_call(
     result->type = callable.result_type;
     result->register_id = target;
     result->valid = true;
-    return true;
+    return mmay_check_record_occurrence(function->checker, check_name, callable.symbol);
 }

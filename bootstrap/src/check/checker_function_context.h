@@ -10,6 +10,8 @@ typedef struct MarimayCheckLocal {
     size_t scope_depth;
     bool mutable_binding;
     bool initialized;
+    MarimaySymbolId editor_symbol;
+    bool editor_symbol_valid;
     MarimayTypeId cell_type, cell_payload_type;
     MarimayMirRegister cell_register;
     bool cell_constructed;

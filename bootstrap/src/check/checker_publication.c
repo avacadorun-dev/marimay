@@ -1,6 +1,7 @@
 #include "checker_publication_api.h"
 #include "checker_declaration_lifecycle_api.h"
 #include "checker_imported_enums_api.h"
+#include "editor_facts.h"
 
 
 
@@ -145,6 +146,7 @@ bool mmay_checker_private_check_symbol_fact_total(
     bool seeds_initialized = false;
     bool published = false;
     memset(&seeds, 0, sizeof(seeds));
+    if (!mmay_check_editor_publish_fields(checker)) return false;
     if (!mmay_checker_private_check_symbol_fact_total(checker, &total)
         || total > checker->options.max_symbols) {
         mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);

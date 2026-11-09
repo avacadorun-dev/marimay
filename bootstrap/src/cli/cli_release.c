@@ -25,6 +25,7 @@ static const MarimayCliTaskHelp mmay_release_tasks[] = {
     {"help", "Show task-oriented command help.", "help [command]", "mmay help build", "CP29", true},
     {"init", "Create a local canonical Marimay module.", "init [path]", "mmay init ./orders", "CP39", true},
     {"list", "List package dependencies.", "list", "mmay list", "I7", false},
+    {"lsp", "Serve basic compiler-backed editor features over standard input/output.", "lsp", "mmay lsp", "I8", true},
     {"outdated", "Report available dependency updates.", "outdated", "mmay outdated", "I7", false},
     {"remove", "Remove a package dependency.", "remove module", "mmay remove marimay.example/postgres", "I7", false},
     {"run", "Run the implemented preview surface with the VM or native engine.", "run [target] [--engine vm|native] [--allow-env name] [--allow-read path] [--allow-write path] [--max-heap-bytes bytes] [-- arguments]", "mmay run --engine native . --allow-env HOME", "CP39", true},
@@ -124,6 +125,7 @@ bool mmay_cli_release_write_top_help(MarimayWriter writer) {
         "  run       Run a program with the VM or native engine\n"
         "  build     Build a host-native executable\n"
         "  init      Create a local canonical module\n"
+        "  lsp       Start the basic language server over stdio\n"
         "\n"
         "Available inspection:\n"
         "  version   Show release contract and build identity\n"

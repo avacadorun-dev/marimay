@@ -458,6 +458,87 @@ Intrinsic metadata has neither a fabricated source definition nor an ordinary
 function type and is not included in nominal receiver completion. It does not
 make the calls first-class values or imply production LSP support.
 
+### 6.1.1 `mmay lsp` (experimental basic server)
+
+Under D113, `mmay lsp` accepts LSP 3.17 JSON-RPC messages with
+`Content-Length` framing on stdin and writes only framed responses and
+notifications to stdout. Human transport failures use stderr. `initialize`,
+`initialized`, `shutdown`, and `exit` follow the LSP lifecycle; unknown requests
+return `-32601`, invalid parameters `-32602`, and requests before initialization
+`-32002`. A clean input EOF ends the process; `exit` without `shutdown` returns
+1. A malformed or truncated frame terminates with status 70.
+
+The initial negotiated encoding is UTF-16. Synchronization is full text
+(`TextDocumentSyncKind.Full`), with open, change, save and close notifications.
+Open text and newer versioned changes replace disk bytes for analysis without
+writing the source file. Stale versions are ignored. Every successful analysis
+publishes the current version's compiler diagnostics, including an empty list
+when repaired; closing a document clears its diagnostics. Analysis failures
+must replace stale diagnostics with an explicit analysis error.
+
+For a module file, the server uses the existing local package discovery and
+standard-package provider. Other source files use standalone script checking.
+All currently open overlays in the selected graph participate in the check.
+Under D120, an analysis owns its snapshots and result together; the workspace
+retains at most four current graphs for repeated queries and diagnostics. Accepted
+compilation-input open/change/close, save and watched source/configuration events invalidate the
+cache. Hits validate closed source and manifest bytes. Dynamic watcher registration
+is offered when supported; newly created/deleted files otherwise require an open,
+save or server restart to refresh discovery. Failed resource allocations are not
+cached. Completion repair and rename staging remain isolated analyses.
+The server supports at most 64 open documents, 16 MiB per source, 64 MiB of
+open text, 16 MiB per protocol body, 8 KiB of headers, and JSON nesting depth 64.
+Only absolute local `file:` URIs are supported; invalid encodings, embedded
+NUL paths, remote hosts and URI query/fragment suffixes are rejected.
+
+Supported queries are `textDocument/definition`, `textDocument/hover`,
+`textDocument/references`, `textDocument/documentSymbol`, `workspace/symbol`,
+`textDocument/formatting`, `textDocument/completion`,
+`textDocument/prepareRename`, and `textDocument/rename`.
+Navigation uses current checked top-level, local/parameter and record-field facts;
+unsupported positions return no result. Package errors can suppress facts.
+Embedded standard definitions open exact content-addressed source views under
+`.mmay/lsp/stdlib/`. These files are reading views, excluded from user-package
+inputs; changed view text receives an informational diagnostic and no position
+query may use it as if it were the original snapshot. Compiler-known stream, conversion, text/bytes, filesystem and environment/process
+calls retain their actual declaration identity. Successful JSON intrinsic call facts may
+navigate to a clearly labelled generated API interface with registry signatures;
+this does not claim an ordinary implementation or create function symbols.
+An error in another file that blocks checking is reported with its related source
+location; manifest failures retain their compiler code and message.
+Document symbols identify declaration-name ranges. Workspace symbol search is
+a bounded prefix query over the first open document's checked package graph,
+not a persistent index of every workspace folder. Formatting uses the built-in
+formatter and returns no edit for invalid syntax or already canonical text.
+Under D119, local and field references are recorded by the checker at actual
+resolution sites. Same-spelled bindings in different scopes and fields of
+different nominal records remain separate identities. Closure captures retain
+the outer binding identity. Shorthand syntax may carry both local and field
+roles at one token; an ambiguous rename cursor must be refused.
+
+Completion provides at most 4096 items with explicit prefix replacement ranges.
+It includes visible locals, current-package symbols, exact imported aliases and
+namespace spellings, accessible nominal fields, and existing resolver-owned
+dot-call/intrinsic candidates. For unfinished identifier or simple dotted member
+expressions, the server may check a private repaired snapshot using a bottom
+expression. The actual document, diagnostic state and disk bytes are unchanged.
+General call/index receivers, generic field-chain substitution and arbitrary
+malformed-buffer recovery are not claimed. No candidate may be inferred solely from matching an unrelated
+identifier spelling.
+
+Rename accepts exactly one non-keyword identifier and proposes versioned
+`documentChanges`, including null versions for closed local files. It stages the
+edits in fresh snapshots, checks the whole local module and verifies that every
+mapped declaration and reference retains its intended binding. Conflicts,
+capture, unsupported/unindexed occurrences, ambiguous roles and exhausted
+comparison budgets return `-32803` without edits. Shorthand may be expanded to
+an explicit field/value pair. Source comments, strings and unrelated same-named
+symbols are not renamed. The editor applies the returned edits.
+
+Generic-local specialization navigation, enum payload identities, semantic tokens,
+background indexing, and asynchronous cancellation remain unavailable.
+The remaining production compatibility and platform gates belong to I8.
+
 ### 6.2 `mmay run`
 
 ```sh

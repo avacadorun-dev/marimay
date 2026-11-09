@@ -8,6 +8,7 @@
 #include "checker_lookup_api.h"
 #include "checker_match_pattern_api.h"
 #include "package_imports_api.h"
+#include "editor_facts.h"
 
 
 
@@ -521,6 +522,8 @@ bool mmay_compound_assignment_kind(
         );
         return false;
     }
+    if (!mmay_check_editor_local_occurrence(function, local, name.start, name.end))
+        return false;
     if (!local->mutable_binding) {
         (void)mmay_checker_add_diagnostic(
             function->checker,

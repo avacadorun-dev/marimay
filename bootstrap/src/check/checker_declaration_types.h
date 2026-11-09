@@ -224,6 +224,8 @@ typedef struct MarimayCheckSymbolSeed {
     MarimayTypeId type;
     MarimayCheckedSymbolKind kind;
     bool is_public;
+    MarimaySymbolId owner_symbol;
+    size_t scope_start, scope_end, visible_from, scope_depth;
 } MarimayCheckSymbolSeed;
 
 #endif

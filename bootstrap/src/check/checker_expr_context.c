@@ -155,5 +155,5 @@ bool mmay_checker_private_compile_context_primitive_call(
     result->type = callable.result_type;
     result->register_id = target;
     result->valid = true;
-    return true;
+    return mmay_check_record_occurrence(function->checker, check_name, callable.symbol);
 }
