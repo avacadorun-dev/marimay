@@ -16,7 +16,7 @@ import prepare
 import publish
 import verify_ci
 
-VERSION = "0.1.0-alpha.2"
+VERSION = "0.1.0-alpha.3"
 SHA = "d" * 40
 REPOSITORY = "marimay-lang/marimay"
 SOURCE = ('set(MMAY_COMPILER_VERSION "' + VERSION + '")\n'
@@ -88,7 +88,7 @@ class ReleasePreparationTest(unittest.TestCase):
     def test_pr_cannot_publish_and_tag_must_match_version(self):
         self.assertEqual(prepare.prepare(SOURCE, "pull_request", "untrusted", SHA)["publish"], "false")
         self.assertEqual(prepare.prepare(SOURCE, "push", "v" + VERSION, SHA)["publish"], "true")
-        for tag in ("main", "v0.1.0-alpha.3", "v" + VERSION + "\noutput=bad", "../../other"):
+        for tag in ("main", "v0.1.0-alpha.4", "v" + VERSION + "\noutput=bad", "../../other"):
             with self.subTest(tag=tag), self.assertRaises(ReleaseError):
                 prepare.prepare(SOURCE, "workflow_dispatch", tag, SHA)
 

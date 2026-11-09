@@ -1,6 +1,6 @@
-# Marimay 0.1.0-alpha.2 known limitations
+# Marimay 0.1.0-alpha.3 known limitations
 
-Version: `0.1.0-alpha.2`
+Version: `0.1.0-alpha.3`
 
 Channel: `experimental-alpha`
 
@@ -12,7 +12,7 @@ This field records incomplete CLI0/CP40 readiness. The owner separately
 authorized D114's bounded experimental macOS prerelease; neither authorization
 nor publication promotes a product milestone.
 
-Standard library: `0.1.0-alpha.2`, scope `bounded-preview`, compatibility
+Standard library: `0.1.0-alpha.3`, scope `bounded-preview`, compatibility
 `alpha-source`
 
 Bytecode: `unavailable`, compatibility `none`

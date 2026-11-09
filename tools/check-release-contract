@@ -24,7 +24,7 @@ ROADMAP_REGISTER = ROOT / "docs/implementation/roadmap.tsv"
 REQUIREMENTS = ROOT / "docs/requirements.md"
 README = ROOT / "README.md"
 LIMITATIONS = ROOT / "docs/known-limitations.md"
-CANDIDATE = ROOT / "docs/releases/0.1.0-alpha.2.md"
+CANDIDATE = ROOT / "docs/releases/0.1.0-alpha.3.md"
 
 MATRIX_FIELDS = (
     "id",
@@ -45,12 +45,12 @@ CLAIMS = {
     "excluded-from-cli0",
 }
 EXPECTED = {
-    "MMAY_COMPILER_VERSION": "0.1.0-alpha.2",
-    "MMAY_RUNTIME_VERSION": "0.1.0-alpha.2",
+    "MMAY_COMPILER_VERSION": "0.1.0-alpha.3",
+    "MMAY_RUNTIME_VERSION": "0.1.0-alpha.3",
     "MMAY_LANGUAGE_VERSION": "0.1-design",
     "MMAY_BYTECODE_VERSION": "unavailable",
     "MMAY_BYTECODE_COMPATIBILITY": "none",
-    "MMAY_STANDARD_LIBRARY_VERSION": "0.1.0-alpha.2",
+    "MMAY_STANDARD_LIBRARY_VERSION": "0.1.0-alpha.3",
     "MMAY_STANDARD_LIBRARY_SCOPE": "bounded-preview",
     "MMAY_STANDARD_LIBRARY_COMPATIBILITY": "alpha-source",
     "MMAY_VERSION_SCHEMA": "marimay.version/2",
@@ -222,7 +222,7 @@ def validate_release_files() -> list[str]:
     limitations = read(LIMITATIONS)
     candidate = read(CANDIDATE)
     required_doc_text = (
-        "Version: `0.1.0-alpha.2`",
+        "Version: `0.1.0-alpha.3`",
         "Channel: `experimental-alpha`",
         "Claim: `local-checker-backed-slice`",
         "Publication ready: `no`",
@@ -232,11 +232,11 @@ def validate_release_files() -> list[str]:
         if needle not in limitations:
             findings.append(f"docs/known-limitations.md: missing {needle!r}")
     for needle in (
-        "0.1.0-alpha.2", "experimental-alpha", "marimay.version/2",
+        "0.1.0-alpha.3", "experimental-alpha", "marimay.version/2",
         "Publication ready: `no`", "D114", "CLI0", "CP40", "unsigned", "unnotarized",
     ):
         if needle not in candidate:
-            findings.append(f"docs/releases/0.1.0-alpha.2.md: missing {needle!r}")
+            findings.append(f"docs/releases/0.1.0-alpha.3.md: missing {needle!r}")
 
     readme = read(README)
     begin = "<!-- cp29-quick-start:begin -->"

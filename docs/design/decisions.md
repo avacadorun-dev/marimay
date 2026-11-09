@@ -4170,3 +4170,25 @@ blocks checking, the open document receives an explanation with the exact relate
 file/range. Invalid module manifests expose their real compiler diagnostic rather
 than an unexplained generic analysis failure. No language syntax, execution,
 formatter semantics, or all-platform I8 acceptance changes are implied.
+
+## D121 — Publish the third experimental macOS alpha
+
+Status: accepted (repository-owner direction, 2026-11-10).
+
+The owner authorizes the next GitHub prerelease `v0.1.0-alpha.3` in the
+D114 experimental-alpha sequence. Compiler, runtime and shipped
+standard-library versions move from `0.1.0-alpha.2` to `0.1.0-alpha.3`;
+the channel remains `experimental-alpha`, the claim remains
+`local-checker-backed-slice`, and `publicationReady` remains `false`.
+Published `v0.1.0-alpha.2` assets stay immutable per D114; this alpha
+publishes the strided managed root frames used by split/graphemes
+(D117, PR #5), coalesced record storage (D118, PR #6), and the
+experimental language server (D113, D119, D120, PR #7), including the
+new `lsp` command, with their recorded local evidence. D117's local
+screening stays inside the session noise floor on its target rows, so
+this record makes no split/graphemes performance claim. No
+stable-language, production, signing, notarization, trademark,
+registry, namespace or performance-parity claim follows. The release
+workflow contract, portable installed macOS policy, package layout,
+receipt identity rules and security review obligations are unchanged
+from D114.
