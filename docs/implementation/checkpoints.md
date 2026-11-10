@@ -1672,6 +1672,38 @@ the first atomic I6 card remains CP43 or later.
 
 State: `in-progress`. Parent gate: CLI0. Predecessor: CP38. Evidence scope: `local`.
 
+### Alpha.4 closure queue (owner-accepted 2026-11-10)
+
+The ten-application portfolio is implemented (2026-09-09). What remains is
+acceptance, not features, and it is the whole content of the `0.2.0-alpha.4`
+release slot:
+
+1. **Coverage and dispositions (#24).** One matrix: the ten applications against
+   the constructs they exercise, the engine, the acceptance command and the
+   recorded result at a single revision, plus an explicit disposition (fixed /
+   accepted debt / excluded) for every finding. At minimum byte-literal-match
+   `I0001`, rune and collection-key equality, parser recovery, VM string
+   retention and source-lint `I0001`.
+2. **Startup budgets (#25).** First native execution 392/387 ms against 100 ms,
+   source-lint small VM run 500-532 ms against 500 ms, warm
+   `test --engine both` 5.506 s against 2 s. Each row ends either met with
+   paired evidence, or re-budgeted by a decision that records the measured floor
+   and puts the corrected number into `known-limitations.md`.
+3. **One bounded perf timebox (#26).** `frequency-map`, `unique-set`,
+   `rune-frequency` and #3, four weeks, exit on a paired improvement or an
+   accepted debt with the next hypothesis. After it, no perf candidate enters
+   the alpha line without a new decision. This replaces the open-ended
+   September perf wave.
+4. **Canonical program (#27).** The notes application builds and runs from a
+   clean checkout in CI, so the supported slice is stated positively in the
+   release contract rather than only by exclusions.
+5. **Release (#28).** `0.2.0-alpha.4` contract, changelog, regenerated
+   limitations, package; no CLI0 claim.
+
+The slot assumes the owner's stated capacity of ~5 h/week, is due 2027-02-28,
+and moves only together with a written note. At most two issues carry the `now`
+label at any time.
+
 Initial evidence: [typed JSON first slice](evidence/cp42-typed-json-first-slice-2026-09-05.md).
 Follow-up: [notes migration and startup convergence](evidence/cp42-notes-startup-2026-09-06.md).
 Follow-up: [structured JSON error paths](evidence/cp42-json-error-paths-2026-09-06.md).
