@@ -72,10 +72,13 @@ cache-independence, and VM/native process gates are verified.
   compilation are not part of CLI0.
 - I6 task suspension, scheduler, cancellation, non-blocking I/O, DNS/TCP/HTTP,
   channels, race/select, and isolates are not implemented.
-- N0 lacks external legal/control/PATH evidence. This roadmap does not authorize
-  public identities, registries, namespaces, signing keys or supported releases.
-  D114 separately authorizes the experimental macOS prerelease and installer;
-  its publication does not close N0, CLI0 or CP39–CP42.
+- N0 lacks external legal/control/PATH evidence. D123 excludes N0 from the CLI0
+  claim and records the accepted residual risk; the gate returns as a hard
+  prerequisite for I7 registry namespaces, any signing or notarization claim,
+  and the P4 1.0 audit. This roadmap still does not authorize public identities,
+  registries, namespaces, signing keys or supported releases. D114 separately
+  authorizes the experimental macOS prerelease and installer; its publication
+  does not close N0, CLI0 or CP39–CP42.
 - Full Tier 1, sanitizer, installer, sustained fuzz, compatibility, bootstrap,
   external-pilot, and production-service evidence required by later gates is
   not complete.
@@ -113,14 +116,14 @@ CP41 remains the separately evidenced cross-target native-code checkpoint.
 ## Critical path
 
 ```text
-D0 + bounded N0/I0/A0/I1-I5 prerequisites
+D0 + bounded I0/A0/I1-I5 prerequisites (N0 deferred by D123)
   -> CP29-CP38: bounded local CLI language/core surface
   -> CP42: JSON/collections/control-flow/API ergonomics + ten external CLI apps
   -> CP41: I4 x86_64 generated-C live-state and spill/branch pressure
   -> CP39-CP40: installable artifact and CLI0 audit
   -> I6: typed JSON/config -> concurrent HTTP fan-out -> timeout/race/cancel
          -> lexical defer cleanup -> deterministic VM/native trace
-  -> E0: external ergonomics pilot
+  -> E0: agent pilot under D124 (3 sessions, 2 platforms)
   -> I7 / I8 / I9 productization
   -> P0 broader ecosystem/service alpha
   -> I10 self-hosting after verified E0
@@ -143,7 +146,7 @@ authorization. These are never synonyms.
 | ID | Gate | State | Evidence scope | Concrete next blocker | Testable exit criterion / execution link |
 |---|---|---|---|---|---|
 | D0 | Research and design baseline | `verified` | `local` | — | Preserve the accepted decision/spec baseline; [evidence](evidence/README.md#d0). |
-| N0 | Naming and distribution identity | `blocked` | `local` | External legal search plus control of domains/accounts/namespaces/signing identity and `mmay` PATH evidence are missing. | Close every naming-audit row, accept the follow-up identity decision, and link direct control/install evidence; [evidence](evidence/README.md#n0). |
+| N0 | Naming and distribution identity | `blocked` | `local` | Deferred by D123: the evidence is genuinely absent, but no release claim depends on it until I7, signing, or the 1.0 audit. | When it returns, close every naming-audit row and link dated control/install evidence; [evidence](evidence/README.md#n0). |
 | I0 | Repository and C17 bootstrap | `in-progress` | `pushed-ci` | The complete Tier 1 bootstrap/compiler/memory-tool matrix is not linked. | Debug/release/compiler/sanitizer/failure-injection checks pass on every claimed Tier 1 host at one revision; [evidence](evidence/README.md#i0). |
 | A0 | Bounded compiler architecture | `in-progress` | `tier-1-partial` | Architecture evidence is missing on part of Tier 1. | `./tools/check-architecture` and focused ownership review pass on the full Tier 1 matrix; [CP0](checkpoints.md#cp0-bounded-compiler-architecture). |
 | I1 | Lossless frontend and formatter | `in-progress` | `pushed-ci` | Remaining production fixtures and the accepted sustained fuzz gate are not closed on Tier 1. | Every grammar production has positive/negative/recovery/formatter evidence and parser/formatter campaigns meet the test-strategy budget; [evidence](evidence/README.md#i1). |
@@ -151,9 +154,9 @@ authorization. These are never synonyms.
 | I3 | Typed bytecode VM | `in-progress` | `pushed-ci` | Portable public bundles and the full hostile-verifier/fuzz/limit gate remain open. | Every opcode and required bundle boundary passes verifier/execution/fuzz/limit tests and MIR/VM differential on Tier 1; [evidence](evidence/README.md#i3). |
 | I4 | C17 AOT and equivalence | `in-progress` | `pushed-ci` | Native run/install/doctor, the full compiler/platform differential matrix, and the measured x86_64 code-pressure gap remain open. | CP39 and CP41 plus complete O0/O2 Clang/GCC/MSVC sanitizer and engine-equivalence evidence meet the I4 gate; [CP41](checkpoints.md#cp41-x86_64-native-code-generation-pressure). |
 | I5 | Managed data and standard core | `in-progress` | `pushed-ci` | The CP30–CP38 bounded CLI data surface is verified, but remaining managed-heap/property/GC/workload and claimed-platform gates are open. | Those remaining gates close with VM/native and claimed-platform evidence; [CP38 evidence](evidence/cp38-bounded-typed-json-2026-09-01.md). |
-| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP42 including the ten external utilities, CP41, CP39–CP40, and remaining CP29 matrix assignments remain open. | CP29–CP42 are verified, N0 and all claimed platform gates are closed, and the CP40 release audit supports only the bounded CLI claim. |
+| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP42 coverage and budgets, CP41, and CP39–CP40 remain open. N0 is excluded from this claim by D123. | CP29–CP42 are verified, the claimed platform gates are closed, the CP40 audit supports only the bounded CLI claim, and the contract states the D123 residual risk. |
 | I6 | Direct-style tasks, scheduler, and I/O | `planned` | `none` | CLI0 and CP41 precede the executable I6 prototype. | Suspension, scope/task lifetime, cancellation, race/select, non-blocking I/O, and deterministic VM/native traces pass the defined vertical scenario. |
-| E0 | Pre-self-host ergonomics pilot | `planned` | `none` | A working I6 vertical slice is unavailable. | At least five external developers on two Tier 1 host families complete the defined tasks and every semantic finding is resolved or accepted. |
+| E0 | Pre-self-host ergonomics pilot | `planned` | `none` | A working I6 vertical slice is unavailable. | Under D124: three independent agent sessions on at least two platforms follow [the pilot protocol](pilot-protocol.md) with zero undocumented steps, and the gate report separates what was proven from what was not. |
 | I7 | Packages, cache, and supply chain | `planned` | `none` | N0 and external semantic feedback are not verified. | Deterministic offline lock/cache, hostile archive, provenance, and registry-prototype gates pass without dependency code execution. |
 | I8 | Complete first-party developer loop | `planned` | `none` | The bounded CLI/package foundations are incomplete. | A fresh user completes init/fmt/check/test/run/build/doc/dependency workflows; test/LSP/doc/fuzz event contracts pass end to end. |
 | I9 | FFI, capabilities, and platform layer | `planned` | `none` | I8 and the production platform contracts are incomplete. | Tier 1 FFI/capability/TLS/HTTP/installer/unsafe audits pass with no untracked pointer or resource escape. |
@@ -175,7 +178,7 @@ dashboard cells.
 |---|---|---|
 | Private preview | Checker-backed local/private C17 bootstrap slices work at named revisions. | No public identity or compatibility claim. |
 | Experimental macOS alpha (`D114`) | A checksummed download of the checker-backed local slice for macOS 15+ ARM64/Intel, with explicit prerequisites and exclusions. | Owner authorization plus exact-revision repository CI/security, both full macOS suites, installed VM/native smoke, and artifact validation. `publicationReady: false`; no CLI0/CP40/N0 promotion, signing or notarization claim. |
-| Bounded CLI alpha (`CLI0`) | Small local CLI programs using the bounded CLI surface on explicitly verified hosts. | N0, CP42 external-application acceptance, CP41, claimed Tier 1 matrices, CP40 audit, and user authorization. No I6/network/registry/FFI/public-bytecode/self-hosting claim. |
+| Bounded CLI alpha (`CLI0`) | Small local CLI programs using the bounded CLI surface on explicitly verified hosts. | CP42 coverage and budgets, CP41, claimed Tier 1 matrices, CP40 audit, user authorization, and the D123 residual-risk statement. N0 is excluded from this claim until I7 or signing. No I6/network/registry/FFI/public-bytecode/self-hosting claim. |
 | Concurrency/service pilot (`I6` + `E0`) | Working direct-style concurrent I/O prototype evaluated by external developers. | I6 deterministic prototype plus verified E0 findings. |
 | Ecosystem alpha (`P0`) | Broader packages/platform/service-oriented alpha using public APIs. | N0, E0, I7–I9, public package/workload evidence. |
 | Beta (`P1`) | Compatibility and security hardening with a frozen surface except blockers. | Self-hosting, compatibility, fuzz, supply-chain and security gates. |
@@ -243,11 +246,14 @@ typed JSON/config
   -> VM/native deterministic trace comparison
 ```
 
-E0 follows the working slice and measures multi-layer `mapError`, D043 dot-call
-discoverability under named type/function/namespace imports, inferred
-suspension without `async` color, `scope`/`spawn`/`wait` plus cancellation and
-race/select cleanup, native-toolchain setup steps, and time to complete. These
-semantic hypotheses cannot freeze from internal tests alone.
+E0 follows the working slice and runs the agent pilot of D124 and
+[`pilot-protocol.md`](pilot-protocol.md): clean-environment installation,
+documented-command completeness, two-platform reproducibility, diagnostics
+quality, and end-to-end use of the bounded surface. The human hypotheses —
+multi-layer `mapError`, D043 dot-call discoverability under named imports,
+inferred suspension without `async` color, and time to complete — are not
+measured by an agent pilot and stay open as optional written human reports with
+no deadline. No gate may present the pilot as evidence for them.
 
 ## Gate contracts
 

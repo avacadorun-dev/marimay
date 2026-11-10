@@ -4395,3 +4395,81 @@ the safepoint paragraph; #18 and #21 depend on the cleanup and trace paragraphs;
 #19 and #20 add runtime operations but no state kind; #22 measures the trace
 schema and the gate-9 budget. A card that needs a different fact reopens this
 record before its implementation lands.
+
+## D123 — The CLI0 claim does not depend on N0 identity clearance
+
+Status: accepted (repository-owner direction, 2026-11-11).
+
+The owner authorizes the bounded public CLI alpha (CLI0) to ship without a
+qualified legal or confusability review, without controlled domains, accounts or
+registry namespaces, without a signing identity, and without independent `mmay`
+PATH-collision evidence. This record amends the N0 sentence in D001 and the CLI0
+dependency and claim rows in the product roadmap. It does not amend D114, which
+still requires explicit authorization for every publication, and it does not
+close N0.
+
+N0 remains `blocked` in the ledger, because the evidence it names still does not
+exist. It leaves CLI0's dependency list and the CLI0 release-claim gate, and it
+returns as a hard prerequisite for exactly three things: a package registry or
+any reserved namespace (I7), any signing, notarization or store-distribution
+claim, and the 1.0 completion audit (P4), where the product identity stops being
+a personal experiment and becomes a promise.
+
+Accepted residual risks, recorded rather than mitigated:
+
+1. another tool named `mmay` may already occupy PATH, and neither coexistence
+   nor a cheap rename may be available;
+2. the name may conflict with an existing mark in some jurisdiction;
+3. no registry namespace is reserved, so an I7 name may be unavailable;
+4. unsigned, unnotarized artifacts lower trust and cannot reach some
+   distribution channels;
+5. there is no funded legal remedy if a conflict materializes.
+
+The free mitigations stay in force: checksummed artifacts, per-version install
+receipts, `mmay doctor` reporting toolchain problems instead of failing
+silently, no command that edits PATH on its own, and release notes that repeat
+that this is an experimental, unsigned, personal project. No release text may
+imply that the name, domain, namespace or signing identity is cleared, reserved
+or available.
+
+Reversal: a paid product, notarized or store distribution, a public registry
+namespace, a trademark complaint, or the 1.0 audit reopens this record before
+the affected release proceeds.
+
+## D124 — E0 is an agent pilot, not a five-developer study
+
+Status: accepted (repository-owner direction, 2026-11-11).
+
+E0's evidence bar changes. Instead of at least five external developers on two
+Tier 1 host families, E0 requires an agent pilot: at least three independent
+sessions on at least two platforms (macOS arm64, macOS x86_64, or Linux
+x86_64), each starting from a clean environment, executing
+[`pilot-protocol.md`](../implementation/pilot-protocol.md), with the transcript,
+timings, every failure and every workaround committed to the evidence index.
+
+Reason: the previous bar was unreachable. The repository has no external
+contributors, no forks and no external issue authors, and an unreachable gate
+does not protect the product — it only makes every downstream gate fictional.
+Agent sessions are the reviewers that actually exist at this stage.
+
+The pilot proves installation and relocation from a clean environment, that the
+documented commands and protocol are complete and truthful, reproducibility
+across two platforms, the quality of diagnostics when a step fails, and that the
+bounded CLI surface is usable end to end without privileged knowledge.
+
+The pilot does not prove human ergonomics, and must not be reported as proving
+them: time to a first working program for a person, dot-call and interface
+discoverability, tolerance for multi-layer `mapError`, and whether inferred
+suspension reads naturally stay unmeasured. Those questions are carried as an
+optional, non-blocking item — two written human reports whenever volunteers
+exist, with no deadline and no gate attached.
+
+Each session is independent: no shared cache, no reused install prefix, and no
+knowledge beyond the committed protocol and the public documentation. A session
+that needs an undocumented step records the step as a finding and stops instead
+of silently inventing it. A session that completes a task only by departing from
+the protocol reports the departure, not a success.
+
+E0 closes on the pilot's gate report, and I7 and I10 become reachable on that
+closure. Reversal: a human report that contradicts the pilot's usability
+findings reopens E0.

@@ -23,7 +23,7 @@ is right about the next step and the ledger is stale — fix both in one commit.
 | [`0.2.0-alpha.4`](https://github.com/marimay-lang/marimay/milestone/2) | **CP42 closed**: portfolio coverage matrix with a disposition for every finding, startup budgets met or re-budgeted, one bounded perf timebox, canonical notes program in CI. | 2027-02-28 | active |
 | [`0.3.0-alpha.5`](https://github.com/marimay-lang/marimay/milestone/3) | **CLI0**: CP41 x86_64 pressure, CP39 clean-host install, CP40 publication audit, plus the N0 and E0 decisions. | 2027-06-14 | next |
 | [`0.4.0-alpha.6`](https://github.com/marimay-lang/marimay/milestone/4) | **I6 slice**: typed JSON/config -> concurrent HTTP fan-out -> timeout/race/cancel -> `defer` cleanup -> deterministic VM/native trace. Cards #14-#22, parked until entry. | 2028-02-29 (provisional) | parked |
-| E0 | External ergonomics pilot, to be redefined by [#33](https://github.com/marimay-lang/marimay/issues/33) before it can block anything. | — | undecided |
+| E0 | **Agent pilot** per D124: three independent sessions on two platforms, zero undocumented steps, gate report. Replaces the five-developer bar; human ergonomics stay explicitly unproven. | — | entry: alpha.6 closed |
 | P0-P4 | Packages and ecosystem, beta, reference service, RC, 1.0. | — | not scheduled |
 
 Dates assume the owner's stated capacity of ~5 h/week and are re-derived at each
