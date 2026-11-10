@@ -517,6 +517,13 @@ every finding, including the reproduced `byte`-literal `I0001` gap. It closes
 the coverage gap only; startup budgets, the perf timebox, the canonical program,
 the release, Tier 1, sanitizers and parity remain open.
 
+[Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
+applications' own measurement harnesses at release compiler `4bf2885`: the small
+VM row passes at 154-226 ms and the warm `test --engine both` row at
+0.44-1.86 s, while the first-native row is shown to measure platform first-exec
+cost (246 ms against a 240 ms trivial-binary baseline) and is re-budgeted by
+D125 rather than repaired.
+
 ## CP41
 
 [The x86_64 code-generation trigger](cp41-x86-codegen-trigger-2026-08-24.md)
