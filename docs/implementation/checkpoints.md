@@ -1691,11 +1691,14 @@ release slot:
    accepted debt / excluded) for every finding. At minimum byte-literal-match
    `I0001`, rune and collection-key equality, parser recovery, VM string
    retention and source-lint `I0001`.
-2. **Startup budgets (#25).** First native execution 392/387 ms against 100 ms,
-   source-lint small VM run 500-532 ms against 500 ms, warm
-   `test --engine both` 5.506 s against 2 s. Each row ends either met with
-   paired evidence, or re-budgeted by a decision that records the measured floor
-   and puts the corrected number into `known-limitations.md`.
+2. **Startup budgets (#25).** Re-measured on 2026-11-11
+   ([re-check](evidence/cp42-startup-budget-recheck-2026-11-11.md)): the small VM
+   row passes at 154-226 ms against 500 ms, and the warm `test --engine both` row
+   passes at 0.44-1.86 s against 2 s. The first-native row is re-budgeted by D125
+   rather than repaired: a fresh Mach-O costs about 240 ms of page-in and
+   code-signing validation before `main`, so Marimay's own startup is 5-11 ms.
+   The applications' `BUDGETS.md` texts follow in their repositories, and the
+   release contract must state the redefinition.
 3. **One bounded perf timebox (#26).** `frequency-map`, `unique-set`,
    `rune-frequency` and #3, four weeks, exit on a paired improvement or an
    accepted debt with the next hypothesis. After it, no perf candidate enters

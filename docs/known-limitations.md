@@ -99,6 +99,11 @@ a workaround or a bounded scope. None of them is a silent exclusion.
 - **`Version` discovery needs a second decode pass** (E04) and **localization has
   no universal position accessor** (E05). Both are application-ergonomics debts,
   excluded from CLI0.
+- **Native startup is measured on repeated execution** (D125). A freshly linked
+  binary costs about 240 ms on this platform before `main` runs — page-in and
+  code-signing validation, measured with a trivial C program — so the budget row
+  reports 5-11 ms of application startup and carries the first-execution number
+  beside the baseline it must be compared with.
 
 ## Publication blockers
 

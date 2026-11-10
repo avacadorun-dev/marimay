@@ -4473,3 +4473,36 @@ the protocol reports the departure, not a success.
 E0 closes on the pilot's gate report, and I7 and I10 become reachable on that
 closure. Reversal: a human report that contradicts the pilot's usability
 findings reopens E0.
+
+## D125 — Startup budgets measure application startup, not platform first-execution
+
+Status: accepted (repository-owner direction, 2026-11-11).
+
+The portfolio budget "first native execution ≤100 ms" is redefined, because the
+quantity it names is dominated by the platform rather than by the program. A
+trivial `int main(void) { return 0; }` built by the same host compiler costs
+about 240 ms on its first execution after linking and about 0 ms afterwards: the
+first launch of a fresh Mach-O binary pays page-in and code-signing validation
+before `main` runs. The two measured applications record 246-247 ms on that
+first run and 5-11 ms on repeats, which places Marimay's own startup at roughly
+6 ms.
+
+The row now means: **repeated native execution ≤100 ms**, measured at 5-11 ms.
+First execution is reported for information and must carry the same-host
+trivial-binary baseline taken immediately before it; a first-execution number
+without that baseline is not a budget result and must not be used to accept or
+reject a release. Recorded floor: 246 ms first execution against a 240 ms
+trivial baseline, 2026-11-11, release compiler
+`4bf288523efa4180d73042964138748bf83b78642afdd89d90a0792bd9088cf8`, macOS
+27.0.1 arm64.
+
+The other two CP42 startup rows keep their numbers and now pass: small VM run
+154-226 ms against 500 ms, warm `test --engine both` 0.44-1.86 s against 2 s.
+
+This changes no program behaviour, no runtime cost and no gate state. It changes
+what the acceptance command means, which is why it is a decision rather than a
+test tweak. Each application's `BUDGETS.md` follows in its own repository, and
+the alpha.4 release contract must state the redefinition.
+
+Reversal: a repeated execution above 100 ms on a claimed host fails the row
+again. The redefinition renames the measurement; it does not excuse a regression.
