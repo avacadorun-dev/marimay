@@ -109,6 +109,30 @@ belongs to. The milestone description carries the exit criteria and the date.
   alpha, and self-hosting (I10) follows a verified E0. Beta, reference service,
   RC and 1.0 are not scheduled and are not implied by any date above.
 
+### Deferred backlog
+
+Two standard-library gaps are specified or needed but sit in no release slot. They
+are GitHub issues in the Backlog milestone with `parked`, which means
+"explicitly deferred, not in any release" — not "forgotten":
+
+- **`std/time` (#40).** §7 of the standard library already specifies `Instant`,
+  `WallTime`, `Duration`, `now`, `wallNow` and `sleep`; no package exists, so the
+  reference slice cannot timestamp anything and `std/task`'s `withTimeout` has no
+  duration type. The issue splits the surface on purpose: the clock-free core is I5
+  work and unblocks `Duration`, while suspending `sleep` waits for I6 rather than
+  shipping a blocking call that contradicts §7. Two decisions come first — whether
+  clock reads are a capability, and whether blocking `sleep` may ship outside I6.
+- **`std/math` (#41).** `f64` arithmetic is specified by LANG-036, but no function
+  exists: no `sqrt`, `abs`, rounding, `min`/`max` or constants. The blocking problem
+  is not the function list but determinism: C `libm` is not bit-identical across
+  Tier 1 platforms, so a decision must choose, per function group, between a
+  self-implemented bit-exact algorithm and an explicit platform-dependence
+  exception. Until then the specification stays silent and nothing is promised.
+
+Each issue states its own entry condition, so neither can be pulled into a slot by
+preference: the trigger is a slot application that needs it, or the gate that needs
+the type.
+
 A perf item enters the alpha line only inside a dated timebox with a recorded
 exit: either a paired improvement or an accepted debt with the next hypothesis.
 CP41 remains the separately evidenced cross-target native-code checkpoint.
