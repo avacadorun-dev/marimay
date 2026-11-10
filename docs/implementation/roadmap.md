@@ -1,10 +1,14 @@
 # Marimay product roadmap
 
-Status: authoritative product gate state and release sequencing.
-Audit date: 2026-08-29.
-Audit base revision: `aeb2baf8644963a8e84cf816c352b4c286dc0f8a`.
+Status: authoritative product gate state. Release ordering and dates live in
+GitHub milestones; see [ROADMAP.md](../../ROADMAP.md).
+Audit date: 2026-11-10.
+Audit base revision: `68e15227226d9ac76edd329319c009e85a8246c5`.
 
 This file answers what the product can claim and what blocks the next release.
+It does not schedule work: the dated release slots are GitHub milestones, and
+the work queue is their issues. A gate state here and a due date on a milestone
+are different facts and must not be derived from one another.
 The [checkpoint ledger](checkpoints.md) is the only execution queue, the
 [TSV register](roadmap.tsv) is the compact machine source of truth for IDs and
 states, and the [evidence index](evidence/README.md) owns direct report links.
@@ -78,21 +82,33 @@ cache-independence, and VM/native process gates are verified.
 
 ## Now / Next / Later
 
-- **Now:**
-  [CP42 — notes-driven CLI ergonomics](checkpoints.md#cp42-notes-driven-cli-ergonomics),
-  explicitly prioritized by the user on 2026-09-05 and expanded on 2026-09-06
-  to the [ten-application external acceptance portfolio](cli-ergonomics-suite.md).
-- **Next:**
-  [CP41 — x86_64 native code-generation pressure](checkpoints.md#cp41-x86_64-native-code-generation-pressure).
-- **Later:** CP39–CP40 finish installation and the CLI0 audit after CP41
-  closes the measured x86_64 native-code pressure gap. I6 next proves one real
-  direct-style concurrent I/O vertical slice. E0 tests the semantic hypotheses
-  externally, I7–I9 productize the ecosystem/platform, and only then do the
-  broader alpha, self-hosting, beta, reference-service, RC, and 1.0 gates close.
+Release slots are GitHub milestones; this section names the slot each checkpoint
+belongs to. The milestone description carries the exit criteria and the date.
 
-No new array-only micro-optimization enters CP31–CP40 unless a correctness or
-security blocker requires it. CP41 is the separately evidenced cross-target
-native-code checkpoint; it does not reopen the earlier array-only sequence.
+- **Now — `0.2.0-alpha.4`, due 2027-02-28:**
+  [CP42 — notes-driven CLI ergonomics](checkpoints.md#cp42-notes-driven-cli-ergonomics)
+  closes. All ten portfolio applications are implemented; what remains is
+  acceptance work, not features: the combined coverage matrix with a disposition
+  for every finding (#24), startup budgets met or re-budgeted (#25), one bounded
+  perf timebox for `frequency-map` / `unique-set` / `rune-frequency` and #3 (#26),
+  the canonical notes program in CI (#27), then the release (#28). The stale
+  sentence about finishing the mutable-capture warning and the delimited /
+  source-lint applications was already delivered on 2026-09-09 (D103,
+  `cp42-stateful-2026-09-09.md`) and no longer describes the next step.
+- **Next — `0.3.0-alpha.5`, due 2027-06-14:** CP41 x86_64 native code-generation
+  pressure (#29), CP39 clean-host installation (#30), CP40 publication audit
+  (#31), plus the N0 identity decision (#32) and the E0 gate decision (#33).
+  CLI0 cannot close by carrying an open-ended N0 or an unachievable E0.
+- **Later — `0.4.0-alpha.6`, provisional 2028-02-29:** the I6 vertical slice.
+  Cards #14-#22 stay in the PARKED milestone until CLI0 closes; they are
+  specified and reviewed, waiting on entry rather than on design.
+- **Then:** I7-I9 productize the ecosystem and platform, P0 opens the broader
+  alpha, and self-hosting (I10) follows a verified E0. Beta, reference service,
+  RC and 1.0 are not scheduled and are not implied by any date above.
+
+A perf item enters the alpha line only inside a dated timebox with a recorded
+exit: either a paired improvement or an accepted debt with the next hypothesis.
+CP41 remains the separately evidenced cross-target native-code checkpoint.
 
 ## Critical path
 

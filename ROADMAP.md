@@ -1,14 +1,75 @@
 # Roadmap
 
-Start with the [current product dashboard](docs/implementation/roadmap.md#current)
-and [Now / Next / Later](docs/implementation/roadmap.md#now-next-later).
+Status: release ladder and working agreement.
+Last revision: 2026-11-10, after `0.1.0-alpha.3`.
 
-The [product roadmap](docs/implementation/roadmap.md) is the only authority for
-gate states and release sequencing. The
-[checkpoint ledger](docs/implementation/checkpoints.md) is the only execution
-queue, and the [evidence index](docs/implementation/evidence/README.md) keeps
-direct reports out of status cells. Their IDs and states are checked against
-[`roadmap.tsv`](docs/implementation/roadmap.tsv).
+Three sources answer three different questions, and none of them answers another:
+
+| Question | Authority |
+|---|---|
+| What may the product claim today? | [Product roadmap](docs/implementation/roadmap.md) — gate states |
+| Which checkpoint is active, and what is its next action? | [Checkpoint ledger](docs/implementation/checkpoints.md) and [`roadmap.tsv`](docs/implementation/roadmap.tsv) |
+| What am I doing next, in what order, and by when? | **GitHub milestones and issues** |
+
+If they disagree: gate state comes from the ledger, order and dates come from the
+milestone. When an issue asks for work the ledger already calls done, the issue
+is right about the next step and the ledger is stale — fix both in one commit.
+
+## Release ladder
+
+| Slot | Scope (exit criterion) | Due | State |
+|---|---|---|---|
+| `0.1.0-alpha.3` | Experimental macOS alpha. `publicationReady: false`, claim `local-checker-backed-slice`. | shipped 2026-11-10 | done |
+| [`0.2.0-alpha.4`](https://github.com/marimay-lang/marimay/milestone/2) | **CP42 closed**: portfolio coverage matrix with a disposition for every finding, startup budgets met or re-budgeted, one bounded perf timebox, canonical notes program in CI. | 2027-02-28 | active |
+| [`0.3.0-alpha.5`](https://github.com/marimay-lang/marimay/milestone/3) | **CLI0**: CP41 x86_64 pressure, CP39 clean-host install, CP40 publication audit, plus the N0 and E0 decisions. | 2027-06-14 | next |
+| [`0.4.0-alpha.6`](https://github.com/marimay-lang/marimay/milestone/4) | **I6 slice**: typed JSON/config -> concurrent HTTP fan-out -> timeout/race/cancel -> `defer` cleanup -> deterministic VM/native trace. Cards #14-#22, parked until entry. | 2028-02-29 (provisional) | parked |
+| E0 | External ergonomics pilot, to be redefined by [#33](https://github.com/marimay-lang/marimay/issues/33) before it can block anything. | — | undecided |
+| P0-P4 | Packages and ecosystem, beta, reference service, RC, 1.0. | — | not scheduled |
+
+Dates assume the owner's stated capacity of ~5 h/week and are re-derived at each
+slot closure. A date without that number behind it is not a plan.
+
+## Working agreement
+
+Each rule below fixes a failure observed in this repository's own record, not a
+hypothetical one.
+
+1. **One release slot at a time.** A slot is a milestone with a due date. Work
+   that does not fit waits for the next slot; it does not widen this one.
+2. **WIP of two.** At most two issues carry the `now` label. A third means one
+   of the two is not actually in progress.
+3. **Timebox or debt.** Every perf or research task has a stop date inside the
+   issue. When it expires the result is a recorded debt with the next
+   hypothesis — not an extension. Both outcomes close the issue.
+4. **Dates move in writing.** A due date changes only together with a note in
+   the milestone description naming what slipped and why.
+5. **Nothing enters the release from outside its milestone.** Green CI, a
+   passing local experiment, or personal interest is not a scope argument.
+6. **Claims follow evidence.** `implemented locally` / `verified` /
+   `publicly shippable` keep their existing meanings. A release may ship with
+   recorded debt; it may not ship with a claim the evidence does not support.
+7. **One home per item.** A milestone for scheduling, a checkpoint for gate
+   state, one issue for the work, labels for the backlog. No parallel queues.
+
+## Where the work is
+
+- Active queue: [`now`](https://github.com/marimay-lang/marimay/issues?q=is%3Aissue+is%3Aopen+label%3Anow).
+- Deferred, explicitly not in any release: the
+  [Backlog milestone](https://github.com/marimay-lang/marimay/milestone/5).
+- Parked I6 design cards: the
+  [PARKED milestone](https://github.com/marimay-lang/marimay/milestone/1) —
+  specified, reviewed, and waiting on CLI0 rather than on thought.
+
+## Why this file changed
+
+Before this revision `ROADMAP.md` was an append-only wall: 424 lines, roughly a
+hundred evidence paragraphs, no Now/Next distinction, and it duplicated the
+product roadmap. A reader could not answer "what is next" from it, and the
+top-level answer drifted from the ledger for two months. The history is kept
+below, collapsed, because the record matters and deleting it would be dishonest.
+
+<details>
+<summary>Historical status log (archived, append-only; superseded 2026-11-10)</summary>
 
 Current execution links: [CLI0](docs/implementation/roadmap.md#cli0-boundary),
 [CP41/I6/E0 sequencing](docs/implementation/roadmap.md#cli0-cp41-boundary-and-post-cli0-i6e0), and the
@@ -422,3 +483,5 @@ test and all 32 Native/ON/OFF results pass; production is restored. Actual body
 counts and later text-row diagnostics remain evidence, not acceptance.
 Next audit repeated MIR verification with explicit proof/rollback ownership;
 the original all 32 parity and complete Tier1/LSan requirements remain open.
+
+</details>
