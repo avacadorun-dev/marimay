@@ -1,0 +1,318 @@
+{
+ "schema": "marimay.cp42-portfolio-matrix/1",
+ "date": "2026-11-11",
+ "parent": "docs/implementation/evidence/cp42-stateful-2026-09-09.md",
+ "compiler": {
+  "revision": "9139cca425a7233a0d890054199dc536a9e7e62d",
+  "version": "0.1.0-alpha.3",
+  "binary_sha256": "99fbf37bcecac2bf117b9bd61edb79c897c86a7f1cb9fdd632d1f1ed3ef442b1",
+  "build": "debug"
+ },
+ "host": {
+  "os": "macOS 27.0.1",
+  "arch": "arm64"
+ },
+ "commands": [
+  "mmay check .",
+  "mmay test . --engine both",
+  "MMAY=<abs>/mmay python3 tools/acceptance.py"
+ ],
+ "apps": [
+  {
+   "name": "marimay-config",
+   "revision": "52b88bc",
+   "source_tests": 7,
+   "process_cases": 32,
+   "process_summary": "32 exact-parity cases x 3 engines; atomic/denied/broken-pipe checks",
+   "wall_seconds": 245,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-delimited",
+   "revision": "b024240",
+   "source_tests": 5,
+   "process_cases": 45,
+   "process_summary": "45 cases + help; VM/native Debug/Release; 3 closed pipes; 524288-byte input",
+   "wall_seconds": 53,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-env-paths",
+   "revision": "073a6ec",
+   "source_tests": 3,
+   "process_cases": 22,
+   "process_summary": "22 exact VM/native cases; 3 pipes",
+   "wall_seconds": 26,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-frequency",
+   "revision": "09959b1",
+   "source_tests": 3,
+   "process_cases": 26,
+   "process_summary": "26 cases; VM/native Debug/Release; 3 pipes; 2097152-byte input",
+   "wall_seconds": 31,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-grep",
+   "revision": "8629f74",
+   "source_tests": 2,
+   "process_cases": 21,
+   "process_summary": "21 cases; VM/native Debug/Release; 3 pipes; 2097152-byte input",
+   "wall_seconds": 17,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-logstats",
+   "revision": "dfc5dcf",
+   "source_tests": 2,
+   "process_cases": 26,
+   "process_summary": "26 cases; VM/native Debug/Release; 3 pipes; 2097152-byte input",
+   "wall_seconds": 38,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-manifest",
+   "revision": "c9bb8e3",
+   "source_tests": 5,
+   "process_cases": 35,
+   "process_summary": "35 exact VM/native cases; 3 pipes",
+   "wall_seconds": 64,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-notes",
+   "revision": "1dcb544",
+   "source_tests": 16,
+   "process_cases": 36,
+   "process_summary": "36 cases x VM/native Debug/Release + 21 closed-pipe checks",
+   "wall_seconds": 38,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-project-check",
+   "revision": "b695356",
+   "source_tests": 4,
+   "process_cases": 31,
+   "process_summary": "31 exact VM/native cases; 3 pipes; 1024 findings",
+   "wall_seconds": 68,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  },
+  {
+   "name": "marimay-source-lint",
+   "revision": "8167c16",
+   "source_tests": 4,
+   "process_cases": 38,
+   "process_summary": "38 cases + help; VM/native Debug/Release; 3 closed pipes; 524288-byte input",
+   "wall_seconds": 90,
+   "check": "ok",
+   "test_both_engines": "ok",
+   "process_acceptance": "ok"
+  }
+ ],
+ "totals": {
+  "source_tests": 51,
+  "process_cases": 312,
+  "wall_seconds": 670
+ },
+ "coverage": {
+  "match": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "Result": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "Option": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "postfix ?": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "mapError": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "defer": [
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats"
+  ],
+  "Map": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-frequency",
+   "marimay-logstats",
+   "marimay-manifest"
+  ],
+  "Set": [
+   "marimay-frequency",
+   "marimay-notes"
+  ],
+  "managed []T": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "interpolation": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "std/json": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "std/cli": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "std/text": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "std/bytes": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "std/fs|path": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "std/env": [
+   "marimay-env-paths"
+  ],
+  "std/io": [
+   "marimay-config",
+   "marimay-delimited",
+   "marimay-env-paths",
+   "marimay-frequency",
+   "marimay-grep",
+   "marimay-logstats",
+   "marimay-manifest",
+   "marimay-notes",
+   "marimay-project-check",
+   "marimay-source-lint"
+  ],
+  "structural interface": [
+   "marimay-delimited"
+  ]
+ },
+ "unresolved": [
+  "First native launch above the 100 ms budget on both measured apps; carried by #25.",
+  "Source-lint small VM launch and warm test-both above their budgets; carried by #25.",
+  "Byte literal match still fails I0001 (reproduced at 9139cca); accepted debt with a recorded workaround.",
+  "The report-concat defect is fixed by the D055 follow-up; general VM string-pool retention remains accepted debt.",
+  "Only macOS arm64 with a Debug compiler was exercised in this pass; no sanitizer, Linux, Windows, Tier 1 or release audit."
+ ]
+}

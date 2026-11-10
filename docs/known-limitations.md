@@ -80,9 +80,31 @@ five VM/native differential tests.
   receiver completion, semantic tokens, background indexing and asynchronous
   cancellation remain unavailable. See [editor support](editor-support.md).
 
+## Known gaps carried as debt
+
+These gaps are reproduced or recorded and accepted for the alpha line, each with
+a workaround or a bounded scope. None of them is a silent exclusion.
+
+- **Matching a `byte` value against a literal fails `I0001`.** Reproduction:
+  `fn f(v: byte): int { return match v { 44 => 1, _ => 0 }; }`. The same
+  function with `v: int` works; the source-lint scanner avoids the construct
+  with boolean comparisons. Evidence:
+  [portfolio matrix](implementation/evidence/cp42-portfolio-matrix-2026-11-11.md).
+- **A VM frame hits a 10,000,000-instruction limit (`I0002`) on pathological
+  inputs where native succeeds** (E08). D087 removed embedder fuel from local
+  commands; the engine asymmetry remains for extreme inputs.
+- **General VM string-pool retention is open.** The `report-concat` defect is
+  fixed by the D055 follow-up; other long-lived concatenation shapes are not
+  measured.
+- **`Version` discovery needs a second decode pass** (E04) and **localization has
+  no universal position accessor** (E05). Both are application-ergonomics debts,
+  excluded from CLI0.
+
 ## Publication blockers
 
-N0 lacks external legal/control/PATH evidence. Full broader-release architecture,
+N0 lacks external legal/control/PATH evidence; D123 excludes N0 from the bounded
+CLI claim, records the residual risk, and returns the gate for I7, signing and
+the 1.0 audit. Full broader-release architecture,
 bootstrap, frontend fuzz, VM/native, sanitizer, installer, and performance
 acceptance remains incomplete. The experimental binary scope is only macOS 15+
 ARM64/Intel, with compatible Apple Command Line Tools required for native
