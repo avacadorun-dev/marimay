@@ -37,6 +37,7 @@ typedef struct MarimayFormatDelimiter {
     MarimaySyntaxKind parent_kind;
     size_t comma_count;
     bool empty;
+    bool has_code;
     bool grouped;
     bool compact;
     bool trailing_comma;

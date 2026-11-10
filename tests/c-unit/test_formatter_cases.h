@@ -14,5 +14,6 @@ void mmay_test_formatter_boolean_groups(void);
 void mmay_test_formatter_braced_groups(void);
 void mmay_test_formatter_enum_separators(void);
 void mmay_test_formatter_type_list_separators(void);
+void mmay_test_formatter_comment_only_list(void);
 
 #endif

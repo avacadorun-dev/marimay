@@ -391,6 +391,10 @@ static bool mmay_formatter_next_comment_same_line(
         );
 }
 
+static MarimayFormatDelimiter *mmay_formatter_top_delimiter(
+    MarimayFormatter *formatter
+);
+
 static void mmay_formatter_emit_token_text(
     MarimayFormatter *formatter,
     const MarimayFormatToken *token
@@ -405,6 +409,9 @@ static void mmay_formatter_emit_token_text(
         formatter->source + token->token.start,
         token->token.end - token->token.start
     );
+    if (formatter->delimiters.length != 0) {
+        mmay_formatter_top_delimiter(formatter)->has_code = true;
+    }
 }
 
 static void mmay_formatter_emit_comment(
@@ -478,6 +485,7 @@ static void mmay_formatter_push_delimiter(
     delimiter.parent_kind = parent_kind;
     delimiter.comma_count = 0;
     delimiter.empty = empty;
+    delimiter.has_code = false;
     delimiter.grouped = grouped;
     delimiter.compact = compact;
     delimiter.trailing_comma = trailing_comma;
@@ -583,6 +591,7 @@ static void mmay_formatter_close_group(
     }
     if (!delimiter->empty) {
         if (delimiter->trailing_comma
+            && delimiter->has_code
             && formatter->has_previous_code
             && formatter->previous_code_kind != MMAY_TOKEN_COMMA
             && !formatter->last_was_comment) {
@@ -669,6 +678,7 @@ static void mmay_formatter_close_brace(
     if (!delimiter->empty) {
         static const unsigned char comma[] = ",";
         if ((token->in_record_expression || delimiter->trailing_comma)
+            && delimiter->has_code
             && formatter->has_previous_code
             && formatter->previous_code_kind != MMAY_TOKEN_COMMA
             && !formatter->last_was_comment) {

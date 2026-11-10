@@ -709,3 +709,49 @@ void mmay_test_formatter_example_corpus(void) {
         mmay_formatter_fixture_dispose(&original);
     }
 }
+
+void mmay_test_formatter_comment_only_list(void) {
+    static const char source[] =
+        "fn after(//\n"
+        "////\n"
+        "): void {}\n";
+    MarimayFormatterFixture original;
+    MarimayFormatterFixture formatted;
+    MarimayFormatResult first;
+    bool original_ready = mmay_formatter_fixture_init(
+        &original,
+        "comment-only-list.my",
+        (const unsigned char *)source,
+        sizeof(source) - 1
+    );
+    MMAY_EXPECT(original_ready);
+    if (!original_ready) {
+        return;
+    }
+    MMAY_EXPECT(original.lexed.diagnostics.length == 0);
+    MMAY_EXPECT(original.parsed.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_format_source(
+        &original.lexed,
+        &original.parsed,
+        mmay_system_allocator(),
+        mmay_format_default_options(),
+        &first
+    ) == MMAY_FORMAT_OK);
+    if (!first.initialized) {
+        mmay_formatter_fixture_dispose(&original);
+        return;
+    }
+    MMAY_EXPECT(mmay_formatter_fixture_init(
+        &formatted,
+        "comment-only-list-formatted.my",
+        first.output.data,
+        first.output.length
+    ));
+    if (formatted.parsed.initialized) {
+        MMAY_EXPECT(formatted.lexed.diagnostics.length == 0);
+        MMAY_EXPECT(formatted.parsed.diagnostics.length == 0);
+    }
+    mmay_formatter_fixture_dispose(&formatted);
+    mmay_format_result_dispose(&first);
+    mmay_formatter_fixture_dispose(&original);
+}
