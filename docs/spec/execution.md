@@ -475,6 +475,8 @@ The compiler assigns each function an internal effect `maySuspend: bool`. It is 
 
 Inference is a least fixed point over strongly connected components of the call graph. Imported package metadata supplies effect summaries and causal source spans. Unsafe code cannot lie about the effect of an ordinary Marimay function.
 
+The published summary is a package-level fact, not only an in-memory checker result. For every function it states whether that function may suspend and, when it may, one deterministic causal chain from the function to a terminal suspending operation. Each link carries the callee or runtime-operation identity and the source span of the call site, adapter, or wait; the chain ends at a direct suspending runtime operation, a task/channel/timer/isolate wait, an open interface or closure dispatch, or a `@blocking` adapter. A function that may not suspend publishes the false fact and no chain. Imported summaries travel with their spans and are expanded transitively; a consumer never substitutes a locally guessed cause for an imported one.
+
 The effect is not considered when checking source-level function compatibility. It is observable to tooling:
 
 ```text
@@ -508,6 +510,12 @@ case 1:
 ```
 
 Actual lowering is generated from MIR and must not expose a C stack address across suspension. Recursion allocates distinct resumable frames and therefore does not retain unbounded native C stack across a wait.
+
+Both engines satisfy one resumption rule. Every suspension site has exactly one resumption point, identified in typed MIR before either engine lowers it. A parked frame records the point at which it will continue and resumes after the operation that parked it; there is no second resumption path and no resumption at a different statement. The VM and generated C use the same state numbering derived from MIR, and an engine may not renumber or reorder states.
+
+Parking preserves lexical cleanup. The frame's cleanup stack is part of the parked state, and running a deferred call may itself suspend and park the same frame again; on resumption that call continues, then the remaining LIFO entries run in D041 order. Requested cancellation stays masked while cleanup is in progress.
+
+No C stack address survives a suspension. A resumable function's live typed locals and every value needed to continue are reachable from the parked frame, recursion allocates a distinct frame per activation, and both engines trace a parked frame through the same precise descriptor contract of §9.2. A function that may not suspend has no parked frame.
 
 ### 6.4 Non-suspending boundaries
 
@@ -1159,7 +1167,9 @@ invalid rather than continue with a fabricated value.
 2. execute native against the same logical event recording;
 3. normalize documented non-semantic metadata;
 4. compare result, output, panic, capability trace, and task trace;
-5. report the first semantic divergence with both MIR/backend locations.
+5. report the first semantic divergence with both MIR/backend locations and the divergent trace event.
+
+Trace comparison covers the versioned deterministic task trace, not engine internals. Observable for comparison are ordered event kind, task and parent creation identifiers, logical step, declaration order, source span of a suspension or wait, selection choice, cancellation request and observation, cleanup event order, completion status, and panic identity, together with the result, output, panic, and capability facts above. Not observable and not compared are engine name, wall-clock or CPU time, addresses, GC timing, frame and descriptor internals, fairness counters, and any field the schema declares diagnostic. Traces whose major schema version differs from the comparator's are a harness error, not a candidate for normalization into agreement.
 
 Tests intentionally exercising real nondeterminism may opt out of byte-for-byte trace comparison but must assert properties independently on both engines. An opt-out cannot hide deterministic core-language coverage.
 
