@@ -1672,6 +1672,13 @@ the first atomic I6 card remains CP43 or later.
 
 State: `in-progress`. Parent gate: CLI0. Predecessor: CP38. Evidence scope: `local`.
 
+Portfolio coverage and dispositions are recorded in
+[the matrix](evidence/cp42-portfolio-matrix-2026-11-11.md): 51 source tests and
+312 process cases across the ten applications at compiler `9139cca`, on both
+engines, with a disposition for every finding. That closes the coverage item;
+startup budgets, the perf timebox, the canonical program and the release stay
+open.
+
 ### Alpha.4 closure queue (owner-accepted 2026-11-10)
 
 The ten-application portfolio is implemented (2026-09-09). What remains is

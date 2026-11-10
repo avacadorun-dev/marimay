@@ -30,8 +30,10 @@ The reports below retain their original identity and scope. A `local` or
 - [Open external naming and distribution audit](../../design/naming-audit.md).
 - [Atomic repository rebrand](marimay-rebrand-2026-08-23.md).
 
-N0 has repository-local migration evidence but remains blocked on external
-legal/search/control/PATH evidence and an accepted follow-up identity decision.
+N0 has repository-local migration evidence, but the external legal, control,
+namespace, signing and PATH evidence still does not exist. D123 leaves the gate
+open and removes it from the CLI0 claim; it returns as a prerequisite for I7
+registry namespaces, any signing or notarization claim, and the 1.0 audit.
 
 ## I0
 
@@ -507,6 +509,14 @@ focused sanitizer/allocation checks and a short Linux fuzz smoke. It also
 records the installed Release-command handoff; its scope remains local and
 does not close the remaining CP42 work or establish pushed-revision CI.
 
+[Portfolio coverage matrix and finding dispositions](cp42-portfolio-matrix-2026-11-11.md)
+([raw evidence](cp42-portfolio-matrix-2026-11-11.json)) re-runs the ten
+applications at compiler `9139cca` on both engines: 51 source tests, 312 process
+cases, a coverage table generated from application source, and a disposition for
+every finding, including the reproduced `byte`-literal `I0001` gap. It closes
+the coverage gap only; startup budgets, the perf timebox, the canonical program,
+the release, Tier 1, sanitizers and parity remain open.
+
 ## CP41
 
 [The x86_64 code-generation trigger](cp41-x86-codegen-trigger-2026-08-24.md)
@@ -518,8 +528,10 @@ exploratory.
 
 ## I6 and E0
 
-No direct implementation or external-pilot evidence exists. I6 and E0 remain
-planned after CLI0, whose I4 path now includes CP41.
+No direct I6 implementation or pilot evidence exists. I6 remains planned after
+CLI0, whose I4 path includes CP41. E0 is now an agent pilot defined by D124 and
+[the pilot protocol](../pilot-protocol.md); no session has run, so no evidence
+exists yet.
 
 ## Historical checkpoint evidence
 
