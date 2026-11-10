@@ -1,0 +1,659 @@
+#!/usr/bin/env python3
+"""Pin, verify and run Marimay's reference slice.
+
+The reference slice is one real application, built from a fresh checkout of its
+own repository by the current compiler, using only the commands its README
+documents. This tool keeps that claim checkable:
+
+* ``check``    offline gate: pin format, report/contract consistency, doc and CI
+               wiring. Runs a mutation self-test on the checks it performs.
+* ``derive``   re-derive the construct profile from a source tree and, with
+               ``--write``, update the committed report and generated block.
+* ``fetch``    fetch the pinned revision into an empty directory.
+* ``verify``   prove a checkout is the pinned revision, tree and content digest,
+               and that its derived profile matches the committed report.
+* ``run``      verify, then execute the documented commands in order.
+
+Nothing here reads a personal path, a private fixture or an unpinned branch.
+"""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+REPORT = ROOT / "docs/implementation/reference-slice.json"
+CONTRACT = ROOT / "docs/implementation/reference-slice.md"
+LIMITATIONS = ROOT / "docs/known-limitations.md"
+RELEASES = ROOT / "docs/releases"
+WORKFLOW = ROOT / ".github/workflows/ci.yml"
+BEGIN = "<!-- reference-slice:begin -->"
+END = "<!-- reference-slice:end -->"
+
+SCHEMA = "marimay.reference-slice/1"
+SKIP_DIRECTORIES = {".git", "build", ".mmay"}
+
+# Each family is a group of related constructs the application exercises. The
+# marker is a deliberately conservative lexical pattern: it is the definition of
+# the family, it is reported next to the count, and it is re-applied by every
+# verification instead of being asserted by hand.
+FAMILIES = (
+    ("imports", "module imports", r"^\s*import\s+(?:\*\s+as\s+\w+|\{[^}]*\})\s+from\b"),
+    ("records", "record declarations", r"^\s*(?:public\s+)?type\s+\w+(?:<[^>]*>)?\s*\{"),
+    ("option-result", "typed Option/Result values", r"\b(?:Option|Result)<"),
+    ("try-propagation", "`?` propagation of fallible values", r"\)\s*\?[;,]"),
+    ("map-error", "contextual error-type mapping through `mapError`", r"\.mapError\("),
+    ("match", "match expressions", r"\bmatch\b"),
+    ("interpolation", "string interpolation", r'\$"'),
+    ("arrays", "managed arrays", r"\[\]\s*\w"),
+    ("sets", "insertion-ordered sets", r"\b(?:Set|setOf)<"),
+    ("for-in", "iterating for loops", r"\bfor\s+\w+\s+in\b"),
+    ("tests", "declared tests", r"^\s*@test\b"),
+    ("panic", "explicit panics", r"\bpanic\("),
+    ("filesystem", "capability-gated filesystem calls", r"\bfs\.\w+"),
+    ("bytes", "UTF-8/byte buffer conversions", r"\bbytes\.\w+"),
+    ("public-api", "public function surface", r"^\s*public\s+fn\b"),
+)
+
+# Families the application deliberately does not exercise. Absence is part of
+# the reference slice: a reader should be able to tell what one green CI run
+# does not cover. Every marker must stay at zero, which turns silent growth into
+# a failure that forces this list to be updated.
+ABSENT_FAMILIES = (
+    ("enums", "enum declarations", r"^\s*(?:public\s+)?enum\s+\w+"),
+    ("interfaces", "interface declarations", r"^\s*(?:public\s+)?interface\s+\w+"),
+    ("generic-declarations", "generic declarations", r"^\s*(?:public\s+)?(?:fn|type|enum|interface)\s+\w+\s*<"),
+    ("maps", "insertion-ordered maps", r"\b(?:Map|mapOf)<"),
+    ("while-loops", "while loops", r"\bwhile\b"),
+    ("defer", "lexical defer", r"\bdefer\b"),
+    ("unsafe", "unsafe blocks and foreign functions", r"\bunsafe\b"),
+    ("extern", "extern declarations", r"^\s*extern\b"),
+    ("mutable-bindings", "mutable bindings", r"\bmutable\b"),
+    ("casts", "total `as` casts", r"\bas\s+(?:int|u8|u32|u64|i8|i32|i64|f64|bool|string|byte)\b"),
+)
+
+COMMANDS = (
+    "mmay fmt . --check",
+    "mmay check .",
+    "mmay test . --engine both",
+    "mmay run . -- --help",
+    "mkdir -p build",
+    "mmay run . --allow-read . --allow-write . -- --db build/reference-slice.json add \"Read the docs\" --tag study",
+    "mmay run . --allow-read . --allow-write . -- --db build/reference-slice.json list",
+    "mmay build . --release --allow-read . --allow-write . --output build/marimay-notes",
+    "./build/marimay-notes --db build/reference-slice.json list",
+    "sh tools/smoke-ru \"$(command -v mmay)\"",
+    "MMAY=\"$(command -v mmay)\" python3 tools/acceptance.py",
+)
+
+
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def git(directory: Path, *arguments: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(directory), *arguments],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"git {' '.join(arguments)} failed in {directory}: {result.stderr.strip()}"
+        )
+    return result.stdout
+
+
+def tracked_files(directory: Path) -> list[str]:
+    output = git(directory, "ls-files", "-z")
+    return sorted(name for name in output.split("\0") if name)
+
+
+def content_digest(directory: Path, files: list[str]) -> str:
+    digest = hashlib.sha256()
+    for name in files:
+        blob = (directory / name).read_bytes()
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(blob).hexdigest().encode("ascii"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def source_files(directory: Path, files: list[str]) -> list[str]:
+    return [name for name in files if name.endswith(".my")]
+
+
+def module_name(directory: Path) -> str:
+    for line in read(directory / "mmay.mod").splitlines():
+        match = re.match(r'module\s+"([^"]+)"', line.strip())
+        if match:
+            return match.group(1)
+    raise ValueError(f"{directory}/mmay.mod has no module declaration")
+
+
+def packages(directory: Path, sources: list[str]) -> list[str]:
+    found: set[str] = set()
+    for name in sources:
+        for match in re.finditer(r'^\s*import\s+.*\s+from\s+"([^"]+)"', read(directory / name), re.MULTILINE):
+            package = match.group(1)
+            if package.startswith("std/"):
+                found.add(package)
+    return sorted(found)
+
+
+def profile(directory: Path, files: list[str]) -> dict[str, object]:
+    sources = source_files(directory, files)
+    texts = {name: read(directory / name) for name in sources}
+
+    def apply(rules):
+        rows = []
+        for identifier, label, marker in rules:
+            pattern = re.compile(marker, re.MULTILINE)
+            per_file = {}
+            for name, text in texts.items():
+                count = len(pattern.findall(text))
+                if count:
+                    per_file[name] = count
+            rows.append(
+                {
+                    "id": identifier,
+                    "label": label,
+                    "marker": marker,
+                    "count": sum(per_file.values()),
+                    "files": per_file,
+                }
+            )
+        return rows
+
+    families = apply(FAMILIES)
+    absent = apply(ABSENT_FAMILIES)
+    return {
+        "module": module_name(directory),
+        "trackedFiles": len(files),
+        "sourceFiles": len(sources),
+        "sourceLines": sum(len(texts[name].splitlines()) for name in sources),
+        "packages": packages(directory, sources),
+        "families": families,
+        "absent": absent,
+        "fileHashes": [
+            {"path": name, "sha256": hashlib.sha256((directory / name).read_bytes()).hexdigest()}
+            for name in files
+        ],
+    }
+
+
+def build_report(directory: Path) -> dict[str, object]:
+    if git(directory, "status", "--porcelain").strip():
+        raise SystemExit(f"{directory}: worktree is not clean; the pin must describe committed content")
+    files = tracked_files(directory)
+    report = {
+        "schema": SCHEMA,
+        "repository": "https://github.com/marimay-lang/marimay-notes",
+        "revision": git(directory, "rev-parse", "HEAD").strip(),
+        "tree": git(directory, "rev-parse", "HEAD^{tree}").strip(),
+        "contentDigest": content_digest(directory, files),
+        "commands": list(COMMANDS),
+    }
+    report.update(profile(directory, files))
+    return report
+
+
+def render_commands() -> str:
+    return "\n".join(COMMANDS)
+
+
+def render_block(report: dict[str, object]) -> str:
+    families = report["families"]
+    absent = report["absent"]
+    packages = report["packages"]
+    lines = [
+        "```text",
+        f"repository      {report['repository']}",
+        f"revision        {report['revision']}",
+        f"tree            {report['tree']}",
+        f"content digest  sha256:{report['contentDigest']}",
+        f"module          {report['module']}",
+        f"size            {report['sourceFiles']} source files, {report['sourceLines']} lines, "
+        f"{report['trackedFiles']} tracked files",
+        "```",
+        "",
+        "| Family | Marker | Occurrences | Files |",
+        "|---|---|---:|---|",
+    ]
+    for family in families:
+        files = ", ".join(f"`{name}` ({count})" for name, count in sorted(family["files"].items()))
+        lines.append(
+            f"| {family['label']} | `{family['marker']}` | {family['count']} | {files} |"
+        )
+    lines.extend(
+        [
+            "",
+            f"Standard-library packages imported by the slice: "
+            + ", ".join(f"`{name}`" for name in packages)
+            + ".",
+            "",
+            "Families the slice does not exercise, asserted to stay at zero:",
+            "",
+            "| Family | Marker |",
+            "|---|---|",
+        ]
+    )
+    for family in absent:
+        lines.append(f"| {family['label']} | `{family['marker']}` |")
+    lines.extend(
+        [
+            "",
+            "The commands the slice is built and verified with, in order:",
+            "",
+            "```sh",
+            render_commands(),
+            "```",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_report(report: dict[str, object], contract: Path = CONTRACT, target: Path = REPORT) -> None:
+    target.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    text = read(contract)
+    block = f"{BEGIN}\n{render_block(report)}\n{END}"
+    pattern = re.compile(re.escape(BEGIN) + r".*?" + re.escape(END), re.DOTALL)
+    if not pattern.search(text):
+        raise SystemExit(f"{contract}: generated markers are missing")
+    contract.write_text(pattern.sub(lambda _match: block, text, count=1), encoding="utf-8")
+
+
+def release_contract() -> Path | None:
+    """The newest alpha contract. A new draft must name the slice as well."""
+    candidates = [
+        path
+        for path in sorted(RELEASES.glob("*.md"))
+        if re.fullmatch(r"\d+\.\d+\.\d+-alpha\.\d+(?:\.draft)?\.md", path.name)
+    ]
+    return candidates[-1] if candidates else None
+
+
+def load_report(path: Path = REPORT) -> dict[str, object]:
+    return json.loads(read(path))
+
+
+def expect(condition: bool, findings: list[str], message: str) -> None:
+    if not condition:
+        findings.append(message)
+
+
+def validate_report(report: dict[str, object]) -> list[str]:
+    findings: list[str] = []
+    expect(report.get("schema") == SCHEMA, findings, f"report schema must be {SCHEMA!r}")
+    url = report.get("repository", "")
+    expect(
+        re.fullmatch(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", str(url)) is not None,
+        findings,
+        "repository must be a public https GitHub URL without credentials",
+    )
+    expect(
+        re.fullmatch(r"[0-9a-f]{40}", str(report.get("revision", ""))) is not None,
+        findings,
+        "revision must be a full 40-character commit id",
+    )
+    expect(
+        re.fullmatch(r"[0-9a-f]{40}", str(report.get("tree", ""))) is not None,
+        findings,
+        "tree must be a full 40-character tree id",
+    )
+    expect(
+        re.fullmatch(r"[0-9a-f]{64}", str(report.get("contentDigest", ""))) is not None,
+        findings,
+        "contentDigest must be a full SHA-256 digest",
+    )
+    hashes = report.get("fileHashes")
+    expect(isinstance(hashes, list) and bool(hashes), findings, "fileHashes must be a non-empty list")
+    if isinstance(hashes, list):
+        paths = [entry.get("path") for entry in hashes]
+        expect(len(paths) == len(set(paths)), findings, "fileHashes paths must be unique")
+        for entry in hashes:
+            expect(
+                re.fullmatch(r"[0-9a-f]{64}", str(entry.get("sha256", ""))) is not None,
+                findings,
+                f"fileHashes entry {entry.get('path')!r} needs a full SHA-256 digest",
+            )
+        expect(
+            len(hashes) == report.get("trackedFiles"),
+            findings,
+            "fileHashes must cover every tracked file",
+        )
+    for key in ("module", "trackedFiles", "sourceFiles", "sourceLines", "packages"):
+        expect(key in report, findings, f"report is missing {key!r}")
+    commands = report.get("commands")
+    expect(
+        isinstance(commands, list) and bool(commands) and all(isinstance(item, str) for item in commands),
+        findings,
+        "commands must be a non-empty list of strings",
+    )
+    if isinstance(commands, list):
+        expect(commands == list(COMMANDS), findings, "commands differ from the tool's documented sequence")
+        expect(
+            any("fmt" in item for item in commands) and any("--engine both" in item for item in commands),
+            findings,
+            "commands must format-check and run both engines",
+        )
+    families = report.get("families")
+    expect(isinstance(families, list) and bool(families), findings, "families must be a non-empty list")
+    if isinstance(families, list):
+        ids = [family.get("id") for family in families]
+        expect(len(ids) == len(set(ids)), findings, "family ids must be unique")
+        expect(ids == [rule[0] for rule in FAMILIES], findings, "family list must match the declared rules")
+        for family in families:
+            expect(
+                isinstance(family.get("count"), int) and family["count"] > 0,
+                findings,
+                f"family {family.get('id')!r} must have occurrences; an empty family belongs in 'absent'",
+            )
+            expect(bool(family.get("files")), findings, f"family {family.get('id')!r} must list files")
+            try:
+                re.compile(str(family.get("marker", "")))
+            except re.error:
+                findings.append(f"family {family.get('id')!r} has an invalid marker")
+    absent = report.get("absent")
+    expect(isinstance(absent, list) and bool(absent), findings, "absent must be a non-empty list")
+    if isinstance(absent, list):
+        expect(
+            [family.get("id") for family in absent] == [rule[0] for rule in ABSENT_FAMILIES],
+            findings,
+            "absent list must match the declared absent rules",
+        )
+        for family in absent:
+            expect(
+                family.get("count") == 0,
+                findings,
+                f"family {family.get('id')!r} is declared absent but its marker now matches",
+            )
+    expect(
+        len(str(report.get("tree", ""))) == 40 and report.get("tree") != report.get("revision"),
+        findings,
+        "tree must be a tree id distinct from the commit id",
+    )
+    return findings
+
+
+def validate_contract(contract_text: str, report: dict[str, object]) -> list[str]:
+    findings: list[str] = []
+    expect(contract_text.count(BEGIN) == 1, findings, f"{CONTRACT.name}: expected one generated block start")
+    expect(contract_text.count(END) == 1, findings, f"{CONTRACT.name}: expected one generated block end")
+    pattern = re.compile(re.escape(BEGIN) + r"(.*?)" + re.escape(END), re.DOTALL)
+    match = pattern.search(contract_text)
+    if match is None:
+        findings.append(f"{CONTRACT.name}: generated block is missing")
+        return findings
+    observed = match.group(1).strip()
+    expected = render_block(report).strip()
+    if observed != expected:
+        findings.append(
+            f"{CONTRACT.name}: generated block is stale; run tools/check-reference-slice derive --source DIR --write"
+        )
+    for needle in (str(report["revision"]), str(report["repository"]), "marimay-notes"):
+        expect(needle in contract_text, findings, f"{CONTRACT.name}: must name {needle!r}")
+    return findings
+
+
+def validate_named_documents(report: dict[str, object]) -> list[str]:
+    findings: list[str] = []
+    revision = str(report["revision"])
+    contract = release_contract()
+    if contract is None:
+        findings.append(f"{RELEASES.relative_to(ROOT)}: no alpha release contract to name the slice")
+        return findings
+    for path in (LIMITATIONS, contract):
+        label = path.relative_to(ROOT)
+        if not path.is_file():
+            findings.append(f"{label}: reference-slice document is missing")
+            continue
+        text = read(path)
+        expect("marimay-notes" in text, findings, f"{label}: must name the reference slice application")
+        expect(revision in text, findings, f"{label}: must record the pinned revision {revision}")
+    return findings
+
+
+def reference_job(workflow_text: str) -> str:
+    match = re.search(
+        r"\n  reference-slice:\n(.*?)(?=\n  [a-z0-9-]+:\n|\Z)",
+        workflow_text,
+        re.DOTALL,
+    )
+    return match.group(1) if match else ""
+
+
+def validate_workflow(workflow_text: str, revision: str = "") -> list[str]:
+    findings: list[str] = []
+    job = reference_job(workflow_text)
+    if not job:
+        findings.append(f"{WORKFLOW.name}: no reference-slice job")
+        return findings
+    for needle in (
+        "tools/check-reference-slice fetch",
+        "tools/check-reference-slice run",
+        "needs: documentation",
+        "persist-credentials: false",
+    ):
+        expect(needle in job, findings, f"{WORKFLOW.name}: reference-slice job is missing {needle!r}")
+    if revision:
+        expect(
+            revision not in job,
+            findings,
+            f"{WORKFLOW.name}: the reference-slice job must not hardcode the pin; "
+            "it is read from docs/implementation/reference-slice.json",
+        )
+    return findings
+
+
+def run_self_tests(report: dict[str, object], contract_text: str, workflow_text: str) -> list[str]:
+    failures: list[str] = []
+
+    def detect(name: str, needle: str, mutate) -> None:
+        sample = copy.deepcopy(report)
+        mutated_contract = contract_text
+        mutated_workflow = workflow_text
+        if isinstance(mutate, tuple) and mutate[0] == "contract":
+            mutated_contract = mutate[1](contract_text)
+        elif isinstance(mutate, tuple) and mutate[0] == "workflow":
+            mutated_workflow = mutate[1](workflow_text)
+        else:
+            mutate(sample)
+        findings = validate_report(sample)
+        findings.extend(validate_contract(mutated_contract, sample))
+        findings.extend(validate_workflow(mutated_workflow, str(sample.get("revision", ""))))
+        if not any(needle in finding for finding in findings):
+            failures.append(f"self-test {name!r} failed to detect {needle!r}")
+
+    detect("short revision", "revision must be a full", lambda sample: sample.__setitem__("revision", "abc"))
+    detect(
+        "stale block",
+        "generated block is stale",
+        ("contract", lambda text: text.replace(BEGIN, BEGIN + "\nstale line")),
+    )
+    detect("empty family", "must have occurrences", lambda sample: sample["families"][0].__setitem__("count", 0))
+    detect("missing commands", "commands differ", lambda sample: sample["commands"].pop())
+    detect("absent match", "declared absent", lambda sample: sample["absent"][0].__setitem__("count", 3))
+    credential_url = "https://" + "someone" + ":" + "redacted" + "@" + "github" + ".com/a/b"
+    detect("credential url", "public https GitHub URL", lambda sample: sample.__setitem__("repository", credential_url))
+    detect("missing job", "no reference-slice job", ("workflow", lambda text: text.replace("reference-slice", "other")))
+    detect(
+        "hardcoded pin",
+        "must not hardcode the pin",
+        ("workflow", lambda text: text.replace("--destination", "c5ec692f3829b4c80facc8864202ae136be3173f --destination", 1)),
+    )
+    return failures
+
+
+def check() -> int:
+    findings: list[str] = []
+    if not REPORT.is_file():
+        print(f"{REPORT.relative_to(ROOT)}: missing; run tools/check-reference-slice derive --source DIR --write", file=sys.stderr)
+        return 1
+    report = load_report()
+    findings.extend(validate_report(report))
+    contract_text = read(CONTRACT) if CONTRACT.is_file() else ""
+    if not contract_text:
+        findings.append(f"{CONTRACT.name}: missing")
+    findings.extend(validate_contract(contract_text, report))
+    findings.extend(validate_named_documents(report))
+    workflow_text = read(WORKFLOW) if WORKFLOW.is_file() else ""
+    findings.extend(validate_workflow(workflow_text, str(report["revision"])))
+    findings.extend(run_self_tests(report, contract_text, workflow_text))
+    if findings:
+        for finding in findings:
+            print(finding, file=sys.stderr)
+        return 1
+    print(
+        "reference slice ok: "
+        f"{len(report['families'])} families, {len(report['absent'])} asserted absent, "
+        f"{len(report['commands'])} documented commands, revision {report['revision'][:12]}"
+    )
+    return 0
+
+
+def derive(source: Path, write: bool) -> int:
+    report = build_report(source)
+    findings = validate_report(report)
+    if findings:
+        for finding in findings:
+            print(finding, file=sys.stderr)
+        return 1
+    if write:
+        write_report(report)
+        print(f"wrote {REPORT.relative_to(ROOT)} and the generated block in {CONTRACT.relative_to(ROOT)}")
+    else:
+        print(render_block(report))
+    return 0
+
+
+def fetch(destination: Path, report: dict[str, object] | None = None) -> int:
+    report = report or load_report()
+    if destination.exists() and any(destination.iterdir()):
+        raise SystemExit(f"{destination}: destination is not empty")
+    destination.mkdir(parents=True, exist_ok=True)
+    revision = str(report["revision"])
+    url = str(report["repository"])
+    steps = (
+        ("init", "-q"),
+        ("remote", "add", "origin", url),
+        ("fetch", "-q", "--depth", "1", "origin", revision),
+        ("checkout", "-q", "--detach", "FETCH_HEAD"),
+    )
+    for step in steps:
+        git(destination, *step)
+    observed = git(destination, "rev-parse", "HEAD").strip()
+    if observed != revision:
+        raise SystemExit(f"{destination}: fetched {observed}, expected {revision}")
+    print(f"fetched {url} at {revision}")
+    return 0
+
+
+def verify(source: Path, report: dict[str, object] | None = None) -> list[str]:
+    report = report or load_report()
+    findings: list[str] = []
+    if not source.is_dir():
+        return [f"{source}: source directory is missing"]
+    dirty = git(source, "status", "--porcelain").strip()
+    if dirty:
+        findings.append(f"{source}: worktree is not clean")
+    revision = git(source, "rev-parse", "HEAD").strip()
+    if revision != report["revision"]:
+        findings.append(f"{source}: revision {revision} is not the pinned {report['revision']}")
+    tree = git(source, "rev-parse", "HEAD^{tree}").strip()
+    if tree != report["tree"]:
+        findings.append(f"{source}: tree {tree} is not the pinned {report['tree']}")
+    files = tracked_files(source)
+    digest = content_digest(source, files)
+    if digest != report["contentDigest"]:
+        findings.append(f"{source}: content digest {digest} is not the pinned {report['contentDigest']}")
+    observed = profile(source, files)
+    for key in ("module", "trackedFiles", "sourceFiles", "sourceLines", "packages", "families", "absent"):
+        if observed[key] != report[key]:
+            findings.append(f"{source}: derived {key} does not match the committed report")
+    expected_hashes = {entry["path"]: entry["sha256"] for entry in report.get("fileHashes", [])}
+    for entry in observed["fileHashes"]:
+        if expected_hashes.get(entry["path"]) != entry["sha256"]:
+            findings.append(f"{source}: {entry['path']} does not match the committed per-file digest")
+    return findings
+
+
+def run(source: Path, compiler: Path) -> int:
+    findings = verify(source)
+    if findings:
+        for finding in findings:
+            print(finding, file=sys.stderr)
+        return 1
+    if not compiler.is_file():
+        print(f"{compiler}: compiler binary is missing", file=sys.stderr)
+        return 1
+    environment = dict(os.environ)
+    environment["MMAY"] = str(compiler)
+    environment["PATH"] = str(compiler.parent) + os.pathsep + environment.get("PATH", "")
+    environment["LC_ALL"] = "C.UTF-8"
+    environment["LANG"] = "C.UTF-8"
+    for command in COMMANDS:
+        print(f"$ {command}", flush=True)
+        result = subprocess.run(
+            command,
+            shell=True,
+            executable="/bin/sh",
+            cwd=source,
+            env=environment,
+            check=False,
+        )
+        if result.returncode != 0:
+            print(f"$ {command}: exit {result.returncode}", file=sys.stderr)
+            return 1
+    print(f"reference slice ok at {load_report()['revision']}")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    subparsers = parser.add_subparsers(dest="command")
+    subparsers.add_parser("check", help="offline pin, report and documentation gate")
+    derive_parser = subparsers.add_parser("derive", help="re-derive the construct profile")
+    derive_parser.add_argument("--source", type=Path, required=True)
+    derive_parser.add_argument("--write", action="store_true")
+    fetch_parser = subparsers.add_parser("fetch", help="fetch the pinned revision")
+    fetch_parser.add_argument("--destination", type=Path, required=True)
+    verify_parser = subparsers.add_parser("verify", help="verify a checkout against the pin")
+    verify_parser.add_argument("--source", type=Path, required=True)
+    run_parser = subparsers.add_parser("run", help="verify, then run the documented commands")
+    run_parser.add_argument("--source", type=Path, required=True)
+    run_parser.add_argument("--compiler", type=Path, required=True)
+    arguments = parser.parse_args(argv)
+    command = arguments.command or "check"
+    if command == "check":
+        return check()
+    if command == "derive":
+        return derive(arguments.source.resolve(), arguments.write)
+    if command == "fetch":
+        return fetch(arguments.destination.resolve())
+    if command == "verify":
+        findings = verify(arguments.source.resolve())
+        for finding in findings:
+            print(finding, file=sys.stderr)
+        if findings:
+            return 1
+        print(f"verified {arguments.source} at {load_report()['revision']}")
+        return 0
+    if command == "run":
+        return run(arguments.source.resolve(), arguments.compiler.resolve())
+    parser.error(f"unknown command {command}")
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

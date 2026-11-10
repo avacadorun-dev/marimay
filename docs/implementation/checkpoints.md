@@ -1697,18 +1697,25 @@ release slot:
    passes at 0.44-1.86 s against 2 s. The first-native row is re-budgeted by D125
    rather than repaired: a fresh Mach-O costs about 240 ms of page-in and
    code-signing validation before `main`, so Marimay's own startup is 5-11 ms.
-   The applications' `BUDGETS.md` texts follow in their repositories, and the
-   release contract must state the redefinition.
+   The applications' `BUDGETS.md` texts follow in their repositories; the
+   redefinition is stated in the draft `0.2.0-alpha.4` contract.
 3. **One bounded perf timebox (#26).** `frequency-map`, `unique-set`,
    `rune-frequency` and #3, four weeks, exit on a paired improvement or an
    accepted debt with the next hypothesis. After it, no perf candidate enters
    the alpha line without a new decision. This replaces the open-ended
    September perf wave.
-4. **Canonical program (#27).** The notes application builds and runs from a
-   clean checkout in CI, so the supported slice is stated positively in the
-   release contract rather than only by exclusions.
-5. **Release (#28).** `0.2.0-alpha.4` contract, changelog, regenerated
-   limitations, package; no CLI0 claim.
+4. **Reference slice (#27).** Delivered: `marimay-notes` is pinned at
+   `c5ec692` (tree `8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15`, content digest
+   `sha256:7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d`)
+   in [the reference-slice contract](reference-slice.md), its construct profile
+   is derived from source by `tools/check-reference-slice`, and the
+   `reference-slice` CI job builds it from a fresh public checkout with the
+   compiler from the same revision; the first pushed-revision
+   [run](https://github.com/marimay-lang/marimay/actions/runs/42877531917/job/130047390041) passed in 84 s with 36 process cases and 21 closed-pipe checks. `known-limitations.md` and the draft alpha.4
+   contract state what it does and does not exercise, so the supported slice is
+   no longer described only by exclusions.
+5. **Release (#28).** Finish the draft `0.2.0-alpha.4` contract and changelog,
+   regenerate the limitations, package and publish; no CLI0 claim.
 
 The slot assumes the owner's stated capacity of ~5 h/week, is due 2027-02-28,
 and moves only together with a written note. At most two issues carry the `now`
@@ -1752,6 +1759,7 @@ alias/containment analysis, precise warning/no-warning fixtures, allocation
 failures and continuing check/run/build/test close this diagnostic removal gap.
 The conservative precision boundary remains explicit; full CP42/Tier 1
 acceptance is still open.
+Reference slice: [pinned application, derived profile and CI job](evidence/cp42-reference-slice-2026-11-11.md).
 The stateful wave implements the remaining delimited/source-lint apps locally:
 [evidence](evidence/cp42-stateful-2026-09-09.md). All ten now have implementations.
 Shared RPO and selected-range copying fixes preserve D058/D076. The first-native,

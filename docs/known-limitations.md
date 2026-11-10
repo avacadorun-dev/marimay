@@ -46,6 +46,39 @@ surface includes `expect.output`, `equal`, `notEqual`, `true`, `false`,
 `some`, `none`, `ok`, and `err`. `examples/tour` is an executable module with
 five VM/native differential tests.
 
+## Reference slice
+
+One program states what the current alpha builds, instead of leaving the
+supported surface to exclusions. The reference slice is the `marimay-notes`
+application at a pinned revision:
+
+- Repository: <https://github.com/marimay-lang/marimay-notes>
+- Pinned revision: `c5ec692f3829b4c80facc8864202ae136be3173f`
+  - tree `8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15`
+  - content digest
+    `sha256:7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d`
+- Module `local/marimay-notes`: 7 source files, 958 lines, 16 tracked files
+- Commands: the sequence its README documents, executed unchanged by
+  `./tools/check-reference-slice run`
+
+The CI job `reference-slice` fetches exactly this revision, proves the tree and
+content digest, re-derives the construct profile, and then formats, checks,
+tests on both engines, runs, builds and process-tests the application with the
+compiler built from the same commit. A regression in any command fails the job.
+
+The slice exercises module imports, record declarations, typed `Option`/`Result`,
+postfix `?`, contextual `mapError`, `match`, string interpolation, managed
+arrays, insertion-ordered sets, iterating `for`, declared tests, capability-gated
+`std/fs`, UTF-8 byte conversion and a public function surface across eight
+`std/*` packages. It deliberately does not exercise enums, interfaces, generic
+declarations, maps, `while`, `defer`, `unsafe`, `extern`, mutable bindings or
+`as` casts, and the absent list is asserted in
+`tools/check-reference-slice`. See
+[the reference-slice contract](implementation/reference-slice.md).
+
+This is one program on one CI platform. It does not promote a gate, guarantee
+source compatibility for other programs, or demonstrate the absent families.
+
 ## Exclusions
 
 - JSON derives, a schema registry, a dynamic DOM, network-body streaming, and
