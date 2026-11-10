@@ -60,7 +60,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | EXEC-002 | VM is required/default for run/test; native required/default for build | execution §3; toolchain §6 | I4 |
 | EXEC-003 | portable `.myb` is typed and verified before execution | execution §4 | I3 |
 | EXEC-004 | generated C17 avoids C undefined behavior | execution §5 | I4 |
-| EXEC-005 | suspension effect inferred internally; no source `async`/`Future` color | execution §6; D010 | I6 |
+| EXEC-005 | suspension effect inferred internally; no source `async`/`Future` color | execution §6; D010/D122 | I6 |
 | EXEC-006 | standard I/O parks only current task, not isolate carrier | execution §§6,10 | I6 |
 | EXEC-007 | concurrency created explicitly by `spawn` inside `scope` | execution §7; D011 | I6 |
 | EXEC-008 | `Task<T>` is affine/scope-bound and cannot escape | execution §7.2 | I6 |

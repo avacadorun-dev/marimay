@@ -4192,3 +4192,206 @@ registry, namespace or performance-parity claim follows. The release
 workflow contract, portable installed macOS policy, package layout,
 receipt identity rules and security review obligations are unchanged
 from D114.
+
+## D122 — Freeze the resumable-frame and effect-metadata contract
+
+Status: accepted (repository-owner direction, 2026-11-10).
+
+This record is the contract that makes I6 cards #14–#22 consequences rather
+than independent guesses. I6 remains blocked behind CLI0 (CP42 → CP41 →
+CP39–CP40), and its first card is CP43+; accepting this contract starts no
+implementation, claims no checkpoint, and changes no roadmap status. A planning
+audit before CP43 may refine an implementation detail; a change to a binding
+item is an amendment to this record, not a silent divergence in a card. Both engines are
+bound by the same statements: an engine may implement less, but it may not
+renumber, reinterpret, or extend them locally.
+
+A resumable frame is one managed allocation owned by the runtime task/frame
+owner. Its fixed header identifies the function symbol, the immutable per-state
+descriptor, the current state number, the task creation identifier, the parent
+continuation, the suspended source span, the resume-status slot, and the head of
+the cleanup stack. A typed register area follows, with one slot for every MIR
+virtual register the function declares, at the width and offset of the verified
+register layout. A slot belongs to a state's descriptor only when MIR proves it
+live at that state; the frame may retain the storage, but an unlisted slot is not
+a root. The resume value, the cleanup stack, and the task metadata share the
+frame's lifetime. Parking transfers ownership from the engine's execution
+storage to the isolate wait set without retaining an address of a C local.
+
+States are numbered by one MIR-derived rule. State 0 is function entry.
+Suspension sites are then ordered by ascending MIR block identifier and, within
+a block, ascending instruction index; the k-th site receives state k, meaning
+"resume after that site's operation has completed and, when it produces a value,
+delivered it". MIR records for each site its block, instruction index, source
+span, resume destination and exact type when the operation produces a value,
+state number, and whether the site executes during lexical cleanup. Both engines
+consume this annotation: the bytecode function metadata carries a resume table
+and generated C emits one `switch` arm per state. Neither engine may renumber,
+coalesce, split, or invent a state. A function whose effect summary says it
+cannot suspend has only state 0 and no resumable frame. Verification rejects
+non-dense or duplicate numbering, a nonzero state not associated with exactly
+one site, a value-producing site without a destination, and a resume destination
+whose type disagrees with its site.
+
+Each state publishes one immutable trace descriptor. The descriptor lists
+exactly the slots live at that state as `(slot, kind, layout)` entries. A kind is
+`scalar` (fixed width, never traced); `record` (exact record layout, every
+reference field traced); `array` (exact element layout, only the initialized
+reference prefix traced, dense raw elements untraced); `string` (a leaf with no
+outgoing references); `enum` (exact enum layout, with the active variant read
+from the slot and only that payload traced); `interface` (box descriptor and
+payload); `closure` (captured environment layout); or `view` (a non-owning alias naming
+its owning slot, covering a D063 array or record view or an analogous string or
+enum binding). A `view` entry is never a root, is invalid on resume, and must be
+rebound from its owning slot before use, so an array, record, string, or enum
+view never crosses a suspension. Unknown
+kinds, a layout that disagrees with the slot's declared type, or a descriptor
+whose live set disagrees with the function and state identity are rejected before
+tracing or resuming. The VM and the native engine consume this one canonical
+descriptor model; each materializes it in its own immutable representation from
+the same MIR derivation at load or compile time. There is no second semantic
+descriptor format and no runtime translation between them.
+
+A frame owns a LIFO chain of cleanup records. Each record stores the deferred
+call target (direct symbol, interface slot plus receiver slot, or closure slot),
+the arguments already evaluated when the `defer` statement executed, the
+`defer` source span, and the next record. Registration appends; cleanup walks
+from the head. The chain is frame-owned, moves with the frame into the wait set,
+and is never a runtime-wide or C-stack stack. A deferred call that suspends parks
+the frame with a cleanup cursor naming the record being executed and a
+cleanup-in-progress flag. On resume the same call continues, its completion or
+panic is committed to the frame's outcome, the record is popped, and the older
+entries follow. A `defer` executed while
+cleanup is already running appends to the same chain and therefore runs before
+the remaining older entries, preserving D041's exactly-once LIFO order.
+Requested cancellation stays masked while the cursor is non-empty. The frame's
+panic state keeps the primary outcome and suppressed cleanup failures. A parked
+frame in cleanup is distinguishable from a parked frame in ordinary code, and
+neither may lose an entry. Cleanup argument slots are live and traced for as long
+as their record exists.
+
+The checker publishes, per function, the `maySuspend` fact and, when true, one
+canonical causal chain into package metadata. A chain link records the callee
+symbol or runtime operation kind and the source span of the call, adapter, or
+wait that creates it. The terminal link names the cause class: a direct
+suspending runtime operation, a task/channel/timer/isolate wait, an open
+interface or closure dispatch, or a `@blocking` adapter. The chain is the
+shortest path to a terminal cause. Among equal shortest paths the compiler
+selects the one whose first differing link has the smaller source-span start,
+then end, then declaration order, so recompiling the same sources yields the
+same summary. A non-suspending function publishes the false fact and an empty
+chain. Imported summaries are transported with their spans and expanded
+transitively; a consuming package never re-derives or guesses an imported
+function's cause. The fact is metadata and diagnostics input, not a source-level
+compatibility rule.
+
+At MIR level a resumable path polls at the §7.6 sites: function entry on a
+resumable path, each loop backedge, allocation slow paths, task/channel/timer
+operations, external blocking adapters, and explicit `task.yield()`. A
+suspension site is itself a scheduling boundary rather than an additional poll.
+Readiness-selection registration and winner commit are task/channel/timer
+operations for this purpose. Each site is an explicit MIR operation carrying its kind and source
+span and is executed by both the VM and generated C, and the allocation
+operation polls only when it takes its slow path; a backend may not add or
+remove a poll. Verification requires a dominating poll on every source loop
+unless the loop is proven finite and bounded, and no transformation may remove
+the last poll on a cycle. Polls reachable only from runtime internals are not a
+substitute for this MIR-level set, because they would let the engines poll at
+different logical places.
+
+The deterministic task trace is a versioned record stream. Every record carries
+the schema version, a monotone sequence number within the isolate, the logical
+scheduler step, the task creation identifier, the parent identifier when the
+event creates work, the event kind, a declaration order, and a source span when
+one exists. Kind-specific fields follow where applicable: park reason, wake source,
+selected alternative index, cancellation source, panic code, completion status,
+cleanup record identity. The kinds are `create`, `start`, `park`, `wake`, `resume`,
+`cancel-request`, `cancel-observation`, `select`, `scope-enter`, `scope-exit`,
+`defer-run`, `complete`, `panic`, `block-pool-wait`, `io-register`, and
+`io-complete`. Declaration order is the deterministic source-order ordinal of
+the operation or declared alternative that caused the event, projected from its
+MIR block-and-instruction position; it orders same-step events without
+reference to engine identity.
+Engine name, wall-clock and CPU time, addresses, GC timing, frame internals, and
+fairness counters are diagnostic metadata outside the compared record. The trace
+schema has its own version, independent of the `.myb` format version: equal
+major versions are comparable, additive optional fields keep the major version,
+and a change to a field's meaning or to the compared field set raises the major
+version. Comparators reject mismatched major versions instead of normalizing
+them.
+
+For §16 gate 9, a parked task's charged cost is its task control block plus
+every resumable frame in its parked chain. The gate fixture parks each task in
+exactly one resumable frame, and the control block and that frame are coalesced
+into one managed allocation following D118's precedent; the fixture keeps at
+most eight live 64-bit slots in the parked state. Charged live bytes for that
+single-frame shape must not exceed 256 bytes per parked task, measured as the
+isolate's live-byte delta across parking, so one million parked tasks require at
+most 256 MiB. A task parked through k frames is charged k frame allocations, and
+nested depth is measured separately against the same per-frame shape rather than
+folded into the gate-9 number. Gate 9 runs with an explicit
+`--max-heap-bytes 335544320` and must also finish with zero live allocations and
+zero live bytes after teardown. Immutable descriptor tables and bytecode are
+compiler/runtime metadata outside the D055 managed-heap charge; scheduler and
+wait-set bookkeeping and poller registrations are runtime and OS resources
+outside it as well. All of them are reported separately with their own bounds. The number is fixed here so that #22
+measures against it. Changing it requires amending this record with the measured
+frame shape, not adjusting the target after the result is known.
+
+Two engine-specific descriptor formats plus a runtime translation layer were
+rejected: the translator would be a third semantic owner, and a slot kind
+accepted by one engine could escape the other's trace. One canonical model with
+two immutable materializations keeps differential comparison honest.
+
+Assigning state numbers in the C emitter and deriving them independently in the
+VM was rejected: the number is the only shared key between two parked frames,
+and deriving it in a backend freezes two accidents in the first suspension
+change. Building a complete switch-shaped state machine in MIR was rejected: MIR
+owns site enumeration, numbering, liveness, and safepoints, while the executable
+control-flow shape stays engine-owned because a VM resume table and generated C
+have different fuel, error, and cleanup paths. Publishing a C machine from MIR
+would put backend control flow into the semantic convergence point; leaving
+numbering to the backend would make the two engines disagree.
+
+Reusing D105 activation-reuse storage for parked frames was rejected: D105
+storage is call-scoped, is unlinked when the call returns, and never roots
+managed values, whereas a parked frame outlives the call and is a root; reuse
+would turn an inactive call buffer into a root and couple a run-to-completion
+optimization to task lifetime. D105/D110 remain for non-parking activations, and
+a resumable function keeps its registers in the heap frame.
+
+One state-independent descriptor per function was rejected because a union of
+all states would retain dead references and make tracing imprecise; precise
+collection requires a live set per state. Versioning the trace schema with
+`.myb` was rejected because bytecode and trace comparison evolve for different
+reasons; sharing a version would force a trace-major bump for an unrelated wire
+change or hide a trace change behind a minor bytecode bump.
+
+This record changes no source grammar or source-level semantics: there is no
+`async`, `await`, or `Future<T>`, no selectable executor, and no new keyword. It
+freezes no public API name; `http.get`, `Channel<T>`, `withTimeout`, and the
+selection surface remain owned by #20 and #21. It does not alter D029's
+race/selection protocol, D041's cleanup policy, D055's accounting, D063's view
+validity, the precise non-moving collector, `scope`/`spawn`/`task.wait()`
+spelling, roadmap statuses, checkpoint numbers, or CLI0 requirements. This
+record itself adds no C API, opcode, bytecode section, or command. The I6 gate
+still closes only through the vertical scenario and gates 1–9.
+
+Ownership follows the existing architecture rows. `check` owns the effect fixed
+point and the published per-function summary, including the canonical chain
+selection. `mir` owns suspension-site enumeration, state numbers, the MIR
+safepoint set, and the liveness and kind derivation that produces each state's
+descriptor model. `bytecode` owns the wire encoding of effect summaries, resume
+tables, and descriptor tables; `vm` and `native` execute them and may not add a
+state, slot kind, or event. `runtime` owns the frame and task record layout,
+the descriptor schema and its validation boundary, the cleanup-stack record, and
+the task-trace schema and emission; its scheduler emits scheduling events through
+that schema without redefining it. These responsibilities fall inside the
+existing `check`, `mir`, `bytecode`, `vm`, `native`, and `runtime` rows, the
+`runtime` row already reserves later GC/tasks/I/O, and this record changes no
+dependency edge. #14 implements the effect paragraph; #15 and #16 are reviewed
+against the frame, descriptor, numbering, and cleanup paragraphs; #17 implements
+the safepoint paragraph; #18 and #21 depend on the cleanup and trace paragraphs;
+#19 and #20 add runtime operations but no state kind; #22 measures the trace
+schema and the gate-9 budget. A card that needs a different fact reopens this
+record before its implementation lands.
