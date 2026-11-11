@@ -593,6 +593,22 @@ candidate is the map, not the object model. The pool is recorded as available
 evidence, not as a refused mechanism: adopting it changes the memory policy and
 needs its own decision.
 
+[One validation and one resolution per string-keyed lookup](cp42-string-key-lookup-2026-11-11.md)
+([pairs, controls and binaries](cp42-string-key-lookup-2026-11-11.json)) is the
+fourth candidate and the first that attacks the row's other half. A rebuilt probe
+family puts the map at 41% of `word-frequency` (39.71 ms of 95.87 ms; 99.3 ns per
+string-keyed get+put pair) with split and map still additive within 1.6%. A
+lookup resolved the key handle four times and validated it twice, three of those
+resolutions in frames that only re-checked what an earlier frame had checked. The
+string key now resolves once and hashes and compares through that slot, in the
+same check order and with the same status codes, while raw64, enum and record
+keys keep the generic path. The map probe falls 12.43% (39.73 → 34.79 ms) against
+an A/A control of +1.15%, `word-frequency` falls 5.92% (93.99 → 88.43 ms) against
+a +0.18% control, and `map-string` falls 6.16%; record-keyed `map-string-book`
+and the three scalar-keyed rows move within ±1.4% code-layout noise. Nothing is
+allocated, nothing is added to the map object, and the hash function is
+unchanged. The row is at 4.4× Go, still open.
+
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small
 VM row passes at 154-226 ms and the warm `test --engine both` row at

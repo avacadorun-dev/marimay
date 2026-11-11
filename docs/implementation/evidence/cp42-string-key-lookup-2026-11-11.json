@@ -1,0 +1,184 @@
+{
+ "schema": "marimay.cp42-string-key-lookup/1",
+ "generated_at": "2026-11-11T15:20:00+07:00",
+ "source_revision": "0eec32e + working-tree map lookup change",
+ "compilers": {
+  "pre_change": {
+   "sha256": "034b6657bd5382c95a71974d0934721c445f8125a400e6d745319e2f8dc047a0",
+   "build_tree": "build/rb-map",
+   "note": "release tree configured and built from the same sources with the map change stashed; resolves its own native-runtime archive"
+  },
+  "patched": {
+   "sha256": "868592ccc95f313906715c68d10dce801f3924b1f367326efa4af1829ac75186",
+   "build_tree": "build/release",
+   "note": "same tree after the map change; a copied compiler would resolve the other tree's archive, so both sides are separate CMake trees"
+  }
+ },
+ "host": {
+  "platform": "macOS arm64",
+  "cpu": "Apple M2",
+  "isolation": "local-unverified"
+ },
+ "decomposition_before_change": {
+  "session": "tmp-perf26/timeit.py, one session, 3 warmups, 11 samples, alternating order",
+  "split": {
+   "median_ms": 57.72,
+   "min_ms": 55.124
+  },
+  "map": {
+   "median_ms": 39.714,
+   "min_ms": 38.616
+  },
+  "full": {
+   "median_ms": 95.871,
+   "min_ms": 91.723
+  },
+  "sum_split_map_ms": 97.434,
+  "additivity_over_full_percent": 1.63,
+  "map_share_of_row_percent": 41.4,
+  "ns_per_get_put_pair": 99.3
+ },
+ "probe": {
+  "source": "tmp-perf26/probe_map.my",
+  "rounds": 10,
+  "lines": 10000,
+  "words_per_line": 4,
+  "get_put_pairs_per_run": 400000,
+  "before_binary": "tmp-perf26/build-cur-probe_map",
+  "before_binary_sha256": "57ff79f6289f99d3d9501f3ca52c2c2292109f65d0d87823a6dd45c0d3959404",
+  "after_binary": "tmp-perf26/build-new-probe_map",
+  "after_binary_sha256": "b3fd77e291061ef892b24f8e7d0d3e395d98b461e711d94feaf13378e2dd34cf",
+  "stdout_before": "map-only 90",
+  "stdout_after": "map-only 90"
+ },
+ "pairs": {
+  "probe": {
+   "warmups": 3,
+   "samples_per_side": 11,
+   "order": "side order alternating every round, fresh process per sample",
+   "before_median_ms": 39.728,
+   "after_median_ms": 34.79,
+   "before_min_ms": 39.38,
+   "after_min_ms": 34.429,
+   "delta_percent": -12.43,
+   "ns_per_pair_before": 99.3,
+   "ns_per_pair_after": 87.0
+  },
+  "probe_aa_control": {
+   "before_binary": "tmp-perf26/build-cur-probe_map",
+   "after_binary": "copy of the same binary outside the build tree",
+   "before_median_ms": 40.252,
+   "after_median_ms": 40.716,
+   "delta_percent": 1.15
+  },
+  "word_frequency": {
+   "warmups": 3,
+   "samples_per_side": 11,
+   "before_median_ms": 93.994,
+   "after_median_ms": 88.433,
+   "before_min_ms": 92.45,
+   "after_min_ms": 88.105,
+   "delta_percent": -5.92,
+   "checksum_before": 2925090,
+   "checksum_after": 2925090
+  },
+  "word_frequency_aa_control": {
+   "before_median_ms": 93.676,
+   "after_median_ms": 93.847,
+   "delta_percent": 0.18
+  },
+  "map_string": {
+   "before_median_ms": 18.93,
+   "after_median_ms": 17.77,
+   "delta_percent": -6.16,
+   "checksum_before": 268505088,
+   "checksum_after": 268505088
+  },
+  "untouched_key_shapes": {
+   "map-string-book_record_keys": {
+    "delta_percent": -0.62,
+    "checksums_equal": true
+   },
+   "frequency-map_int_keys": {
+    "delta_percent": 1.33,
+    "checksums_equal": true
+   },
+   "unique-set_int_keys": {
+    "delta_percent": 1.0,
+    "checksums_equal": true
+   },
+   "rune-frequency_rune_keys": {
+    "delta_percent": -0.42,
+    "checksums_equal": true
+   }
+  }
+ },
+ "corpus_matrices": {
+  "pre_change": "benchmarks/results/perf26-c4-pre-anchors.md",
+  "patched": "benchmarks/results/perf26-c4-map-anchors.md",
+  "word_frequency_ms": {
+   "before": 96.61,
+   "after": 91.08
+  },
+  "map_string_ms": {
+   "before": 19.28,
+   "after": 17.54
+  }
+ },
+ "mechanism": {
+  "key_resolutions_per_lookup_before": 4,
+  "key_resolutions_per_lookup_after": 2,
+  "validation_calls_per_lookup_before": 1,
+  "validation_calls_per_lookup_after": 1,
+  "allocation_delta_per_lookup": 0,
+  "struct_layout_changes": 0,
+  "hash_function_changes": 0,
+  "status_code_changes": 0,
+  "generic_path_key_shapes": [
+   "raw64",
+   "enum",
+   "record"
+  ],
+  "files": [
+   "runtime/common/managed_map.c"
+  ]
+ },
+ "correctness": {
+  "full_debug_suite": {
+   "total": 100,
+   "passed": 99,
+   "failed": [
+    "mmay_macos_package"
+   ],
+   "note": "pkgbuild failure reproduces with the change stashed; it exercises packaging, not the managed heap"
+  },
+  "asan_ubsan_labels": {
+   "tests": 6,
+   "passed": 6,
+   "labels": [
+    "managed-memory",
+    "resource",
+    "stateful"
+   ]
+  },
+  "asan_ubsan_by_name": {
+   "tests": 5,
+   "passed": 5,
+   "names": [
+    "mmay_c_unit",
+    "mmay_c_unit_runtime",
+    "mmay_cp33_text_bytes",
+    "mmay_format_cp33-text-bytes",
+    "runtime suite"
+   ]
+  },
+  "runtime_c_unit_suite": "passed, including the two-heap differential map/set fuzzers and the deterministic allocation-failure sweeps",
+  "allocation_failure_indices": "unchanged; the lookup path allocates nothing"
+ },
+ "limitations": [
+  "No Tier 1 baseline, VM column or Bun column.",
+  "word-frequency remains at about 4.4x Go after this change.",
+  "Record-keyed maps keep the generic path and gain nothing.",
+  "The profile table in the record is an attribution, not a measurement gate."
+ ]
+}

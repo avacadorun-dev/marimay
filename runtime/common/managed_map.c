@@ -456,10 +456,87 @@ static MarimayManagedStatus mmay_managed_map_value_equal(
     return MMAY_MANAGED_INVALID_ARGUMENT;
 }
 
+/* One validated, resolved string key for one lookup. The checked entry points
+ * return the same status sequence as validation followed by hashing, but the
+ * slot is resolved once and then reused by the hash, the probe and the key
+ * comparison. Nothing here allocates, so the slot stays valid for the call. */
+static MarimayManagedStatus mmay_managed_map_string_key_slot(
+    const MarimayManagedHeap *heap,
+    const MarimayManagedFieldDescriptor *field,
+    MarimayManagedCell key,
+    const MarimayManagedSlot **slot_result
+) {
+    const MarimayManagedSlot *slot = NULL;
+    if (slot_result == NULL) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
+    }
+    *slot_result = NULL;
+    if (!mmay_managed_heap_valid(heap) || field == NULL) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
+    }
+    if (field->cell_kind != MMAY_MANAGED_CELL_REFERENCE
+        || field->reference_kind != MMAY_MANAGED_OBJECT_STRING) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
+    }
+    if (mmay_managed_reference_is_invalid(key.reference)) {
+        return MMAY_MANAGED_INVALID_REFERENCE;
+    }
+    slot = mmay_managed_resolve_const(heap, key.reference);
+    if (slot == NULL) {
+        return MMAY_MANAGED_INVALID_REFERENCE;
+    }
+    if (slot->kind != MMAY_MANAGED_OBJECT_STRING || slot->as.string == NULL) {
+        return MMAY_MANAGED_TYPE_MISMATCH;
+    }
+    if (field->reference_descriptor != NULL || field->is_mutable) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
+    }
+    *slot_result = slot;
+    return MMAY_MANAGED_OK;
+}
+
+static uint64_t mmay_managed_map_string_hash_slot(
+    const MarimayManagedHeap *heap,
+    const MarimayManagedSlot *slot
+) {
+    return mmay_hash_seeded(
+        slot->as.string->bytes,
+        slot->as.string->length,
+        heap->options.collection_hash_seed0,
+        heap->options.collection_hash_seed1
+    );
+}
+
+static MarimayManagedStatus mmay_managed_map_string_slot_equal(
+    const MarimayManagedSlot *entry_slot,
+    const MarimayManagedSlot *key_slot,
+    bool *result
+) {
+    if (entry_slot == NULL || key_slot == NULL || key_slot->as.string == NULL
+        || result == NULL) {
+        return MMAY_MANAGED_INVALID_REFERENCE;
+    }
+    if (entry_slot->kind != MMAY_MANAGED_OBJECT_STRING
+        || entry_slot->as.string == NULL) {
+        return MMAY_MANAGED_TYPE_MISMATCH;
+    }
+    *result = entry_slot->as.string->length == key_slot->as.string->length
+        && (key_slot->as.string->length == 0
+            || memcmp(
+                entry_slot->as.string->bytes,
+                key_slot->as.string->bytes,
+                key_slot->as.string->length
+            ) == 0);
+    return MMAY_MANAGED_OK;
+}
+
+/* `key_slot` carries the already-validated string key, or NULL for every other
+ * key shape, which keeps the recursive generic comparison. */
 static MarimayManagedStatus mmay_managed_map_find_reference(
     const MarimayManagedHeap *heap,
     const MarimayManagedMap *map,
     MarimayManagedCell key,
+    const MarimayManagedSlot *key_slot,
     uint64_t hash,
     size_t *bucket,
     size_t *entry,
@@ -475,10 +552,20 @@ static MarimayManagedStatus mmay_managed_map_find_reference(
         /* This comparison neither allocates nor mutates the map. Only hash
          * candidates enter recursive equality; all keys share one probe. */
         *found = false;
-        status = mmay_managed_map_value_equal(
-            heap, &map->descriptor->key, mmay_managed_map_entry_key(map, *entry),
-            key, 0, &equal
-        );
+        if (key_slot != NULL) {
+            status = mmay_managed_map_string_slot_equal(
+                mmay_managed_resolve_const(
+                    heap, mmay_managed_map_entry_key(map, *entry).reference
+                ),
+                key_slot,
+                &equal
+            );
+        } else {
+            status = mmay_managed_map_value_equal(
+                heap, &map->descriptor->key,
+                mmay_managed_map_entry_key(map, *entry), key, 0, &equal
+            );
+        }
         if (status != MMAY_MANAGED_OK) return status;
         if (equal) {
             *found = true;
@@ -545,6 +632,7 @@ static inline MarimayManagedStatus mmay_managed_map_lookup_resolved(
     uint64_t *hash_result
 ) {
     uint64_t hash = 0;
+    const MarimayManagedSlot *key_slot = NULL;
     MarimayManagedStatus status;
     if (map->descriptor->key.cell_kind == MMAY_MANAGED_CELL_RAW64) {
         if (!map->descriptor->is_set && map->lookup.valid
@@ -563,6 +651,14 @@ static inline MarimayManagedStatus mmay_managed_map_lookup_resolved(
             heap->options.collection_hash_seed0,
             heap->options.collection_hash_seed1
         );
+    } else if (map->descriptor->key.reference_kind == MMAY_MANAGED_OBJECT_STRING) {
+        status = mmay_managed_map_string_key_slot(
+            heap, &map->descriptor->key, key, &key_slot
+        );
+        if (status != MMAY_MANAGED_OK) {
+            return status;
+        }
+        hash = mmay_managed_map_string_hash_slot(heap, key_slot);
     } else {
         status = mmay_managed_validate_field(
             heap, &map->descriptor->key, key
@@ -588,7 +684,7 @@ static inline MarimayManagedStatus mmay_managed_map_lookup_resolved(
         ? mmay_managed_map_probe(
             map, hash, true, key.f64_bits, bucket, entry, found, NULL
         ) : mmay_managed_map_find_reference(
-            heap, map, key, hash, bucket, entry, found
+            heap, map, key, key_slot, hash, bucket, entry, found
         );
     return status;
 }
@@ -762,11 +858,22 @@ static inline MarimayManagedStatus mmay_managed_map_put_resolved(
     /* Reuse the absent bucket unless growth or compaction rebuilt it. */
     if (map->bucket_capacity != previous_buckets
         || map->entry_count != previous_entries) {
+        const MarimayManagedSlot *growth_slot = NULL;
+        if (map->descriptor->key.cell_kind == MMAY_MANAGED_CELL_REFERENCE
+            && map->descriptor->key.reference_kind
+                == MMAY_MANAGED_OBJECT_STRING) {
+            status = mmay_managed_map_string_key_slot(
+                heap, &map->descriptor->key, key, &growth_slot
+            );
+            if (status != MMAY_MANAGED_OK) {
+                return status;
+            }
+        }
         status = map->descriptor->key.cell_kind == MMAY_MANAGED_CELL_RAW64
             ? mmay_managed_map_probe(
                 map, hash, true, key.f64_bits, &bucket, &entry, &found, NULL
             ) : mmay_managed_map_find_reference(
-                heap, map, key, hash, &bucket, &entry, &found
+                heap, map, key, growth_slot, hash, &bucket, &entry, &found
             );
     }
     if (status != MMAY_MANAGED_OK || found || bucket == MMAY_MAP_EMPTY
