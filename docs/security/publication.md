@@ -64,7 +64,14 @@ objects, and a new commit carrying the same address still fails. The scan prints
 the suppressed count on every run, so the exception cannot quietly widen.
 
 The durable lever is the account's public commit address; until it changes, a new
-squash merge produces a new occurrence rather than a fixed one. The alternative
+squash merge produces a new occurrence rather than a fixed one. That happened the
+same day: the squash merge delivering D126 added
+`39dd34698eced227b799f937f8ffb8bd8b6cbe2c`, which is accepted for the same
+reason. The list is closed at seven objects — a further occurrence means the
+merge process regressed, not that the table grows — and this repository no longer
+squash-merges through the API, because an API squash merge replaces the author
+line with the account's public address. Rebase merges and fast-forward pushes
+keep the commits' own no-reply author lines. The alternative
 that would actually remove the address — rewriting history and asking GitHub to
 purge unreachable objects and pull-request refs — stays available and unfree.
 

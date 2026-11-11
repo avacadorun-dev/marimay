@@ -4548,3 +4548,19 @@ Reversal: a seventh object with the same finding fails the guard, and the
 response is to amend this decision rather than to broaden the checker. The
 exception disappears when those six objects stop being reachable or when a
 complete purge removes them.
+
+Amendment (2026-11-11, same day): the seventh object appeared before this
+decision was a day old — `39dd34698eced227b799f937f8ffb8bd8b6cbe2c`, the squash
+merge that delivered this very decision. That is the mechanism in one line: every
+API squash merge writes one more object with the account's public author address,
+so an object list would grow without end and the "narrow exception" would slowly
+become an address allowlist with extra steps. The list is therefore closed at
+seven, and the process changes instead: this repository stops using API squash
+merges. A merge must leave the commits' own author lines in place, which means a
+rebase merge or a fast-forward push; the delivering commit of this amendment was
+pushed as a fast-forward for exactly that reason. A further occurrence is a
+process failure to fix, not a row to add.
+
+The lasting source fix remains the account's public commit address: while it is a
+personal mailbox, any future squash merge — here or in a sibling repository —
+creates the same finding again.

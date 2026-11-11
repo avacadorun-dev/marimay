@@ -31,7 +31,10 @@ EMAIL = re.compile(rb"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24
 # history would not un-publish them either: the pull-request refs on GitHub keep
 # the same objects reachable. They are accepted as reviewed history instead.
 # The exception is per object, never by address, so any new commit carrying the
-# same address still fails. See docs/security/publication.md and issue #43.
+# same address still fails. The list is closed (D126, amended 2026-11-11): a new
+# occurrence means the merge process regressed, not that this table grows, which
+# is why this repository now merges by rebase or fast-forward instead of an API
+# squash merge. See docs/security/publication.md and issue #43.
 ACCEPTED_HISTORICAL_COMMITS = {
     oid: "#43 accepted squash-merge author line" + ": documented in docs/security/publication.md"
     for oid in (
@@ -41,6 +44,7 @@ ACCEPTED_HISTORICAL_COMMITS = {
         "53b216734c8f03118cadeea348b5c12c0048fc72",
         "a24e9e40365a092a035552a5d8a22e5d7e793d7a",
         "a9848597a580004a1cbde62c6c2fe46fb5f2ea5f",
+        "39dd34698eced227b799f937f8ffb8bd8b6cbe2c",
     )
 }
 
