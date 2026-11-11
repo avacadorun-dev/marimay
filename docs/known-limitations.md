@@ -95,6 +95,12 @@ source compatibility for other programs, or demonstrate the absent families.
   nested contexts such as `Ok(None)`. Positional constructor shorthand and
   annotation-free expression closures are contextual only at compiler-known
   `Result.mapError` in 0.1; they are not general storable function values.
+- `std/time` is specified by standard-library §7 but unimplemented: there is no
+  clock, instant or duration surface, and `std/task.withTimeout` therefore has no
+  duration type. `std/math` is absent entirely — no `sqrt`, no rounding, no
+  `min`/`max`, no constants — and the specification does not yet define
+  cross-platform determinism for such functions. Both gaps are tracked as deferred
+  backlog (#40, #41) rather than assumed away.
 - Cross compilation, automatic PATH editing, signing and notarization remain
   absent. D114 separately permits the experimental macOS package and release
   workflow; this does not establish CP39/CP40 completion. Commands shown as
