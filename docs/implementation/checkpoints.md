@@ -1721,8 +1721,21 @@ release slot:
    carried their payload and temporary root vector in separate allocations while
    records and strings already owned one. The split probe fell a further 8.98%
    with A/A controls at +0.02% and -0.36%, the enum's profile share fell 16.1%
-   to 6.8%, and the delta calibrates the remaining cost at about 24 ns per heap
-   allocation and its sweep. The three collection rows remain open.
+   to 6.8%, and the delta calibrated the remaining cost at about 24 ns per heap
+   allocation and its sweep. The third candidate tested that calibration with a
+   pool of released object blocks: 23.83% better on a collection-heavy probe, but
+   nothing on the row, because `word-frequency` allocates about seven hundred
+   thousand objects against a one-million-object threshold and never collects —
+   and a 1 MiB retention cap was 2.97% worse than no pool, since one collection
+   releases the whole dead set at once. It is recorded as available evidence
+   rather than adopted: the row sits inside the 1.3% drift, and adopting it would
+   change the memory policy for no measured gain on the rows this timebox exists
+   to move. The screening protocol gained a rule: a probe must match the row's
+   allocation volume and collection schedule, because the 5,000,000-call probe
+   overstates per-object savings by roughly seven times. The row now measures
+   about 970 ns per call with the split at ~300 ns and four string-keyed get+put
+   pairs at ~390 ns, so the next candidate is the map. The three collection rows
+   remain open.
 4. **Reference slice (#27).** Delivered: `marimay-notes` is pinned at
    `c5ec692` (tree `8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15`, content digest
    `sha256:7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d`)

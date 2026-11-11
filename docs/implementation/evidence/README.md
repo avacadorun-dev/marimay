@@ -575,6 +575,24 @@ the delta calibrates the cost the next candidate must attack: about 24 ns per
 heap allocation and its sweep. Eight allocations per call remain and the row
 stays open.
 
+[The released-object pool the corpus cannot use](cp42-released-object-pool-2026-11-11.md)
+([probe pairs and corpus medians](cp42-released-object-pool-2026-11-11.json)) is
+the third candidate, measured and not adopted. Per-size-class free lists of
+released object blocks cut the split probe 23.83%, but only from a cap of
+`max_live_bytes`: a 1 MiB cap measured 2.97% *worse* than no pool, because one
+collection releases about nine hundred thousand objects at once. On the corpus
+the pool is worth nothing: `word-frequency` allocates about seven hundred thousand
+objects against a one-million-object threshold, so **no collection runs**, nothing
+is ever released and there is nothing to reuse. That also corrects the previous
+record's transfer: the enum change is worth −1.3% on the row, not the probe's
+−8.98%, and the 5,000,000-call probe overstates per-object savings by roughly
+seven times because it forces about forty-five collections. The row now costs
+about 970 ns per call with the split at ~300 ns, four string-keyed get+put pairs
+at ~390 ns and the rest loop, aggregation and the final sweep — so the next
+candidate is the map, not the object model. The pool is recorded as available
+evidence, not as a refused mechanism: adopting it changes the memory policy and
+needs its own decision.
+
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small
 VM row passes at 154-226 ms and the warm `test --engine both` row at
