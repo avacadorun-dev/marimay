@@ -1703,7 +1703,14 @@ release slot:
    `rune-frequency` and #3, four weeks, exit on a paired improvement or an
    accepted debt with the next hypothesis. After it, no perf candidate enters
    the alpha line without a new decision. This replaces the open-ended
-   September perf wave.
+   September perf wave. Started 2026-11-11 with a hard stop on 2026-12-09:
+   [the start record](evidence/cp42-perf-timebox-2026-11-11.md) fixes the
+   acceptance baseline, lists the five rejected candidate families with what
+   each forbids, and decomposes `word-frequency` into 72% `text.split` and 30%
+   string-keyed map work and `rune-frequency` into ~86% map work. It also
+   records one unresolved discrepancy between the in-program per-piece cost and
+   the C replication, and blocks mechanism selection on it rather than choosing
+   a candidate from counters that do not locate the cost.
 4. **Reference slice (#27).** Delivered: `marimay-notes` is pinned at
    `c5ec692` (tree `8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15`, content digest
    `sha256:7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d`)

@@ -95,7 +95,11 @@ belongs to. The milestone description carries the exit criteria and the date.
   finding (#24) is delivered, startup budgets are met or re-budgeted (#25), and
   the reference slice is pinned, derived and built from a clean checkout in CI
   (#27). What is left is one bounded perf timebox for `frequency-map` /
-  `unique-set` / `rune-frequency` and #3 (#26), then the release (#28). The stale
+  `unique-set` / `rune-frequency` and #3 (#26), then the release (#28). The
+  timebox runs from 2026-11-11 to a hard stop on 2026-12-09 and opened with
+  [a measured decomposition](evidence/cp42-perf-timebox-2026-11-11.md): each of
+  the four rows now has a per-row floor and a ranked hypothesis instead of the
+  open-ended September wave. The stale
   sentence about finishing the mutable-capture warning and the delimited /
   source-lint applications was already delivered on 2026-09-09 (D103,
   `cp42-stateful-2026-09-09.md`) and no longer describes the next step.

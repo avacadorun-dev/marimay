@@ -1,0 +1,231 @@
+{
+ "schema": "marimay.cp42-perf-timebox/1",
+ "generated_at": "2026-11-11T10:35:00+07:00",
+ "compiler": {
+  "revision": "900c25bc7c25db445cc5e27d7db106510d96b2c8",
+  "binary": "build/release/mmay",
+  "sha256": "4bf288523efa4180d73042964138748bf83b78642afdd89d90a0792bd9088cf8",
+  "version": "0.1.0-alpha.3"
+ },
+ "host": {
+  "platform": "macOS 27.0.1 arm64",
+  "cpu": "Apple M2",
+  "isolation": "local-unverified",
+  "load_average_at_measurement": [
+   5.45,
+   5.65,
+   5.98
+  ]
+ },
+ "method": {
+  "timer": "fresh process, CLOCK_MONOTONIC via perf_counter_ns, 5 warmups, 21 samples, alternating order",
+  "script": "timeit.py (embedded below)",
+  "note": "screening probes derived from the unchanged corpus rows; not corpus acceptance evidence",
+  "script_source": "#!/usr/bin/env python3\n\"\"\"Fresh-process median timer: 3 warmups, 11 samples, rotating order.\"\"\"\nimport json\nimport statistics\nimport subprocess\nimport sys\nimport time\nfrom pathlib import Path\n\nimport os\nWARMUPS = int(os.environ.get('WARMUPS', '3'))\nSAMPLES = int(os.environ.get('SAMPLES', '11'))\n\n\ndef run_once(path):\n    start = time.perf_counter_ns()\n    out = subprocess.run([path], capture_output=True, text=True, timeout=300)\n    elapsed = time.perf_counter_ns() - start\n    if out.returncode != 0:\n        raise SystemExit(f\"{path} failed: {out.stderr}\")\n    return elapsed / 1e6, out.stdout.strip()\n\n\ndef main():\n    paths = [Path(p).resolve() for p in sys.argv[1:]]\n    results = {p.name: [] for p in paths}\n    outputs = {}\n    for _ in range(WARMUPS):\n        for p in paths:\n            run_once(p)\n    for index in range(SAMPLES):\n        order = paths if index % 2 == 0 else list(reversed(paths))\n        for p in order:\n            ms, text = run_once(p)\n            results[p.name].append(ms)\n            outputs[p.name] = text\n    summary = {}\n    for p in paths:\n        values = sorted(results[p.name])\n        summary[p.name] = {\n            \"median_ms\": round(statistics.median(values), 3),\n            \"min_ms\": round(values[0], 3),\n            \"max_ms\": round(values[-1], 3),\n            \"stdout\": outputs[p.name],\n            \"samples\": [round(v, 3) for v in values],\n        }\n    print(json.dumps(summary, indent=1))\n\n\nif __name__ == \"__main__\":\n    main()\n"
+ },
+ "probe_sources": {
+  "probe_full.my": {
+   "sha256": "38dcdf3119815204a1db03b2d18ab4610a3bc82c52746d087dcb40aa2156ce4b",
+   "source": "import * as text from \"std/text\";\nimport { println, Error as IoError } from \"std/io\";\n\nfn main(): Result<void, IoError> {\n  const lines = [\n    \"книга море книга дом\",\n    \"море свет дом книга\",\n    \"rust go marimay go\",\n    \"ёжик туман ёжик книга\",\n  ];\n  let checksum = 0;\n  for repeat in 0..10 {\n    const counts: Map<string, int> = mapOf<string, int>();\n    for index in 0..10_000 {\n      const words = match text.split(lines[index % 4], \" \", 16) {\n        Ok(value) => value,\n        Err(_) => panic(\"split failed\"),\n      };\n      for word in words {\n        const count = match counts.get(word) {\n          Some(value) => value,\n          None => 0,\n        };\n        match counts.put(word, count + 1) {\n          Ok(_) => {},\n          Err(_) => panic(\"map failed\"),\n        };\n      }\n    }\n    checksum = checksum + counts.length();\n  }\n  println($\"full {checksum}\")?;\n  return Ok();\n}\n"
+  },
+  "probe_int_map.my": {
+   "sha256": "0e2459180ca6d96279877e466149c42214c731646693334f20822d0b2fe0574d",
+   "source": "import { println, Error as IoError } from \"std/io\";\n\nfn main(): Result<void, IoError> {\n  let pattern: []int = [];\n  for index in 0..15 {\n    const _ = pattern.push(0x4D + index * 7);\n  }\n  const counts: Map<int, int> = mapOf<int, int>();\n  let checksum = 0;\n  for repeat in 0..30_000 {\n    for value in pattern {\n      const next = match counts.get(value) {\n        Some(count) => count + 1,\n        None => 1,\n      };\n      const _ = counts.put(value, next);\n    }\n  }\n  checksum = checksum + counts.length();\n  println($\"int-map {checksum}\")?;\n  return Ok();\n}\n"
+  },
+  "probe_map.my": {
+   "sha256": "69aa890ee1d824ff5a23701df74d75bcf7cf8009047673f31fdeefbf87ce0245",
+   "source": "import { println, Error as IoError } from \"std/io\";\n\nfn main(): Result<void, IoError> {\n  const flat = [\n    \"книга\", \"море\", \"книга\", \"дом\",\n    \"море\", \"свет\", \"дом\", \"книга\",\n    \"rust\", \"go\", \"marimay\", \"go\",\n    \"ёжик\", \"туман\", \"ёжик\", \"книга\",\n  ];\n  let checksum = 0;\n  for repeat in 0..10 {\n    const counts: Map<string, int> = mapOf<string, int>();\n    for index in 0..10_000 {\n      const base = (index % 4) * 4;\n      for slot in 0..4 {\n        const word = flat[base + slot];\n        const count = match counts.get(word) {\n          Some(value) => value,\n          None => 0,\n        };\n        match counts.put(word, count + 1) {\n          Ok(_) => {},\n          Err(_) => panic(\"map failed\"),\n        };\n      }\n    }\n    checksum = checksum + counts.length();\n  }\n  println($\"map-only {checksum}\")?;\n  return Ok();\n}\n"
+  },
+  "probe_rune_loop.my": {
+   "sha256": "7fe7ab34c717d763b7de4f964abf9231dfc1bc9b8c586958093c5d2d70edbe27",
+   "source": "import * as text from \"std/text\";\nimport { println, Error as IoError } from \"std/io\";\n\nfn main(): Result<void, IoError> {\n  const pattern = match text.runes(\"Marimay λ 東京 🚀🙂\", 15) {\n    Ok(values) => values,\n    Err(_) => panic(\"runes failed\"),\n  };\n  let checksum = 0;\n  for repeat in 0..30_000 {\n    for value in pattern {\n      const count = match checksum {\n        0 => 0,\n        _ => 0,\n      };\n      const _ = count;\n      checksum = checksum + 1;\n    }\n  }\n  println($\"rune-loop {checksum}\")?;\n  return Ok();\n}\n"
+  },
+  "probe_rune_map.my": {
+   "sha256": "568e9d6d55f865218f3cc24e6a5900fa30bba473d9309350f867fc25bfadcb99",
+   "source": "import * as text from \"std/text\";\nimport { println, Error as IoError } from \"std/io\";\n\nfn main(): Result<void, IoError> {\n  const pattern = match text.runes(\"Marimay λ 東京 🚀🙂\", 15) {\n    Ok(values) => values,\n    Err(_) => panic(\"runes failed\"),\n  };\n  const counts: Map<rune, int> = mapOf<rune, int>();\n  let checksum = 0;\n  for repeat in 0..30_000 {\n    for value in pattern {\n      const next = match counts.get(value) {\n        Some(count) => count + 1,\n        None => 1,\n      };\n      const _ = counts.put(value, next);\n    }\n  }\n  checksum = checksum + counts.length();\n  println($\"rune-map {checksum}\")?;\n  return Ok();\n}\n"
+  },
+  "probe_rune_push.my": {
+   "sha256": "72c4411ebcaa8399d46e546981b6653da1bd05084d6d2a632c349c8d021190f4",
+   "source": "import * as text from \"std/text\";\nimport { println, Error as IoError } from \"std/io\";\n\nfn main(): Result<void, IoError> {\n  const pattern = match text.runes(\"Marimay λ 東京 🚀🙂\", 15) {\n    Ok(values) => values,\n    Err(_) => panic(\"runes failed\"),\n  };\n  let values: []rune = [];\n  for repeat in 0..30_000 {\n    for value in pattern {\n      const _ = values.push(value);\n    }\n  }\n  println($\"rune-push {values.length()}\")?;\n  return Ok();\n}\n"
+  },
+  "probe_split.my": {
+   "sha256": "042451c751c6ee3cbfb5b0445e46d2bcd33b3570a222a279be7c2b5ba25f1653",
+   "source": "import * as text from \"std/text\";\nimport { println, Error as IoError } from \"std/io\";\n\nfn main(): Result<void, IoError> {\n  const lines = [\n    \"книга море книга дом\",\n    \"море свет дом книга\",\n    \"rust go marimay go\",\n    \"ёжик туман ёжик книга\",\n  ];\n  let checksum = 0;\n  for repeat in 0..10 {\n    for index in 0..10_000 {\n      const words = match text.split(lines[index % 4], \" \", 16) {\n        Ok(value) => value,\n        Err(_) => panic(\"split failed\"),\n      };\n      checksum = checksum + words.length();\n    }\n  }\n  println($\"split-only {checksum}\")?;\n  return Ok();\n}\n"
+  },
+  "probe_split1.my": {
+   "sha256": "64fe3587b013953c223488262ba0a562ad247c6b0bd0e4d5d70ccc23978bcd8a",
+   "source": "import * as text from \"std/text\";\nimport { println, Error as IoError } from \"std/io\";\n\nfn main(): Result<void, IoError> {\n  const lines = [\n    \"книга\",\n    \"море\",\n    \"rust\",\n    \"ёжик\",\n  ];\n  let checksum = 0;\n  for repeat in 0..10 {\n    for index in 0..10_000 {\n      const words = match text.split(lines[index % 4], \" \", 16) {\n        Ok(value) => value,\n        Err(_) => panic(\"split failed\"),\n      };\n      checksum = checksum + words.length();\n    }\n  }\n  println($\"split-one {checksum}\")?;\n  return Ok();\n}\n"
+  }
+ },
+ "probe_binaries": {
+  "build-probe_full": "02a2c328433656703fb689e24bd4b5bb966765b9af45f7b30a1d92c0dd267d58",
+  "build-probe_int_map": "d1d4a74036ba5666ea3afa52d9eb6feec44a63ba67592699335b6c7346d69fe3",
+  "build-probe_map": "eac2c312f23f12b29d1137f382c10bb98cfa754d6022c3ae7cde7b8e76df9409",
+  "build-probe_rune_loop": "f8ecb15385c51903d18ef3da32d9cb892440fc85c7277b69bc8474038d2f7eef",
+  "build-probe_rune_map": "d417db22c847496e9407317d23dd18c1ccbcfa78087662a1e5390b1a175213a2",
+  "build-probe_rune_push": "0931493941f4e8563b05f33e3857b37dc6c12a5a876326b110f82e1fa3b61d5d",
+  "build-probe_split": "eadd58d3a4a3cff7a7f5e31d8de47abf5ee164ba1f2d4409c9c33a637a2c278b",
+  "build-probe_split1": "39115c7dfb73ad0d74bd63b3fddd1f3a515d31c02dd3ad4d279932251ba53eb3"
+ },
+ "results": {
+  "group_a_21_samples": {
+   "probe_split1": {
+    "median_ms": 43.424,
+    "min_ms": 41.576,
+    "max_ms": 48.876,
+    "stdout": "split-one 100000"
+   },
+   "probe_split": {
+    "median_ms": 95.42,
+    "min_ms": 92.855,
+    "max_ms": 109.843,
+    "stdout": "split-only 400000"
+   },
+   "probe_map": {
+    "median_ms": 39.558,
+    "min_ms": 38.522,
+    "max_ms": 47.163,
+    "stdout": "map-only 90"
+   },
+   "probe_full": {
+    "median_ms": 132.021,
+    "min_ms": 130.483,
+    "max_ms": 147.801,
+    "stdout": "full 90"
+   }
+  },
+  "group_b_21_samples": {
+   "probe_rune_loop": {
+    "median_ms": 4.714,
+    "min_ms": 4.249,
+    "max_ms": 5.993,
+    "stdout": "rune-loop 450000"
+   },
+   "probe_rune_push": {
+    "median_ms": 9.046,
+    "min_ms": 8.335,
+    "max_ms": 10.554,
+    "stdout": "rune-push 450000"
+   },
+   "probe_rune_map": {
+    "median_ms": 20.792,
+    "min_ms": 20.238,
+    "max_ms": 22.087,
+    "stdout": "rune-map 12"
+   }
+  },
+  "group_a_noisy_rerun_11_samples": {
+   "probe_split1": {
+    "median_ms": 52.468,
+    "min_ms": 41.834,
+    "max_ms": 313.89,
+    "stdout": "split-one 100000"
+   },
+   "probe_split": {
+    "median_ms": 135.45,
+    "min_ms": 93.013,
+    "max_ms": 190.323,
+    "stdout": "split-only 400000"
+   },
+   "probe_map": {
+    "median_ms": 45.474,
+    "min_ms": 39.782,
+    "max_ms": 394.138,
+    "stdout": "map-only 90"
+   },
+   "probe_full": {
+    "median_ms": 196.155,
+    "min_ms": 145.918,
+    "max_ms": 1082.696,
+    "stdout": "full 90"
+   }
+  },
+  "group_b_noisy_rerun_11_samples": {
+   "probe_rune_loop": {
+    "median_ms": 5.242,
+    "min_ms": 4.729,
+    "max_ms": 8.324,
+    "stdout": "rune-loop 450000"
+   },
+   "probe_rune_push": {
+    "median_ms": 9.664,
+    "min_ms": 8.978,
+    "max_ms": 13.985,
+    "stdout": "rune-push 450000"
+   },
+   "probe_rune_map": {
+    "median_ms": 22.554,
+    "min_ms": 21.404,
+    "max_ms": 24.297,
+    "stdout": "rune-map 12"
+   }
+  },
+  "group_a_first_11_samples": {
+   "probe_split": {
+    "median_ms": 94.884,
+    "min_ms": 93.1,
+    "max_ms": 98.211,
+    "stdout": "split-only 400000"
+   },
+   "probe_map": {
+    "median_ms": 39.271,
+    "min_ms": 38.606,
+    "max_ms": 40.667,
+    "stdout": "map-only 90"
+   },
+   "probe_full": {
+    "median_ms": 132.835,
+    "min_ms": 130.626,
+    "max_ms": 150.897,
+    "stdout": "full 90"
+   }
+  }
+ },
+ "isolated_c_benches": {
+  "string_new": {
+   "ns_per_op": 68.5,
+   "objects": 400000,
+   "note": "no roots, default heap options, 64 MiB"
+  },
+  "int_map_get_put": {
+   "ns_per_op": 25.8,
+   "operations": 400000,
+   "distinct_keys": 4096
+  },
+  "split_scaffold": {
+   "ns_per_call_1_piece": 253.1,
+   "ns_per_call_4_pieces": 350.9,
+   "marginal_ns_per_piece": 32.6,
+   "note": "replicates the emitted helper; does not reproduce the in-program per-piece cost (see open discrepancy)"
+  }
+ },
+ "corpus_baseline": {
+  "source": "docs/implementation/evidence/cp42-portfolio-matrix-2026-11-11.json companion run, alpha.3 compiler 9367193, 3 warmups/11 samples, 5 participants",
+  "rows": {
+   "word-frequency": {
+    "marimay-native": 142.999,
+    "go": 21.74,
+    "rust": 32.265,
+    "ratio_go": 6.58
+   },
+   "frequency-map": {
+    "marimay-native": 31.668,
+    "go": 16.369,
+    "rust": 20.06,
+    "ratio_go": 1.93
+   },
+   "unique-set": {
+    "marimay-native": 24.833,
+    "go": 18.206,
+    "rust": 22.451,
+    "ratio_go": 1.36
+   },
+   "rune-frequency": {
+    "marimay-native": 23.203,
+    "go": 6.667,
+    "rust": 7.787,
+    "ratio_go": 3.48
+   }
+  }
+ }
+}

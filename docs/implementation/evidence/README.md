@@ -529,6 +529,20 @@ closed-pipe checks. It also records the workspace-relative compiler default foun
 in the application and fixed upstream before pinning. It closes the canonical-program gap only; the
 perf timebox and the release remain open.
 
+[The perf timebox start record](cp42-perf-timebox-2026-11-11.md)
+([raw probes and observations](cp42-perf-timebox-2026-11-11.json)) opens the
+bounded #26/#3 wave: it fixes 2026-11-11 to 2026-12-09 as a hard stop, keeps the
+unchanged corpus as the acceptance reference, and lists the five rejected
+candidate families with what each now forbids. It replaces "the allocation path
+is the bottleneck" with a measured split: `word-frequency` is 72% `text.split`
+(260.9 ns per call plus 173.3 ns per produced piece) and 30% string-keyed map
+work, `rune-frequency` is ~86% `Map<rune,int>` at 35.7 ns per get+put, and both
+`frequency-map` and `unique-set` sit within a few nanoseconds per event of the
+isolated map floor. It rules out collection pressure, a stale runtime archive and
+a map algorithm defect, then records one unresolved discrepancy — 173 ns per
+piece in-program against 33 ns in the C replication — and blocks mechanism
+selection on it. No row is closed and no gate changes.
+
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small
 VM row passes at 154-226 ms and the warm `test --engine both` row at
