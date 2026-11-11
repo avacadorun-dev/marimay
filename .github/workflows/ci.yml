@@ -41,6 +41,8 @@ jobs:
         run: ./tools/check-architecture
       - name: Check release contract
         run: ./tools/check-release-contract
+      - name: Check the pinned reference slice
+        run: ./tools/check-reference-slice
       - name: Check public source privacy
         run: ./tools/check-publication
       - name: Test Python development tools
@@ -50,6 +52,46 @@ jobs:
           python3 -m unittest discover -s tools/publication -p 'test_*.py'
           python3 -m unittest discover -s tools/release -p 'test_*.py'
           python3 -m unittest discover -s tools -p 'test_package_macos.py'
+
+  reference-slice:
+    name: Reference slice / marimay-notes at the pinned revision
+    needs: documentation
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Configure the release compiler
+        run: >-
+          cmake -S . -B build/reference
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER=clang
+          -DCMAKE_C_STANDARD=17
+          -DBUILD_TESTING=OFF
+          -DMMAY_WARNINGS_AS_ERRORS=ON
+      - name: Build the release compiler
+        run: cmake --build build/reference --parallel 2
+      - name: Fetch the pinned reference application
+        run: >-
+          ./tools/check-reference-slice fetch
+          --destination "$RUNNER_TEMP/reference-slice"
+      - name: Prove the pin and run the documented commands
+        run: >-
+          ./tools/check-reference-slice run
+          --source "$RUNNER_TEMP/reference-slice"
+          --compiler "$GITHUB_WORKSPACE/build/reference/mmay"
+      - name: Preserve the reference-slice process evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reference-slice-evidence
+          path: ${{ runner.temp }}/reference-slice/build/process-acceptance-*.json
+          if-no-files-found: warn
+          retention-days: 7
 
   c17:
     name: ${{ matrix.target.name }} / ${{ matrix.configuration }}

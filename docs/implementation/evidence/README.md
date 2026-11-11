@@ -514,8 +514,20 @@ does not close the remaining CP42 work or establish pushed-revision CI.
 applications at compiler `9139cca` on both engines: 51 source tests, 312 process
 cases, a coverage table generated from application source, and a disposition for
 every finding, including the reproduced `byte`-literal `I0001` gap. It closes
-the coverage gap only; startup budgets, the perf timebox, the canonical program,
+the coverage gap only; startup budgets, the perf timebox, the reference slice,
 the release, Tier 1, sanitizers and parity remain open.
+
+[The reference slice](cp42-reference-slice-2026-11-11.md) pins `marimay-notes`
+at `c5ec692` with a tree id and a repository-independent content digest, derives
+the construct profile from its sources with `tools/check-reference-slice`, and
+runs the application's own documented commands against release compiler
+`4bf2885` from a fresh public checkout: 33 s end to end, both engines, 36
+VM/native Debug/Release acceptance cases and 21 closed-pipe checks. A
+`reference-slice` CI job repeats the sequence at the compiler's own revision: the
+first pushed-revision [run](https://github.com/marimay-lang/marimay/actions/runs/42877531917/job/130047390041) passed in 84 s with 36 process cases and 21
+closed-pipe checks. It also records the workspace-relative compiler default found
+in the application and fixed upstream before pinning. It closes the canonical-program gap only; the
+perf timebox and the release remain open.
 
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small

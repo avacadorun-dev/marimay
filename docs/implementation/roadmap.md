@@ -91,10 +91,11 @@ belongs to. The milestone description carries the exit criteria and the date.
 - **Now — `0.2.0-alpha.4`, due 2027-02-28:**
   [CP42 — notes-driven CLI ergonomics](checkpoints.md#cp42-notes-driven-cli-ergonomics)
   closes. All ten portfolio applications are implemented; what remains is
-  acceptance work, not features: the combined coverage matrix with a disposition
-  for every finding (#24), startup budgets met or re-budgeted (#25), one bounded
-  perf timebox for `frequency-map` / `unique-set` / `rune-frequency` and #3 (#26),
-  the canonical notes program in CI (#27), then the release (#28). The stale
+  acceptance work, not features. The coverage matrix with a disposition for every
+  finding (#24) is delivered, startup budgets are met or re-budgeted (#25), and
+  the reference slice is pinned, derived and built from a clean checkout in CI
+  (#27). What is left is one bounded perf timebox for `frequency-map` /
+  `unique-set` / `rune-frequency` and #3 (#26), then the release (#28). The stale
   sentence about finishing the mutable-capture warning and the delimited /
   source-lint applications was already delivered on 2026-09-09 (D103,
   `cp42-stateful-2026-09-09.md`) and no longer describes the next step.
@@ -154,7 +155,7 @@ authorization. These are never synonyms.
 | I3 | Typed bytecode VM | `in-progress` | `pushed-ci` | Portable public bundles and the full hostile-verifier/fuzz/limit gate remain open. | Every opcode and required bundle boundary passes verifier/execution/fuzz/limit tests and MIR/VM differential on Tier 1; [evidence](evidence/README.md#i3). |
 | I4 | C17 AOT and equivalence | `in-progress` | `pushed-ci` | Native run/install/doctor, the full compiler/platform differential matrix, and the measured x86_64 code-pressure gap remain open. | CP39 and CP41 plus complete O0/O2 Clang/GCC/MSVC sanitizer and engine-equivalence evidence meet the I4 gate; [CP41](checkpoints.md#cp41-x86_64-native-code-generation-pressure). |
 | I5 | Managed data and standard core | `in-progress` | `pushed-ci` | The CP30–CP38 bounded CLI data surface is verified, but remaining managed-heap/property/GC/workload and claimed-platform gates are open. | Those remaining gates close with VM/native and claimed-platform evidence; [CP38 evidence](evidence/cp38-bounded-typed-json-2026-09-01.md). |
-| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP42 startup budgets, perf timebox, canonical program and release, then CP41 and CP39–CP40, remain open. N0 is excluded from this claim by D123. | CP29–CP42 are verified, the claimed platform gates are closed, the CP40 audit supports only the bounded CLI claim, and the contract states the D123 residual risk. |
+| CLI0 | Bounded public CLI alpha | `planned` | `none` | The CP42 perf timebox and the alpha release, then CP41 and CP39–CP40, remain open. N0 is excluded from this claim by D123. | CP29–CP42 are verified, the claimed platform gates are closed, the CP40 audit supports only the bounded CLI claim, and the contract states the D123 residual risk. |
 | I6 | Direct-style tasks, scheduler, and I/O | `planned` | `none` | CLI0 and CP41 precede the executable I6 prototype. | Suspension, scope/task lifetime, cancellation, race/select, non-blocking I/O, and deterministic VM/native traces pass the defined vertical scenario. |
 | E0 | Pre-self-host ergonomics pilot | `planned` | `none` | A working I6 vertical slice is unavailable. | Under D124: three independent agent sessions on at least two platforms follow [the pilot protocol](pilot-protocol.md) with zero undocumented steps, and the gate report separates what was proven from what was not. |
 | I7 | Packages, cache, and supply chain | `planned` | `none` | N0 and external semantic feedback are not verified. | Deterministic offline lock/cache, hostile archive, provenance, and registry-prototype gates pass without dependency code execution. |

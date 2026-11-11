@@ -1,0 +1,344 @@
+{
+  "schema": "marimay.reference-slice/1",
+  "repository": "https://github.com/marimay-lang/marimay-notes",
+  "revision": "c5ec692f3829b4c80facc8864202ae136be3173f",
+  "tree": "8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15",
+  "contentDigest": "7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d",
+  "commands": [
+    "mmay fmt . --check",
+    "mmay check .",
+    "mmay test . --engine both",
+    "mmay run . -- --help",
+    "mkdir -p build",
+    "mmay run . --allow-read . --allow-write . -- --db build/reference-slice.json add \"Read the docs\" --tag study",
+    "mmay run . --allow-read . --allow-write . -- --db build/reference-slice.json list",
+    "mmay build . --release --allow-read . --allow-write . --output build/marimay-notes",
+    "./build/marimay-notes --db build/reference-slice.json list",
+    "sh tools/smoke-ru \"$(command -v mmay)\"",
+    "MMAY=\"$(command -v mmay)\" python3 tools/acceptance.py"
+  ],
+  "module": "local/marimay-notes",
+  "trackedFiles": 16,
+  "sourceFiles": 7,
+  "sourceLines": 958,
+  "packages": [
+    "std/bytes",
+    "std/cli",
+    "std/convert",
+    "std/fs",
+    "std/io",
+    "std/json",
+    "std/path",
+    "std/text"
+  ],
+  "families": [
+    {
+      "id": "imports",
+      "label": "module imports",
+      "marker": "^\\s*import\\s+(?:\\*\\s+as\\s+\\w+|\\{[^}]*\\})\\s+from\\b",
+      "count": 25,
+      "files": {
+        "main.my": 8,
+        "main_test.my": 3,
+        "messages/json.my": 1,
+        "messages/system.my": 3,
+        "messages_test.my": 6,
+        "notes/api.my": 4
+      }
+    },
+    {
+      "id": "records",
+      "label": "record declarations",
+      "marker": "^\\s*(?:public\\s+)?type\\s+\\w+(?:<[^>]*>)?\\s*\\{",
+      "count": 3,
+      "files": {
+        "notes/api.my": 3
+      }
+    },
+    {
+      "id": "option-result",
+      "label": "typed Option/Result values",
+      "marker": "\\b(?:Option|Result)<",
+      "count": 13,
+      "files": {
+        "main.my": 6,
+        "main_test.my": 1,
+        "notes/api.my": 6
+      }
+    },
+    {
+      "id": "try-propagation",
+      "label": "`?` propagation of fallible values",
+      "marker": "\\)\\s*\\?[;,]",
+      "count": 7,
+      "files": {
+        "main.my": 1,
+        "notes/api.my": 6
+      }
+    },
+    {
+      "id": "map-error",
+      "label": "contextual error-type mapping through `mapError`",
+      "marker": "\\.mapError\\(",
+      "count": 4,
+      "files": {
+        "main.my": 1,
+        "notes/api.my": 3
+      }
+    },
+    {
+      "id": "match",
+      "label": "match expressions",
+      "marker": "\\bmatch\\b",
+      "count": 58,
+      "files": {
+        "main.my": 27,
+        "main_test.my": 13,
+        "messages/json.my": 3,
+        "messages/system.my": 4,
+        "messages_test.my": 6,
+        "notes/api.my": 1,
+        "notes/collection_baseline_test.my": 4
+      }
+    },
+    {
+      "id": "interpolation",
+      "label": "string interpolation",
+      "marker": "\\$\"",
+      "count": 41,
+      "files": {
+        "main.my": 9,
+        "messages/json.my": 12,
+        "messages/system.my": 18,
+        "notes/api.my": 2
+      }
+    },
+    {
+      "id": "arrays",
+      "label": "managed arrays",
+      "marker": "\\[\\]\\s*\\w",
+      "count": 12,
+      "files": {
+        "main.my": 8,
+        "main_test.my": 1,
+        "notes/api.my": 3
+      }
+    },
+    {
+      "id": "sets",
+      "label": "insertion-ordered sets",
+      "marker": "\\b(?:Set|setOf)<",
+      "count": 2,
+      "files": {
+        "notes/api.my": 2
+      }
+    },
+    {
+      "id": "for-in",
+      "label": "iterating for loops",
+      "marker": "\\bfor\\s+\\w+\\s+in\\b",
+      "count": 8,
+      "files": {
+        "main.my": 4,
+        "main_test.my": 2,
+        "notes/api.my": 1,
+        "notes/collection_baseline_test.my": 1
+      }
+    },
+    {
+      "id": "tests",
+      "label": "declared tests",
+      "marker": "^\\s*@test\\b",
+      "count": 16,
+      "files": {
+        "main_test.my": 7,
+        "messages_test.my": 3,
+        "notes/collection_baseline_test.my": 6
+      }
+    },
+    {
+      "id": "panic",
+      "label": "explicit panics",
+      "marker": "\\bpanic\\(",
+      "count": 16,
+      "files": {
+        "main.my": 1,
+        "main_test.my": 8,
+        "messages_test.my": 3,
+        "notes/api.my": 1,
+        "notes/collection_baseline_test.my": 3
+      }
+    },
+    {
+      "id": "filesystem",
+      "label": "capability-gated filesystem calls",
+      "marker": "\\bfs\\.\\w+",
+      "count": 5,
+      "files": {
+        "main.my": 3,
+        "messages/system.my": 1,
+        "messages_test.my": 1
+      }
+    },
+    {
+      "id": "bytes",
+      "label": "UTF-8/byte buffer conversions",
+      "marker": "\\bbytes\\.\\w+",
+      "count": 9,
+      "files": {
+        "main_test.my": 5,
+        "messages_test.my": 2,
+        "notes/api.my": 2
+      }
+    },
+    {
+      "id": "public-api",
+      "label": "public function surface",
+      "marker": "^\\s*public\\s+fn\\b",
+      "count": 12,
+      "files": {
+        "messages/json.my": 1,
+        "messages/system.my": 4,
+        "notes/api.my": 7
+      }
+    }
+  ],
+  "absent": [
+    {
+      "id": "enums",
+      "label": "enum declarations",
+      "marker": "^\\s*(?:public\\s+)?enum\\s+\\w+",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "interfaces",
+      "label": "interface declarations",
+      "marker": "^\\s*(?:public\\s+)?interface\\s+\\w+",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "generic-declarations",
+      "label": "generic declarations",
+      "marker": "^\\s*(?:public\\s+)?(?:fn|type|enum|interface)\\s+\\w+\\s*<",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "maps",
+      "label": "insertion-ordered maps",
+      "marker": "\\b(?:Map|mapOf)<",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "while-loops",
+      "label": "while loops",
+      "marker": "\\bwhile\\b",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "defer",
+      "label": "lexical defer",
+      "marker": "\\bdefer\\b",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "unsafe",
+      "label": "unsafe blocks and foreign functions",
+      "marker": "\\bunsafe\\b",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "extern",
+      "label": "extern declarations",
+      "marker": "^\\s*extern\\b",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "mutable-bindings",
+      "label": "mutable bindings",
+      "marker": "\\bmutable\\b",
+      "count": 0,
+      "files": {}
+    },
+    {
+      "id": "casts",
+      "label": "total `as` casts",
+      "marker": "\\bas\\s+(?:int|u8|u32|u64|i8|i32|i64|f64|bool|string|byte)\\b",
+      "count": 0,
+      "files": {}
+    }
+  ],
+  "fileHashes": [
+    {
+      "path": ".github/banner.svg",
+      "sha256": "5a634299756e2b25e0f817bac8b89a1609208c2b7a3a1fe9cde504316094d5e8"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "bae277986828c942a7043b46b49bf481999fd8be9655dfc9835671d002e32a91"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "36155c771f6d327f7de545fe2ca2162d5c908ea703e9b3e08f04d86679b7b3c7"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "28747fe75a4afc84bffd2a7d53b5838b57dbe684e33c3658b5f9c676cc016037"
+    },
+    {
+      "path": "README.md",
+      "sha256": "728ad017b672db7bc64fa6f6d95ac2dbae941ee51f2ec1ffe6c0bac8cac8e624"
+    },
+    {
+      "path": "main.my",
+      "sha256": "1523c2a1acda9c5098312f3a82f3f116a9f304b42ae59fc465f00948a88d7878"
+    },
+    {
+      "path": "main_test.my",
+      "sha256": "7dc20623e52f5a5ec636bd68425a048d8eb9a001045730344291fb66a1e42c9d"
+    },
+    {
+      "path": "messages/json.my",
+      "sha256": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027"
+    },
+    {
+      "path": "messages/system.my",
+      "sha256": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84"
+    },
+    {
+      "path": "messages_test.my",
+      "sha256": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1"
+    },
+    {
+      "path": "mmay.mod",
+      "sha256": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef"
+    },
+    {
+      "path": "notes/api.my",
+      "sha256": "c58ac4bafb0f393ae3663d8309b1b7dcd5526cf5da559bfbb12bd3cb77377db4"
+    },
+    {
+      "path": "notes/collection_baseline_test.my",
+      "sha256": "66566901e2da3f4b19052c96dbb1543f20246caae6bbc248eb0302c3ddccdc0f"
+    },
+    {
+      "path": "tools/acceptance.py",
+      "sha256": "41511a0bc39defe1b9af5cb610ff76a4355bc3686a5eb48f1a8c491082dd1d05"
+    },
+    {
+      "path": "tools/mmay_acceptance.py",
+      "sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce"
+    },
+    {
+      "path": "tools/smoke-ru",
+      "sha256": "24f7840a8e1065f297abeb0b92760a109846cbd6f996033d5a6d51f0026a0ba5"
+    }
+  ]
+}

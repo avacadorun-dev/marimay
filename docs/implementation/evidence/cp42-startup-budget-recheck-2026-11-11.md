@@ -23,7 +23,9 @@ application defined before measurement.
 | Compiler | release build, SHA-256 `4bf288523efa4180d73042964138748bf83b78642afdd89d90a0792bd9088cf8` |
 | Version | `0.1.0-alpha.3` |
 | Host | macOS 27.0.1 arm64 |
-| Budgets source | each application's `BUDGETS.md`, SHA-256 `b5b0dc2c5a97b8b3` |
+| Budgets source | each application's `BUDGETS.md` as measured, SHA-256 `b5b0dc2c5a97b8b3`;
+both files now state the D125 rule (`marimay-delimited` `6bf9d9c`, `marimay-source-lint`
+`1df3c23`), so a re-run measures the new text |
 | Harness | `tools/measure.py` of each application |
 
 ## Results
