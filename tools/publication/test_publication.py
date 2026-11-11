@@ -3,6 +3,7 @@ import gzip
 import importlib.machinery
 import importlib.util
 from pathlib import Path
+import re
 import struct
 import unittest
 import zlib
@@ -74,6 +75,29 @@ class PublicationTest(unittest.TestCase):
         self.assertTrue(publication.inspect(png(b'iTXt', b'Comment\0\1\0\0\0' + zlib.compress(private)), 'image'))
         self.assertTrue(publication.inspect(png(b'eXIf', b'fixture'), 'image'))
         self.assertTrue(publication.inspect(png(b'IDAT', b'') + private, 'image'))
+
+
+    def test_reviewed_historical_commit_exception_is_object_scoped(self):
+        accepted = publication.ACCEPTED_HISTORICAL_COMMITS
+        self.assertTrue(accepted)
+        self.assertTrue(all(re.fullmatch(r'[0-9a-f]{40}', oid) for oid in accepted))
+        oid = sorted(accepted)[0]
+        address = ('avacado.run' + '@' + 'gmail.com').encode()
+        metadata = b'author Person <' + address + b'> 0 +0000'
+        findings, suppressed = publication.history_findings(metadata, 'commit/tag metadata', oid)
+        self.assertEqual(findings, [])
+        self.assertTrue(suppressed)
+        for name, label, other in (
+            ('unknown object', 'commit/tag metadata', '0' * 40),
+            ('file contents', 'notes.txt', oid),
+        ):
+            with self.subTest(name=name):
+                findings, suppressed = publication.history_findings(metadata, label, other)
+                self.assertTrue(findings)
+                self.assertFalse(suppressed)
+        private = b'/' + b'Users' + b'/developer'
+        findings, _ = publication.history_findings(private, 'commit/tag metadata', oid)
+        self.assertTrue(findings, 'the exception must not silence other privacy rules')
 
 
 if __name__ == '__main__':

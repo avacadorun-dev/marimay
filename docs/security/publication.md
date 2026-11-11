@@ -19,7 +19,11 @@ The [release contract](../releases/0.1.0-alpha.1.md) and
 [CI gates](../ci.md#experimental-macos-release-flow) require exact-revision
 security, build/test/install and immutable-asset validation before release.
 Release checks preserve all source/history scanner rules. A failing metadata
-check is repaired at its source rather than accepted through an allowlist.
+check is repaired at its source rather than accepted through an allowlist. One
+exception to that rule is recorded in
+[D126](../design/decisions.md#d126-accept-six-historical-squash-merge-author-lines-as-reviewed-history)
+and described [below](#reviewed-exception-in-commit-metadata); it exists because
+the source of that finding cannot be repaired from inside the repository.
 
 ## History and privacy
 
@@ -37,6 +41,32 @@ Paths and endpoints are placeholders. Process inventories are omitted where
 present. Existing recorded digests describe the historical experiment inputs;
 this import is not a rerun or fresh milestone verification. Consult the
 [review](review-2026-11-08.md) for the checks performed.
+
+## Reviewed exception in commit metadata
+
+Six squash-merge commits authored on 2026-11-11 carry the owner's GMail address
+in the author line: `c8d92cc68d64124f27f4b0f8b3c155e13eeb37cb`,
+`9139cca425a7233a0d890054199dc536a9e7e62d`,
+`f2c9bf0c54398eeb3f3fccc7b2255af2943089d3`,
+`53b216734c8f03118cadeea348b5c12c0048fc72`,
+`a24e9e40365a092a035552a5d8a22e5d7e793d7a`,
+`a9848597a580004a1cbde62c6c2fe46fb5f2ea5f`. The committer of all six is the
+GitHub no-reply identity, which is what makes the source visible: GitHub wrote
+the author line from the account's public commit address, so the repository-local
+identity — already the no-reply address — could not prevent it and cannot repair
+it. The address is the local part `avacado.run` at domain `gmail.com`, written
+here in halves so that this page does not itself trip the guard it describes.
+
+D126 accepts them as reviewed history. The exception keys on those six object
+ids, only for a `commit/tag metadata` object, and only for the email finding:
+personal paths, private endpoints and credentials are still rejected in the same
+objects, and a new commit carrying the same address still fails. The scan prints
+the suppressed count on every run, so the exception cannot quietly widen.
+
+The durable lever is the account's public commit address; until it changes, a new
+squash merge produces a new occurrence rather than a fixed one. The alternative
+that would actually remove the address — rewriting history and asking GitHub to
+purge unreachable objects and pull-request refs — stays available and unfree.
 
 ## Before publishing further changes
 

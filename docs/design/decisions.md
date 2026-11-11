@@ -4506,3 +4506,45 @@ the alpha.4 release contract must state the redefinition.
 
 Reversal: a repeated execution above 100 ms on a claimed host fails the row
 again. The redefinition renames the measurement; it does not excuse a regression.
+
+## D126 — Accept six historical squash-merge author lines as reviewed history
+
+Status: accepted (repository-owner direction, 2026-11-11; issue #43).
+
+The publication guard reports a non-placeholder email address in commit
+metadata. Six objects reachable from `main` carry the owner's GMail address in
+their **author** line: `c8d92cc`, `9139cca`, `f2c9bf0`, `53b2167`, `a24e9e4`
+and `a984859`. In all six the committer is `GitHub <noreply@github.com>`, which
+identifies them as squash merges: GitHub took the author line from the account's
+public commit address, not from local Git configuration. The repository-local
+identity is already the GitHub no-reply address, so a configuration repair cannot
+reach these objects, and the account setting that produced them lives outside the
+repository.
+
+Three options were recorded in #43. Rewriting the six objects was rejected: it
+invalidates the revisions cited by the 2026-11-11 evidence, and the
+pull-request refs keep the same content-addressed objects reachable, so the
+address would remain public while the audit trail lost its anchors. A rewrite
+followed by a GitHub support purge is the only complete removal and depends on a
+third party, so it stays available rather than being performed now. Accepted:
+a reviewed exception, recorded here and enforced by the guard.
+
+The exception is deliberately narrow in three dimensions. It is **object-scoped**
+— only those six commit ids, never the address, so any new commit carrying the
+same address still fails. It is **label-scoped** — only an object whose label is
+`commit/tag metadata`, so a file containing the address is never exempt. It is
+**rule-scoped** — only the email finding is dropped; personal paths, private
+endpoints, credentials and every other privacy rule still apply to those objects.
+`tools/check-publication` reports the count it suppressed, so the exception stays
+visible in every run instead of disappearing from the output.
+
+Consequence, stated plainly: the address stays visible in the public repository
+and in the pull-request refs. This decision records that exposure, it does not
+undo it. `docs/security/publication.md` carries the same table for readers who
+do not follow the decision log, and closing the source of new occurrences is the
+account's public commit address, not this repository.
+
+Reversal: a seventh object with the same finding fails the guard, and the
+response is to amend this decision rather than to broaden the checker. The
+exception disappears when those six objects stop being reachable or when a
+complete purge removes them.

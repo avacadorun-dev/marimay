@@ -25,6 +25,25 @@ PATTERNS = {
 RULES = {name: re.compile(pattern) for name, pattern in PATTERNS.items()}
 EMAIL = re.compile(rb"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}")
 
+# Squash-merge commits authored before the account's public commit address was
+# changed take their author line from the GitHub account, not from local Git
+# configuration, so a later configuration fix cannot repair them. Rewriting the
+# history would not un-publish them either: the pull-request refs on GitHub keep
+# the same objects reachable. They are accepted as reviewed history instead.
+# The exception is per object, never by address, so any new commit carrying the
+# same address still fails. See docs/security/publication.md and issue #43.
+ACCEPTED_HISTORICAL_COMMITS = {
+    oid: "#43 accepted squash-merge author line" + ": documented in docs/security/publication.md"
+    for oid in (
+        "c8d92cc68d64124f27f4b0f8b3c155e13eeb37cb",
+        "9139cca425a7233a0d890054199dc536a9e7e62d",
+        "f2c9bf0c54398eeb3f3fccc7b2255af2943089d3",
+        "53b216734c8f03118cadeea348b5c12c0048fc72",
+        "a24e9e40365a092a035552a5d8a22e5d7e793d7a",
+        "a9848597a580004a1cbde62c6c2fe46fb5f2ea5f",
+    )
+}
+
 
 def inspect(data, label):
     if data.startswith(b"\x1f\x8b"):
@@ -111,7 +130,7 @@ def history():
             if len(data) != size or process.stdout.read(1) != b"\n":
                 raise RuntimeError("incomplete Git object read")
             if header[1] in (b"blob", b"commit", b"tag"):
-                yield data, name.decode("utf-8", "replace") or "commit/tag metadata"
+                yield data, name.decode("utf-8", "replace") or "commit/tag metadata", oid.decode()
     finally:
         process.stdin.close()
         process.stdout.close()
@@ -188,6 +207,20 @@ def workflows():
     return issues
 
 
+def history_findings(data, label, oid):
+    """Findings for one historical object, with the reviewed exception applied.
+
+    Only the email rule is dropped for an accepted squash-merge object: personal
+    paths, credentials, endpoints and every other rule still apply to it.
+    """
+    findings = inspect(data, label)
+    reviewed = oid in ACCEPTED_HISTORICAL_COMMITS and label == "commit/tag metadata"
+    if not reviewed:
+        return findings, False
+    remaining = [item for item in findings if not item.endswith("non-placeholder email address")]
+    return remaining, len(remaining) != len(findings)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--history", action="store_true")
@@ -198,15 +231,21 @@ def main():
         entries = history()
     else:
         names = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).split(b"\0")
-        entries = (( (ROOT / name.decode()).read_bytes(), name.decode())
+        entries = (((ROOT / name.decode()).read_bytes(), name.decode(), "")
                    for name in names if name and (ROOT / name.decode()).is_file())
-    for data, label in entries:
+    accepted = 0
+    for data, label, oid in entries:
         count += 1
-        issues.extend(inspect(data, label))
+        findings, suppressed = history_findings(data, label, oid)
+        issues.extend(findings)
+        accepted += int(suppressed)
     issues.extend(workflows())
     for issue in sorted(set(issues)):
         print(issue)
-    print(f"publication privacy: {count} inputs checked, {len(set(issues))} findings")
+    summary = f"publication privacy: {count} inputs checked, {len(set(issues))} findings"
+    if accepted:
+        summary += f", {accepted} reviewed historical author lines"
+    print(summary)
     return bool(issues)
 
 
