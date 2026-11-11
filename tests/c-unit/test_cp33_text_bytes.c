@@ -189,6 +189,78 @@ static void mmay_cp33_text_base_edges(void) {
         &count));
 }
 
+/* The shared separator search replaced four hand-written per-byte memcmp
+ * loops. These cases pin the boundaries each loop had: leading, trailing and
+ * consecutive separators, a multi-byte separator, a match at the last
+ * possible position and every input the counting pass would have rejected. */
+static void mmay_cp33_text_separator_search(void) {
+    static const unsigned char empty[] = "";
+    static const unsigned char single[] = ",";
+    static const unsigned char joined[] = "a,,b,";
+    static const unsigned char pair[] = "::";
+    static const unsigned char triple[] = "a::b::c";
+    static const unsigned char tail[] = "abc::";
+    static const unsigned char last[] = "ab::";
+    static const unsigned char reversed[] = ":a:a";
+    static const unsigned char colon[] = ":";
+    size_t end = SIZE_MAX;
+    int64_t count = -1;
+
+    mmay_text_find_separator(empty, 0, 0, single, 1, &end);
+    MMAY_EXPECT(end == 0);
+    mmay_text_find_separator(single, 1, 0, single, 1, &end);
+    MMAY_EXPECT(end == 0);
+    mmay_text_find_separator(joined, 5, 0, single, 1, &end);
+    MMAY_EXPECT(end == 1);
+    mmay_text_find_separator(joined, 5, 2, single, 1, &end);
+    MMAY_EXPECT(end == 2);
+    mmay_text_find_separator(joined, 5, 3, single, 1, &end);
+    MMAY_EXPECT(end == 4);
+    mmay_text_find_separator(joined, 5, 5, single, 1, &end);
+    MMAY_EXPECT(end == 5);
+    mmay_text_find_separator(triple, 7, 0, pair, 2, &end);
+    MMAY_EXPECT(end == 1);
+    mmay_text_find_separator(triple, 7, 3, pair, 2, &end);
+    MMAY_EXPECT(end == 4);
+    mmay_text_find_separator(last, 4, 0, pair, 2, &end);
+    MMAY_EXPECT(end == 2);
+    mmay_text_find_separator(tail, 5, 3, pair, 2, &end);
+    MMAY_EXPECT(end == 3);
+    /* A one-byte separator matches only its own byte. */
+    mmay_text_find_separator(reversed, 4, 0, colon, 1, &end);
+    MMAY_EXPECT(end == 0);
+    mmay_text_find_separator(reversed, 4, 1, colon, 1, &end);
+    MMAY_EXPECT(end == 2);
+    mmay_text_find_separator(reversed, 4, 0, single, 1, &end);
+    MMAY_EXPECT(end == 4);
+    /* Rejected inputs are total and report the text length. */
+    mmay_text_find_separator(triple, 7, 0, pair, 0, &end);
+    MMAY_EXPECT(end == 7);
+    mmay_text_find_separator(triple, 7, 0, NULL, 2, &end);
+    MMAY_EXPECT(end == 7);
+    mmay_text_find_separator(NULL, 1, 0, single, 1, &end);
+    MMAY_EXPECT(end == 1);
+    mmay_text_find_separator(triple, 7, 8, pair, 2, &end);
+    MMAY_EXPECT(end == 7);
+    mmay_text_find_separator(triple, 7, 0, joined, 5, &end);
+    MMAY_EXPECT(end == 7);
+    mmay_text_find_separator(triple, 7, 0, pair, 2, NULL);
+
+    /* Counting must agree with the search at every position it can reach. */
+    MMAY_EXPECT(mmay_text_split_count(joined, 5, single, 1, &count));
+    MMAY_EXPECT(count == 4);
+    MMAY_EXPECT(mmay_text_split_count(triple, 7, pair, 2, &count));
+    MMAY_EXPECT(count == 3);
+    MMAY_EXPECT(mmay_text_split_count(tail, 5, pair, 2, &count));
+    MMAY_EXPECT(count == 2);
+    MMAY_EXPECT(mmay_text_split_count(last, 4, pair, 2, &count));
+    MMAY_EXPECT(count == 2);
+    MMAY_EXPECT(mmay_text_split_count(reversed, 4, pair, 2, &count));
+    MMAY_EXPECT(count == 1);
+    MMAY_EXPECT(mmay_text_split_count(empty, 0, pair, 2, &count));
+    MMAY_EXPECT(count == 1);
+}
+
 static bool mmay_cp33_add_registers(
     MarimayCp33TextFixture *fixture,
     MarimayMirRegister registers[22]
@@ -779,6 +851,7 @@ void mmay_test_cp33_text_bytes(void) {
     MarimayCp33TextFixture fixture;
     mmay_cp33_text_properties();
     mmay_cp33_text_base_edges();
+    mmay_cp33_text_separator_search();
     MMAY_EXPECT(mmay_cp33_text_fixture_init(&fixture, false));
     MMAY_EXPECT(mmay_mir_verify(&fixture.function) == MMAY_MIR_VERIFY_OK);
     mmay_cp33_hostile_mir(&fixture);

@@ -543,6 +543,21 @@ a map algorithm defect, then records one unresolved discrepancy — 173 ns per
 piece in-program against 33 ns in the C replication — and blocks mechanism
 selection on it. No row is closed and no gate changes.
 
+[One separator search](cp42-split-separator-search-2026-11-11.md)
+([raw matrices and probes](cp42-split-separator-search-2026-11-11.json)) is the
+first candidate of that timebox. It corrects the start record's per-piece slope
+with an equal-length control — 173.3 ns per piece was really 74.8 ns per piece
+plus 19.6 ns per scanned byte — then replaces four hand-written per-byte `memcmp`
+loops (counting pass, emitted native helper, VM, MIR interpreter) with one owner
+search that uses `memchr` for a one-byte separator, and reuses it for
+`mmay_text_contains`. `word-frequency`, the only corpus workload that calls the
+changed primitive, falls 27.0% (130.70 → 95.47 ms; −28.2% against a repeated
+pre-patch matrix) with −27.3% P90, from 6.68× to 5.06× Go. Two A/A matrices bound
+the host: ±4.6% for one binary repeated, up to 9.1% for a single row, so no row
+regresses and the other 31 rows' movement is drift, not attribution. The three
+#26 collection rows measure −0.7%, +0.4% and −0.5% and stay open; the row's 2.0×
+Go target is not met.
+
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small
 VM row passes at 154-226 ms and the warm `test --engine both` row at

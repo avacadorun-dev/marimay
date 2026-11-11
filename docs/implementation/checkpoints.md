@@ -1710,7 +1710,12 @@ release slot:
    string-keyed map work and `rune-frequency` into ~86% map work. It also
    records one unresolved discrepancy between the in-program per-piece cost and
    the C replication, and blocks mechanism selection on it rather than choosing
-   a candidate from counters that do not locate the cost.
+   a candidate from counters that do not locate the cost. The first candidate
+   resolved it: an equal-length control showed that the per-byte `memcmp` scan
+   was the largest split cost, not allocation. One owner search replaced the four
+   copies and `word-frequency` fell 27.0% (130.70 to 95.47 ms) from 6.68x to
+   5.06x Go, with two A/A matrices bounding host drift and no attributed
+   regression; the three collection rows remain open.
 4. **Reference slice (#27).** Delivered: `marimay-notes` is pinned at
    `c5ec692` (tree `8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15`, content digest
    `sha256:7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d`)

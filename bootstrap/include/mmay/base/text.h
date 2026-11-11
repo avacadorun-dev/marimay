@@ -43,6 +43,15 @@ bool mmay_text_split_count(
     const unsigned char *separator, size_t separator_length,
     int64_t *result
 );
+/* Locate the first separator match that starts at or after `start`.
+ * Total: invalid input, an empty separator, a separator longer than the
+ * remaining text, or an exhausted range all report `text_length`. A match can
+ * never start at `text_length` (it needs `length - separator_length`), so the
+ * two cases stay distinguishable without a second status channel. */
+void mmay_text_find_separator(
+    const unsigned char *text, size_t text_length, size_t start,
+    const unsigned char *separator, size_t separator_length, size_t *end
+);
 bool mmay_text_next_grapheme(
     const unsigned char *text, size_t length, size_t start, size_t *end
 );

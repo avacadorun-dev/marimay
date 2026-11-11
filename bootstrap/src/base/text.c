@@ -112,10 +112,9 @@ bool mmay_text_contains(
         || !mmay_text_valid_input(needle, needle_length)) return false;
     if (needle_length == 0) return true;
     if (needle_length > text_length) return false;
-    for (offset = 0; offset <= text_length - needle_length; offset += 1U) {
-        if (memcmp(text + offset, needle, needle_length) == 0) return true;
-    }
-    return false;
+    mmay_text_find_separator(text, text_length, 0, needle, needle_length,
+        &offset);
+    return offset != text_length;
 }
 
 static bool mmay_text_ascii_space(unsigned char value) {
@@ -136,24 +135,56 @@ void mmay_text_trim_ascii_range(
     *end = last;
 }
 
+/* One separator search owns every split loop. The scalar scan compares the
+ * first separator byte directly and only then calls memcmp, so a one-byte
+ * separator never leaves this translation unit. */
+void mmay_text_find_separator(
+    const unsigned char *text, size_t text_length, size_t start,
+    const unsigned char *separator, size_t separator_length, size_t *end
+) {
+    size_t offset = 0;
+    if (end == NULL) return;
+    *end = text_length;
+    if (!mmay_text_valid_input(text, text_length)
+        || !mmay_text_valid_input(separator, separator_length)
+        || separator_length == 0 || separator_length > text_length
+        || start > text_length || start == text_length) return;
+    if (separator_length == 1U) {
+        const unsigned char *found = memchr(
+            mmay_text_range_start(text, start), separator[0],
+            text_length - start
+        );
+        if (found != NULL) *end = (size_t)(found - text);
+        return;
+    }
+    for (offset = start; offset <= text_length - separator_length;
+        offset += 1U) {
+        if (text[offset] != separator[0]) continue;
+        if (memcmp(text + offset, separator, separator_length) == 0) {
+            *end = offset;
+            return;
+        }
+    }
+}
+
 bool mmay_text_split_count(
     const unsigned char *text, size_t text_length,
     const unsigned char *separator, size_t separator_length,
     int64_t *result
 ) {
     size_t offset = 0;
+    size_t end = 0;
     int64_t count = 1;
     if (!mmay_text_valid_input(text, text_length)
         || !mmay_text_valid_input(separator, separator_length)
         || separator_length == 0 || result == NULL) return false;
-    while (offset <= text_length && separator_length <= text_length - offset) {
-        if (memcmp(text + offset, separator, separator_length) == 0) {
-            if (count == INT64_MAX) return false;
-            count += 1;
-            offset += separator_length;
-        } else {
-            offset += 1U;
-        }
+    for (;;) {
+        mmay_text_find_separator(text, text_length, offset, separator,
+            separator_length, &end);
+        if (end == text_length) break;
+        if (count == INT64_MAX) return false;
+        count += 1;
+        offset = end + separator_length;
     }
     *result = count;
     return true;

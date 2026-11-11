@@ -147,12 +147,8 @@ static MarimayMirInterpretStatus mmay_mir_text_string_array(
                 break;
             }
         } else {
-            while (end <= text_length
-                && separator_length <= text_length - end
-                && memcmp(text + end, separator, separator_length) != 0) {
-                end += 1U;
-            }
-            if (separator_length > text_length - end) end = text_length;
+            mmay_text_find_separator(text, text_length, start, separator,
+                separator_length, &end);
         }
         status = mmay_mir_execution_new_string(
             options.execution, mmay_text_range_start(text, start), end - start,
