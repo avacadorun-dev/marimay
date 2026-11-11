@@ -1,6 +1,6 @@
 # One validation and one resolution per string-keyed lookup
 
-Local macOS arm64 evidence, 2026-11-11; third candidate inside the #26/#3
+Local macOS arm64 evidence, 2026-11-11; fourth candidate inside the #26/#3
 timebox. [Orders, samples and executable hashes](cp42-string-key-lookup-2026-11-11.json).
 
 This attacks the other half of the `word-frequency` row. The
@@ -35,8 +35,10 @@ twice. Per `get`, in order: `mmay_managed_map_resolve` for the receiver,
 `mmay_managed_validate_field` (which resolves the key slot), then
 `mmay_managed_map_value_hash` (which resolves it again), then
 `mmay_managed_map_value_equal` for the probe's hash candidate, which resolved
-both the stored key and the query key. Nine of the profile's samples sat in
-those three frames rather than in hashing or probing.
+both the stored key and the query key. Validation, hashing and comparison
+together took 930 of the profile's 3,352 samples (27.7%), and two of the three
+resolution passes inside those frames repeated a check an earlier frame had
+already done.
 
 The string key now has one path through the lookup:
 
