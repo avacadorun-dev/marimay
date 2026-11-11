@@ -558,6 +558,23 @@ regresses and the other 31 rows' movement is drift, not attribution. The three
 #26 collection rows measure −0.7%, +0.4% and −0.5% and stay open; the row's 2.0×
 Go target is not met.
 
+[One allocation per enumerated value](cp42-enum-single-allocation-2026-11-11.md)
+([orders and samples](cp42-enum-single-allocation-2026-11-11.json)) is the second
+candidate. A `sample` profile of the real 5,000,000-call probe overturns the
+first record's closing decomposition: the harness ladder that produced
+"scaffolding 265 ns, four pieces 299 ns" never ran a collection, while the real
+call performs ten heap allocations and the collector's sweep of those objects
+carries 22.7% of the program, the host allocator 24.2%. Enumerated values were
+the one object still split across three allocations — value, payload and a
+temporary root vector — and every `split` call produces one, because it returns
+`Result<[]string, string>`. The payload now sits in the object's tail and the
+root vector on the stack, exactly the layout records and strings already use.
+The split probe falls 8.98% (2616.35 → 2381.53 ms; replicated at −8.89%) with A/A
+controls at +0.02% and −0.36%, the enum's profile share falls 16.1% → 6.8%, and
+the delta calibrates the cost the next candidate must attack: about 24 ns per
+heap allocation and its sweep. Eight allocations per call remain and the row
+stays open.
+
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small
 VM row passes at 154-226 ms and the warm `test --engine both` row at

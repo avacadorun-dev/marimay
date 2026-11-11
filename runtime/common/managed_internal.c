@@ -68,8 +68,9 @@ void mmay_managed_enum_dispose(
     if (heap == NULL || value == NULL) {
         return;
     }
-    mmay_deallocate(&heap->allocator, value->payload, payload_bytes);
-    mmay_deallocate(&heap->allocator, value, sizeof(*value));
+    mmay_deallocate(
+        &heap->allocator, value, sizeof(*value) + payload_bytes
+    );
 }
 
 void mmay_managed_interface_dispose(

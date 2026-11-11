@@ -231,17 +231,14 @@ MarimayManagedStatus mmay_managed_enum_new(
         ) || !mmay_size_add(sizeof(*value), payload_bytes, &object_bytes)) {
         return MMAY_MANAGED_LIMIT_REACHED;
     }
-    value = mmay_allocate(&heap->allocator, sizeof(*value));
+    value = mmay_allocate(&heap->allocator, object_bytes);
     if (value == NULL) {
-        return mmay_managed_resource_host_failure(heap, sizeof(*value));
+        return mmay_managed_resource_host_failure(heap, object_bytes);
     }
     memset(value, 0, sizeof(*value));
     if (payload_bytes != 0) {
-        value->payload = mmay_allocate(&heap->allocator, payload_bytes);
-        if (value->payload == NULL) {
-            mmay_deallocate(&heap->allocator, value, sizeof(*value));
-            return mmay_managed_resource_host_failure(heap, payload_bytes);
-        }
+        value->payload = (MarimayManagedCell *)((unsigned char *)value
+            + sizeof(*value));
         memcpy(value->payload, payload, payload_bytes);
     }
     value->descriptor = descriptor;
@@ -251,12 +248,13 @@ MarimayManagedStatus mmay_managed_enum_new(
             selected->payloads,
             payload_count
         );
+        MarimayManagedReference local_roots[8];
+        MarimayManagedReference *roots = local_roots;
         size_t root_bytes = 0;
-        MarimayManagedReference *roots = NULL;
-        if (root_count != 0
+        if (root_count > sizeof(local_roots) / sizeof(*local_roots)
             && mmay_size_multiply(
                 root_count,
-                sizeof(MarimayManagedReference),
+                sizeof(*roots),
                 &root_bytes
             )) {
             roots = mmay_allocate(&heap->allocator, root_bytes);
@@ -270,9 +268,13 @@ MarimayManagedStatus mmay_managed_enum_new(
                     root_count,
                     &root_count
                 ))) {
-            mmay_deallocate(&heap->allocator, roots, root_bytes);
+            if (roots != local_roots) {
+                mmay_deallocate(&heap->allocator, roots, root_bytes);
+            }
             mmay_managed_enum_dispose(heap, value);
-            return mmay_managed_resource_host_failure(heap, root_bytes);
+            return mmay_managed_resource_host_failure(
+                heap, roots == NULL ? root_bytes : 0
+            );
         }
         status = mmay_managed_publish_object(
             heap,
@@ -285,7 +287,9 @@ MarimayManagedStatus mmay_managed_enum_new(
             0,
             result
         );
-        mmay_deallocate(&heap->allocator, roots, root_bytes);
+        if (roots != local_roots) {
+            mmay_deallocate(&heap->allocator, roots, root_bytes);
+        }
     }
     if (status != MMAY_MANAGED_OK) {
         mmay_managed_enum_dispose(heap, value);

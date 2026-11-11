@@ -99,7 +99,13 @@ belongs to. The milestone description carries the exit criteria and the date.
   timebox runs from 2026-11-11 to a hard stop on 2026-12-09 and opened with
   [a measured decomposition](evidence/cp42-perf-timebox-2026-11-11.md): each of
   the four rows now has a per-row floor and a ranked hypothesis instead of the
-  open-ended September wave. The stale
+  open-ended September wave. Two candidates have landed since: the
+  [one-owner separator search](evidence/cp42-split-separator-search-2026-11-11.md)
+  took `word-frequency` 27.0% (6.68x to 5.06x its Go column) and the
+  [single-allocation enum](evidence/cp42-enum-single-allocation-2026-11-11.md)
+  took the split probe a further 8.98% while correcting the timebox's cost model
+  from "per-call scaffolding" to "per-object allocation and sweep, ten
+  allocations per call". The stale
   sentence about finishing the mutable-capture warning and the delimited /
   source-lint applications was already delivered on 2026-09-09 (D103,
   `cp42-stateful-2026-09-09.md`) and no longer describes the next step.

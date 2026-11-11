@@ -1,0 +1,181 @@
+{
+  "schema": "marimay.cp42-enum-single-allocation/1",
+  "generated_at": "2026-11-11T12:45:00+07:00",
+  "source_revision": "dee131c + working-tree enum change",
+  "compilers": {
+    "pre_change": {
+      "sha256": "7f70d3b2be0ccbe10680efa875f09126c2ae1110590f3a423ee83fbd07fb3550",
+      "build_tree": "build/rb-c2",
+      "note": "release tree configured from the stashed pre-change sources; resolves its own native-runtime archive"
+    },
+    "patched": {
+      "sha256": "ed827a0bfa8745f503128aef72898f4f6962df819a22a1e0650f8e055b09a3a9",
+      "build_tree": "build/release",
+      "note": "same tree after the enum change; both sides link their own runtime archive, which a single tree cannot do"
+    }
+  },
+  "host": {
+    "platform": "macOS arm64",
+    "cpu": "Apple M2",
+    "isolation": "local-unverified"
+  },
+  "probe": {
+    "source": "tmp-perf26/probe_split_big.my",
+    "calls_per_run": 5000000,
+    "line_bytes": 37,
+    "pieces_per_call": 4,
+    "before_binary_sha256": "4f333eddd20bb330e4b1150d19f79be9a96b79df528e14de12faa11e4054309f",
+    "after_binary_sha256": "9c03e1e64524e6b3ae0988b70a93a3277373704f5e9af4fb288ab1c531b079d8"
+  },
+  "pairs": {
+    "main": {
+      "before_binary": "build-c2-before",
+      "after_binary": "build-c2-after",
+      "warmups": 3,
+      "samples_per_side": 11,
+      "samples": {
+        "before": [
+          2594.9454590000014,
+          2616.34875,
+          2622.251540999997,
+          2604.9553329999994,
+          2605.847959000002,
+          2602.2743340000006,
+          2608.3172080000027,
+          2619.7579999999975,
+          2678.6668749999976,
+          2618.956292,
+          2635.0636250000007
+        ],
+        "after": [
+          2375.332583000002,
+          2433.467457999999,
+          2370.6819159999986,
+          2376.3835830000025,
+          2393.204875000002,
+          2381.5262500000003,
+          2380.726541999998,
+          2387.3486660000012,
+          2390.7666249999975,
+          2395.763499999994,
+          2365.625915999999
+        ]
+      },
+      "median": {
+        "before": 2616.34875,
+        "after": 2381.5262500000003
+      },
+      "delta_percent": -8.975198738318038
+    },
+    "aa_before": {
+      "before_binary": "build-c2-before",
+      "after_binary": "build-c2-before",
+      "warmups": 3,
+      "samples_per_side": 11,
+      "samples": {
+        "before": [
+          2618.7306669999975,
+          2595.4045420000007,
+          2620.9237079999994,
+          2603.224832999999,
+          2624.4555419999997,
+          2617.5936670000015,
+          2623.7660000000033,
+          2602.520792,
+          2666.403332999998,
+          2713.4100419999922,
+          2602.6506249999957
+        ],
+        "after": [
+          2604.562874999999,
+          2619.3133750000006,
+          2642.8945830000002,
+          2633.798208999998,
+          2625.456374999999,
+          2608.5794999999976,
+          2607.8582909999996,
+          2620.5916250000028,
+          2617.715665999995,
+          2657.3878749999976,
+          2615.239583999994
+        ]
+      },
+      "median": {
+        "before": 2618.7306669999975,
+        "after": 2619.3133750000006
+      },
+      "delta_percent": 0.022251543747744074
+    },
+    "aa_after": {
+      "before_binary": "build-c2-after",
+      "after_binary": "build-c2-after",
+      "warmups": 3,
+      "samples_per_side": 11,
+      "samples": {
+        "before": [
+          2393.680500000002,
+          2396.141042,
+          2386.4536660000012,
+          2382.4187920000027,
+          2429.6894169999987,
+          2407.3144160000056,
+          2393.1238750000007,
+          2388.1272500000036,
+          2382.541165999996,
+          2395.314583000001,
+          2392.5514580000067
+        ],
+        "after": [
+          2372.2824579999974,
+          2389.3788749999985,
+          2384.5208749999997,
+          2384.3950829999976,
+          2375.0253330000037,
+          2382.160500000005,
+          2378.360833000002,
+          2386.891292000001,
+          2383.307292000005,
+          2384.961000000004,
+          2388.4445000000055
+        ]
+      },
+      "median": {
+        "before": 2393.1238750000007,
+        "after": 2384.3950829999976
+      },
+      "delta_percent": -0.3647446791697344
+    }
+  },
+  "replicate_pair_delta_percent": -8.89,
+  "allocations_per_split_call": {
+    "before": 10,
+    "after": 8
+  },
+  "per_allocation_cost_ns": 24,
+  "profile_shares_percent": {
+    "before": {
+      "enum_new": 16.1,
+      "string_join": 53.2,
+      "array_construct": 10.6,
+      "collection_finish": 22.7,
+      "host_free": 14.6,
+      "host_malloc": 9.6
+    },
+    "after": {
+      "enum_new": 6.8,
+      "string_join": 55.6,
+      "array_construct": 12.3,
+      "collection_finish": 22.1,
+      "host_free": 11.5,
+      "host_malloc": 8.3
+    },
+    "samples": {
+      "before": 1530,
+      "after": 1421
+    }
+  },
+  "corpus": {
+    "run": false,
+    "note": "corpus matrices for this candidate are recorded separately when they land"
+  }
+}
