@@ -530,6 +530,73 @@ static MarimayManagedStatus mmay_managed_map_string_slot_equal(
     return MMAY_MANAGED_OK;
 }
 
+/* A found string entry remembered by the previous lookup. The memo holds no
+ * reference and no copied bytes: a hit re-checks the generation, the seeds and
+ * the key length, then compares the stored key in full, so any mutation, growth
+ * or tombstone change that bumps the generation invalidates it. */
+static bool mmay_managed_map_string_memo_hit(
+    const MarimayManagedHeap *heap,
+    const MarimayManagedMap *map,
+    const MarimayManagedSlot *key_slot,
+    size_t *bucket,
+    size_t *entry,
+    bool *found,
+    uint64_t *hash
+) {
+    const MarimayManagedSlot *entry_slot = NULL;
+    size_t candidate = 0;
+    bool equal = false;
+    if (map->descriptor->is_set || !map->lookup.valid || !map->lookup.found
+        || map->lookup.generation != map->mutation_generation
+        || map->lookup.seed0 != heap->options.collection_hash_seed0
+        || map->lookup.seed1 != heap->options.collection_hash_seed1
+        || map->lookup.key_bits != (uint64_t)key_slot->as.string->length
+        || map->lookup.entry >= map->entry_count || map->entries == NULL) {
+        return false;
+    }
+    candidate = map->lookup.entry;
+    if (!mmay_managed_map_entry_prefix(map, candidate)->active
+        || mmay_managed_map_entry_prefix(map, candidate)->hash
+            != map->lookup.hash) {
+        return false;
+    }
+    entry_slot = mmay_managed_resolve_const(
+        heap, mmay_managed_map_entry_key(map, candidate).reference
+    );
+    /* A miss here is not an error: the full probe re-runs every check. */
+    if (mmay_managed_map_string_slot_equal(entry_slot, key_slot, &equal)
+            != MMAY_MANAGED_OK || !equal) {
+        return false;
+    }
+    *bucket = map->lookup.bucket;
+    *entry = candidate;
+    *found = true;
+    *hash = map->lookup.hash;
+    return true;
+}
+
+static void mmay_managed_map_string_memo_store(
+    const MarimayManagedHeap *heap,
+    const MarimayManagedMap *map,
+    const MarimayManagedSlot *key_slot,
+    size_t bucket,
+    size_t entry,
+    uint64_t hash
+) {
+    /* The memo is a query cache of indices, not a root: it holds no reference
+     * and is rejected by any mutation-generation or seed change. */
+    MarimayManagedMap *memoized = (MarimayManagedMap *)map;
+    memoized->lookup.key_bits = (uint64_t)key_slot->as.string->length;
+    memoized->lookup.hash = hash;
+    memoized->lookup.generation = map->mutation_generation;
+    memoized->lookup.seed0 = heap->options.collection_hash_seed0;
+    memoized->lookup.seed1 = heap->options.collection_hash_seed1;
+    memoized->lookup.bucket = bucket;
+    memoized->lookup.entry = entry;
+    memoized->lookup.found = true;
+    memoized->lookup.valid = true;
+}
+
 /* `key_slot` carries the already-validated string key, or NULL for every other
  * key shape, which keeps the recursive generic comparison. */
 static MarimayManagedStatus mmay_managed_map_find_reference(
@@ -658,6 +725,11 @@ static inline MarimayManagedStatus mmay_managed_map_lookup_resolved(
         if (status != MMAY_MANAGED_OK) {
             return status;
         }
+        if (mmay_managed_map_string_memo_hit(
+                heap, map, key_slot, bucket, entry, found, &hash)) {
+            if (hash_result != NULL) *hash_result = hash;
+            return MMAY_MANAGED_OK;
+        }
         hash = mmay_managed_map_string_hash_slot(heap, key_slot);
     } else {
         status = mmay_managed_validate_field(
@@ -686,6 +758,12 @@ static inline MarimayManagedStatus mmay_managed_map_lookup_resolved(
         ) : mmay_managed_map_find_reference(
             heap, map, key, key_slot, hash, bucket, entry, found
         );
+    if (status == MMAY_MANAGED_OK && key_slot != NULL && *found
+        && !map->descriptor->is_set) {
+        mmay_managed_map_string_memo_store(
+            heap, map, key_slot, *bucket, *entry, hash
+        );
+    }
     return status;
 }
 

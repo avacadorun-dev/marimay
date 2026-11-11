@@ -609,6 +609,23 @@ and the three scalar-keyed rows move within ±1.4% code-layout noise. Nothing is
 allocated, nothing is added to the map object, and the hash function is
 unchanged. The row is at 4.4× Go, still open.
 
+[A memo that survives the read-modify-write pair](cp42-string-key-lookup-memo-2026-11-11.md)
+([pairs, controls and binaries](cp42-string-key-lookup-memo-2026-11-11.json)) is
+the fifth candidate and closes the gap the fourth left: `get` and `put` on the
+same key are two calls, so a pair still paid for the whole lookup twice. The map
+already memoized the last successful scalar-key lookup, but it compared a 64-bit
+scalar and strings are equal by content. The string path now fills the same memo
+with the entry index, bucket, hash, generation, seeds and key length - no
+reference and no copied bytes - and a hit re-checks the generation, the seeds,
+the length, the stored hash and finally the full content. A miss falls through to
+the unchanged probe, so the memo can only avoid repeating an answer. Every
+mutation bumps the generation and the generation never wraps, so a stale memo is
+rejected by one scalar compare. The map probe falls 10.06%, `word-frequency`
+falls 2.77% (88.18 → 85.73 ms) against a +0.32% control and `map-string` 3.41%,
+with identical checksums on all 32 corpus rows; the rows the mechanism cannot
+reach stay within ±1.6% layout noise. Cumulatively the row has moved 130.70 →
+85.73 ms (-34.4%), from 6.68× to about 4.3× Go, still open.
+
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small
 VM row passes at 154-226 ms and the warm `test --engine both` row at

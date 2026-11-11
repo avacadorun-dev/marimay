@@ -1743,10 +1743,18 @@ release slot:
    `word-frequency` fell 5.92% against a +0.18% control and `map-string` fell
    6.16%, with unchanged checksums and record- and scalar-keyed rows inside
    +-1.4% layout noise. Nothing is allocated and the hash function is unchanged.
-   The row now measures about 4.4x Go. The remaining structural waste is that
-   get and put on the same key each recompute hash, probe and comparison, and
-   that a key of at most ten bytes still enters `memcmp`; both are separate
-   candidates. The three collection rows remain open.
+   The fifth candidate removed that remaining waste: `get` and `put` on the
+   same key are two calls, so a pair still did the whole lookup twice. The map
+   already memoized the last successful scalar-key lookup, but it compared a
+   scalar and strings are equal by content; the string path now fills the same
+   memo with the entry index, bucket, hash, generation, seeds and key length (no
+   reference, no copied bytes) and a hit re-checks all of them plus the full
+   content, while a miss falls through to the unchanged probe. The map probe
+   fell 10.06% and `word-frequency` a further 2.77% (88.18 to 85.73 ms) against a
+   +0.32% control with identical checksums on all 32 rows, so the row now
+   measures about 4.3x Go and -34.4% since the timebox opened. The remaining
+   levers are the short-key `memcmp` and the probe's group scan. The three
+   collection rows remain open.
 4. **Reference slice (#27).** Delivered: `marimay-notes` is pinned at
    `c5ec692` (tree `8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15`, content digest
    `sha256:7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d`)

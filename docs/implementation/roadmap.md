@@ -110,7 +110,10 @@ belongs to. The milestone description carries the exit criteria and the date.
   measured across three retention policies and not adopted because the row never
   collects, and
   [one validation and one resolution per string-keyed lookup](evidence/cp42-string-key-lookup-2026-11-11.md)
-  took the map probe 12.43% and the row 5.92% with the checksums unchanged. The
+  took the map probe 12.43% and the row 5.92% with the checksums unchanged, and
+  [a memo that survives the read-modify-write pair](evidence/cp42-string-key-lookup-memo-2026-11-11.md)
+  took the map probe a further 10.06% and the row 2.77%, putting `word-frequency`
+  at 85.73 ms, −34.4% since the timebox opened. The
   stale
   sentence about finishing the mutable-capture warning and the delimited /
   source-lint applications was already delivered on 2026-09-09 (D103,

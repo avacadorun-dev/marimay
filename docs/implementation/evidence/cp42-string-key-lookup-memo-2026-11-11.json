@@ -1,0 +1,102 @@
+{
+ "schema": "marimay.cp42-string-key-lookup-memo/1",
+ "generated_at": "2026-11-11T16:20:00+07:00",
+ "source_revision": "ee860c8 + working-tree string lookup memo",
+ "compilers": {
+  "previous_candidate": {
+   "sha256": "868592ccc95f313906715c68d10dce801f3924b1f367326efa4af1829ac75186",
+   "note": "release compiler of the previous record; both sides link their own native-runtime archive"
+  },
+  "this_candidate": {
+   "sha256": "582d13fdbcc1d9d363baad03eff63f53aac742dfa867bec3fde404713e7dfd8f",
+   "build_tree": "build/release",
+   "note": "same tree after the memo; a copied compiler resolves the other tree's archive, so the two sides are separate builds"
+  }
+ },
+ "host": {
+  "platform": "macOS arm64",
+  "cpu": "Apple M2",
+  "isolation": "local-unverified"
+ },
+ "probe": {
+  "source": "tmp-perf26/probe_map.my",
+  "get_put_pairs_per_run": 400000,
+  "before_binary": "tmp-perf26/build-final-probe_map",
+  "before_binary_sha256": "52ee91d22eb6adda71c0c589680aa4da5d838c1c20fad43cd026363467042986",
+  "after_binary": "tmp-perf26/build-c5b-probe_map",
+  "after_binary_sha256": "a89bdffcc6c8c6808cfc1960604a15c487556565388bc230954fcba205bd2108",
+  "stdout_before": "map-only 90",
+  "stdout_after": "map-only 90"
+ },
+ "pairs": {
+  "probe": {
+   "warmups": 3,
+   "samples_per_side": 11,
+   "before_median_ms": 33.413,
+   "after_median_ms": 30.05,
+   "delta_percent": -10.06,
+   "ns_per_pair_before": 83.5,
+   "ns_per_pair_after": 75.1
+  },
+  "word_frequency": {
+   "before_median_ms": 88.177,
+   "after_median_ms": 85.731,
+   "delta_percent": -2.77,
+   "checksum_before": 2925090,
+   "checksum_after": 2925090
+  },
+  "word_frequency_aa_control": {
+   "before_median_ms": 88.001,
+   "after_median_ms": 88.281,
+   "delta_percent": 0.32
+  },
+  "map_string": {
+   "before_median_ms": 17.57,
+   "after_median_ms": 16.97,
+   "delta_percent": -3.41,
+   "checksum_before": 268505088,
+   "checksum_after": 268505088
+  },
+  "unreached_rows": {
+   "map-string-book_record_keys": {"delta_percent": -0.28, "checksums_equal": true},
+   "set-string-churn_set_without_read": {"delta_percent": 1.18, "checksums_equal": true},
+   "unique-set_int_keys": {"delta_percent": 1.63, "checksums_equal": true},
+   "rune-frequency_rune_keys": {"delta_percent": 0.8, "checksums_equal": true}
+  }
+ },
+ "corpus_matrices": {
+  "previous_candidate": "benchmarks/results/perf26-c4-map-anchors.md",
+  "this_candidate": "benchmarks/results/perf26-c5-memo-anchors.md",
+  "rows": 32,
+  "stdout_mismatches": 0,
+  "note": "the matrix pair is not interleaved row by row, so the paired executables above are the primary numbers"
+ },
+ "cumulative": {
+  "timebox_start_word_frequency_ms": 130.7,
+  "now_ms": 85.731,
+  "delta_percent": -34.4,
+  "go_ratio_now": 4.3
+ },
+ "mechanism": {
+  "memo_contents": ["entry index", "bucket", "hash", "mutation generation", "hash seeds", "key length"],
+  "memo_holds_reference": false,
+  "memo_holds_copied_bytes": false,
+  "hit_requirements": ["unchanged generation", "unchanged seeds", "equal key length", "active entry with the same stored hash", "full content comparison"],
+  "invalidating_operations": ["put on found entry", "put insert", "remove", "clear", "growth", "tombstone rehash"],
+  "miss_behaviour": "falls through to the unchanged probe; the memo cannot change an answer",
+  "struct_layout_changes": 0,
+  "allocation_delta": 0,
+  "files": ["runtime/common/managed_map.c"]
+ },
+ "correctness": {
+  "full_debug_suite": {"total": 100, "passed": 99, "failed": ["mmay_macos_package"]},
+  "asan_ubsan_labels": {"tests": 6, "passed": 6, "labels": ["managed-memory", "resource", "stateful"]},
+  "asan_ubsan_by_name": {"tests": 20, "passed": 20, "filter": "c_unit|cp33"},
+  "corpus_checksums": "identical on all 32 rows"
+ },
+ "limitations": [
+  "No Tier 1 baseline, VM column or Bun column.",
+  "The gain depends on get-then-put adjacency, which the language does not require.",
+  "word-frequency remains at about 4.3x Go and open."
+ ]
+}
