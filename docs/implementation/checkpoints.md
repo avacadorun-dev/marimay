@@ -1765,8 +1765,22 @@ release slot:
    map probe 9.02%, and the paired corpus run puts `rune-frequency` at 23.03 to
    20.74 ms, -9.94% and about 3.1x Go, with byte-identical stdout on all 32 rows
    and every other row inside layout noise. A focused emitter test fails without
-   the clause. `frequency-map` and `unique-set` are unchanged and still open, and
-   the probe's group scan remains the only untested name on the map path.
+   the clause. The probe's group scan remains the only untested name on the map
+   path. `frequency-map` and `unique-set` then exited as accepted debt (D127):
+   with probes matching the corpus call shape - the loop inside a function that
+   receives the collection, which the first in-main family missed by 28% - an
+   `int`-keyed get+put pair measures 23.9 ns and a `Set<int>` insertion 16.4 ns,
+   81% and 74% of those rows, spread over resolution, validation, hashing, the
+   probe and status plumbing with no frame above a fifth of the time, while an
+   isolated C replication of the same two calls measures 25.8 ns per pair, so the
+   generated code is not the gap. The next hypothesis is a fused collection update
+   for the adjacent get-then-put idiom at 8-10 ns per pair, a MIR-level pass with
+   its own decision and differential coverage, outside the bounded slot. The
+   timebox therefore closes with three exits: `word-frequency` -34.4% and
+   `rune-frequency` -9.94% on paired improvements, `frequency-map` and
+   `unique-set` on debt, and no further performance candidate enters the alpha
+   line without a new decision. `word-frequency` stays above its 2.0x Go target
+   under #3.
 4. **Reference slice (#27).** Delivered: `marimay-notes` is pinned at
    `c5ec692` (tree `8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15`, content digest
    `sha256:7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d`)

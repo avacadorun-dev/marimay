@@ -1,0 +1,105 @@
+{
+ "schema": "marimay.cp42-collection-rows-debt/1",
+ "generated_at": "2026-11-13T16:55:00+07:00",
+ "source_revision": "5fceb8a",
+ "host": {
+  "platform": "macOS arm64",
+  "cpu": "Apple M2",
+  "isolation": "local-unverified"
+ },
+ "probes": {
+  "shape": "generate() -> iterate(values) / frequencies(values) / unique(values); the collection crosses the function boundary exactly as in the corpus",
+  "warmups": 3,
+  "samples_per_side": 11,
+  "clock": "perf_counter_ns",
+  "generate": {
+   "source": "tmp-perf26/probe_fm2_gen.my",
+   "elements": 1000000,
+   "median_ms": 4.93,
+   "min_ms": 4.62,
+   "max_ms": 5.54
+  },
+  "iterate": {
+   "source": "tmp-perf26/probe_fm2_loop.my",
+   "median_ms": 5.6,
+   "min_ms": 5.09,
+   "max_ms": 6.48
+  },
+  "frequencies": {
+   "source": "tmp-perf26/probe_fm2_map.my",
+   "pairs": 1000000,
+   "median_ms": 29.48,
+   "min_ms": 29.2,
+   "max_ms": 29.99
+  },
+  "unique": {
+   "source": "tmp-perf26/probe_fm2_set.my",
+   "insertions": 1000000,
+   "median_ms": 21.98,
+   "min_ms": 21.67,
+   "max_ms": 22.53
+  }
+ },
+ "rejected_probe_shape": {
+  "description": "generation and the collection loop kept in main",
+  "row_binary_median_ms": 30.148,
+  "probe_median_ms": 38.632,
+  "overstatement_percent": 28.14,
+  "conclusion": "the corpus loop runs in a function whose array parameter is a prewarmed substitution; the in-main probe overstated the row by 28%"
+ },
+ "derived": {
+  "ns_per_int_get_put_pair": 23.9,
+  "ns_per_set_insertion": 16.4,
+  "map_share_of_frequency_map_row": 0.81,
+  "set_share_of_unique_set_row": 0.74,
+  "ns_per_iterated_element": 0.67
+ },
+ "rows": {
+  "frequency_map": {
+   "paired_median_ms": 30.26,
+   "go_median_ms": 16.16,
+   "ratio_go": 2.0
+  },
+  "unique_set": {
+   "paired_median_ms": 22.16,
+   "go_median_ms": 17.36,
+   "ratio_go": 1.37
+  }
+ },
+ "profile_shares": {
+  "mmay_managed_map_probe": 0.21,
+  "get_plus_put_frames": 0.39,
+  "lookup_resolved": 0.135,
+  "hash_seeded_word": 0.06,
+  "invalid_reference": 0.026,
+  "generated_loop": 0.165,
+  "samples": 700
+ },
+ "ruled_out": [
+  "last-lookup memo is already used by scalar keys",
+  "[]int element access already took the inline scalar path",
+  "released-object pooling measured nothing on collection-light rows",
+  "inline short-key comparison applies to string keys only",
+  "isolated C replication of get+put measures 25.8 ns per pair at the same cardinality"
+ ],
+ "next_hypothesis": [
+  {
+   "rank": 1,
+   "mechanism": "fused collection update for the adjacent get+put idiom",
+   "estimate_ns_saved_per_pair": "8-10",
+   "requirement": "MIR-level pass, new runtime entry point, own decision"
+  },
+  {
+   "rank": 2,
+   "mechanism": "bound map view mirroring the array view",
+   "estimate_ns_saved_per_pair": "2-4",
+   "requirement": "backend and ABI change"
+  }
+ ],
+ "decision": "D127",
+ "limitations": [
+  "No Tier 1 baseline and no VM column.",
+  "Floors are local medians, not a regression gate.",
+  "word-frequency remains above its 2.0x Go target and stays with #3."
+ ]
+}

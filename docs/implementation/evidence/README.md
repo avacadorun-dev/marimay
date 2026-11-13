@@ -642,6 +642,23 @@ fails without the clause, so the behaviour is guarded rather than described. The
 same step also measured and rejected the last named map lever: comparing short
 keys inline instead of entering `_platform_memcmp` was 3.98% slower against a
 -0.63% A/A control.
+[Same-binary controls for that candidate](cp42-rune-dense-scalar-controls-2026-11-13.md)
+bound what one pass may call a regression: a binary moves 2.3% against itself on a
+12 ms row, and the four rows above the 2% threshold in the first paired pass come
+back at -0.04%, -0.30%, +0.89% and -0.45% on a repeat, three of them changing sign.
+
+[The two scalar-keyed collection rows exit as accepted debt](cp42-collection-rows-debt-2026-11-13.md)
+([probe sources, medians and pairs](cp42-collection-rows-debt-2026-11-13.json))
+closes `#26`. Measured at the corpus size with the loop inside a function that
+receives the collection - the corpus call shape - a `Map<int,int>` get+put pair
+costs 23.9 ns and a `Set<int>` insertion 16.4 ns, 81% and 74% of `frequency-map`
+and `unique-set`. The first probe family kept the loop in `main` and overstated
+the row by 28%, so the screening rule now also requires the row's call shape. No
+frame holds more than a fifth of the time and an isolated C replication of the
+same two calls measures 25.8 ns per pair, so the generated code is not the gap.
+The ranked next hypothesis is a fused collection update for the adjacent
+get-then-put idiom at 8-10 ns per pair, a MIR-level pass that needs its own
+decision (D127).
 
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small

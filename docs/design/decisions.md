@@ -4564,3 +4564,38 @@ process failure to fix, not a row to add.
 The lasting source fix remains the account's public commit address: while it is a
 personal mailbox, any future squash merge — here or in a sibling repository —
 creates the same finding again.
+
+## D127 — CP42 exits `frequency-map` and `unique-set` as accepted debt
+
+Status: accepted (repository-owner direction, 2026-11-13; issue #26).
+
+The #26 timebox exits one row on a paired improvement (`word-frequency` -34.4%
+and `rune-frequency` -9.94% since it opened) and two on accepted debt.
+`frequency-map` and `unique-set` are scalar-keyed and dominated by the same
+generic out-of-line collection call: measured at the corpus size, an `int`-keyed
+get+put pair costs 23.9 ns and a `Set<int>` insertion 16.4 ns, which is 81% and
+74% of those rows. The cost is spread across resolution, validation, hashing, the
+probe and status plumbing with no frame above a fifth of the time, so no contained
+mechanism exists inside the remaining timebox budget.
+
+What was ruled out by measurement is recorded in
+[the exit record](../implementation/evidence/cp42-collection-rows-debt-2026-11-13.md):
+the scalar-key memo was already in place, `[]int` element access already took the
+inline scalar path, released-object pooling measured nothing on these rows, and an
+isolated C replication of the same two calls measures 25.8 ns per pair, so the
+generated code is not adding the gap.
+
+The next hypothesis, and the reason this is debt rather than a candidate, is a
+**fused collection update**: recognizing the adjacent `get`-then-`put` idiom and
+entering one runtime call would save one handle resolution, one key validation and
+one status round trip, on the order of 8-10 ns per pair. That is a MIR-level pass
+with a new runtime entry point - a design item with its own decision, differential
+coverage and platform evidence, not something the bounded perf slot can carry. A
+bound map view mirroring the array view is the smaller second option at 2-4 ns per
+pair.
+
+Consequence: no further performance candidate enters the alpha line without a new
+decision, `#26` closes with these three exits, and `word-frequency` stays above its
+2.0x Go target under issue #3, which keeps its own tracker. Reversal: a new
+decision that adopts the fused update supersedes the debt verdict for these rows
+without changing this record.

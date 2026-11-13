@@ -118,7 +118,14 @@ belongs to. The milestone description carries the exit criteria and the date.
   took the first collection row, `rune-frequency`, 9.94% (23.03 → 20.74 ms) by
   letting the emitter use the inline element read its storage already allowed,
   with the same step measuring and rejecting an inline short-key comparison as
-  3.98% slower than the platform `memcmp`. The
+  3.98% slower than the platform `memcmp`. The last two rows,
+  [the scalar-keyed collection rows](evidence/cp42-collection-rows-debt-2026-11-13.md),
+  exit as accepted debt under D127: with probes matching the corpus call shape a
+  `Map<int,int>` get+put pair measures 23.9 ns and a `Set<int>` insertion 16.4 ns,
+  81% and 74% of those rows, and the next hypothesis - a fused collection update
+  at 8-10 ns per pair - is a MIR-level pass with its own decision, so the timebox
+  closes with three exits and nothing further enters the alpha line without a new
+  decision. `word-frequency` stays above its 2.0× Go target under #3. The
   stale
   sentence about finishing the mutable-capture warning and the delimited /
   source-lint applications was already delivered on 2026-09-09 (D103,
