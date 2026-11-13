@@ -626,6 +626,23 @@ with identical checksums on all 32 corpus rows; the rows the mechanism cannot
 reach stay within ±1.6% layout noise. Cumulatively the row has moved 130.70 →
 85.73 ms (-34.4%), from 6.68× to about 4.3× Go, still open.
 
+[A rune is a dense scalar to the native emitter](cp42-rune-dense-scalar-2026-11-13.md)
+([samples, binaries and per-row pairs](cp42-rune-dense-scalar-2026-11-13.json)) is
+the sixth candidate and the first aimed at a collection row. A `[]rune` array is
+already stored as dense RAW32 with a 4-byte stride, exactly like `[]u32`, but the
+native emitter's dense scalar element path did not list `MMAY_TYPE_RUNE`, so every
+rune element read bound a view and called the out-of-line
+`mmay_managed_array_view_get`. The stride function now answers for rune too, so
+element reads and stores stay inline; no runtime file, descriptor or storage kind
+changed. Bare iteration falls 68.71% (about 4.0 to 1.25 ns per element), the push
+probe 13.16% and the rune map probe 9.02%, and the paired corpus run puts
+`rune-frequency` at 23.03 → 20.74 ms (-9.94%) with byte-identical stdout on all
+32 rows and every other row inside code-layout noise. A focused emitter test
+fails without the clause, so the behaviour is guarded rather than described. The
+same step also measured and rejected the last named map lever: comparing short
+keys inline instead of entering `_platform_memcmp` was 3.98% slower against a
+-0.63% A/A control.
+
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small
 VM row passes at 154-226 ms and the warm `test --engine both` row at

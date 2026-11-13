@@ -1752,9 +1752,21 @@ release slot:
    content, while a miss falls through to the unchanged probe. The map probe
    fell 10.06% and `word-frequency` a further 2.77% (88.18 to 85.73 ms) against a
    +0.32% control with identical checksums on all 32 rows, so the row now
-   measures about 4.3x Go and -34.4% since the timebox opened. The remaining
-   levers are the short-key `memcmp` and the probe's group scan. The three
-   collection rows remain open.
+   measures about 4.3x Go and -34.4% since the timebox opened. The last named lever, comparing short string keys inline
+   instead of entering `_platform_memcmp`, was measured and rejected: the map
+   probe came out 3.98% slower against a -0.63% A/A control, because the platform
+   routine already compares those lengths with the same two-window trick. The
+   sixth candidate left the map for the first collection row: `[]rune` is stored
+   as dense RAW32 with stride 4 like `[]u32`, but the native emitter's dense
+   scalar element path did not list rune, so every rune element read bound a view
+   and called the out-of-line validated accessor. The stride clause now answers
+   for rune, so element reads and stores stay inline; bare iteration falls
+   68.71% (about 4.0 to 1.25 ns per element), the push probe 13.16% and the rune
+   map probe 9.02%, and the paired corpus run puts `rune-frequency` at 23.03 to
+   20.74 ms, -9.94% and about 3.1x Go, with byte-identical stdout on all 32 rows
+   and every other row inside layout noise. A focused emitter test fails without
+   the clause. `frequency-map` and `unique-set` are unchanged and still open, and
+   the probe's group scan remains the only untested name on the map path.
 4. **Reference slice (#27).** Delivered: `marimay-notes` is pinned at
    `c5ec692` (tree `8a46ffe1a4a49c6eb41cc51d6fafd6c96d369c15`, content digest
    `sha256:7bb57548a2f40451e601878102526af074b234266fe6828957d4695b39e2634d`)

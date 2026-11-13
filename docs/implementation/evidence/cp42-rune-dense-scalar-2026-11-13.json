@@ -1,0 +1,313 @@
+{
+ "schema": "marimay.cp42-rune-dense-scalar/1",
+ "generated_at": "2026-11-13T14:50:00+07:00",
+ "measured_at": "2026-11-11T23:40:00+07:00",
+ "source_revision": "f509409 + working-tree rune stride clause",
+ "host": {
+  "platform": "macOS arm64",
+  "cpu": "Apple M2",
+  "isolation": "local-unverified"
+ },
+ "probes": {
+  "iteration": {
+   "source": "tmp-perf26/probe_rune_loop_long2.my",
+   "elements_per_run": 450000000,
+   "before_binary": "tmp-perf26/build-cur-probe_rune_loop_long2",
+   "before_binary_sha256": "fdeb01c5a914e3341bbefa62b3e1241a30f7554c3219c35a9116f22bc500f8c7",
+   "after_binary": "tmp-perf26/build-c7-probe_rune_loop_long2",
+   "after_binary_sha256": "ac13353bbaba5f3c35a60eb224fa74a412a92cb54c8aa7de1e89cf09b9b4b91d",
+   "warmups": 3,
+   "samples_per_side": 9,
+   "before_median_ms": 1792.2,
+   "after_median_ms": 560.8,
+   "delta_percent": -68.71,
+   "ns_per_element_before": 3.98,
+   "ns_per_element_after": 1.25
+  },
+  "push": {
+   "source": "tmp-perf26/probe_rune_push.my",
+   "pushes_per_run": 450000,
+   "before_binary_sha256": "cc0888c64bc1bb8c9719d118958549201b4b2824eb152c0610f38bc8e9b91ac4",
+   "after_binary_sha256": "f1fe2f00311f13e809d883514d14e71eb6b29702bf8b5db4d87440edd301126f",
+   "warmups": 3,
+   "samples_per_side": 11,
+   "before_median_ms": 8.509,
+   "after_median_ms": 7.389,
+   "delta_percent": -13.16
+  },
+  "map": {
+   "source": "tmp-perf26/probe_rune_map.my",
+   "get_put_pairs_per_run": 450000,
+   "before_binary_sha256": "afe8eda46b2a13d1081d6dd63c7f9ae04516adf30c063e9fc6ba6ba600f070ff",
+   "after_binary_sha256": "ca1b5fb87ea3506a9fa060d2837e33903bd96a1074b10ffefdc8f87bb959131a",
+   "warmups": 3,
+   "samples_per_side": 11,
+   "before_median_ms": 20.226,
+   "after_median_ms": 18.402,
+   "delta_percent": -9.02
+  }
+ },
+ "corpus_pairs": {
+  "rows": 32,
+  "stdout_mismatches": 0,
+  "sampling": {
+   "warmups": 3,
+   "samples_per_side": 11,
+   "order": "alternating"
+  },
+  "rows_detail": {
+   "title-search-10k": {
+    "before_median_ms": 6.743,
+    "after_median_ms": 6.666,
+    "delta_percent": -1.15,
+    "stdout_equal": true
+   },
+   "title-search-100k": {
+    "before_median_ms": 47.361,
+    "after_median_ms": 44.822,
+    "delta_percent": -5.36,
+    "stdout_equal": true
+   },
+   "normalize-title": {
+    "before_median_ms": 50.37,
+    "after_median_ms": 50.142,
+    "delta_percent": -0.45,
+    "stdout_equal": true
+   },
+   "word-frequency": {
+    "before_median_ms": 87.036,
+    "after_median_ms": 86.486,
+    "delta_percent": -0.63,
+    "stdout_equal": true
+   },
+   "report-builder": {
+    "before_median_ms": 12.626,
+    "after_median_ms": 12.969,
+    "delta_percent": 2.72,
+    "stdout_equal": true
+   },
+   "report-concat": {
+    "before_median_ms": 68.092,
+    "after_median_ms": 67.707,
+    "delta_percent": -0.56,
+    "stdout_equal": true
+   },
+   "map-int": {
+    "before_median_ms": 7.358,
+    "after_median_ms": 7.392,
+    "delta_percent": 0.46,
+    "stdout_equal": true
+   },
+   "map-string": {
+    "before_median_ms": 18.592,
+    "after_median_ms": 18.581,
+    "delta_percent": -0.06,
+    "stdout_equal": true
+   },
+   "map-string-book": {
+    "before_median_ms": 23.608,
+    "after_median_ms": 23.118,
+    "delta_percent": -2.07,
+    "stdout_equal": true
+   },
+   "set-string-churn": {
+    "before_median_ms": 33.117,
+    "after_median_ms": 34.314,
+    "delta_percent": 3.61,
+    "stdout_equal": true
+   },
+   "catalog-match": {
+    "before_median_ms": 13.539,
+    "after_median_ms": 13.549,
+    "delta_percent": 0.07,
+    "stdout_equal": true
+   },
+   "catalog-dotcall": {
+    "before_median_ms": 8.728,
+    "after_median_ms": 8.818,
+    "delta_percent": 1.03,
+    "stdout_equal": true
+   },
+   "catalog-interface": {
+    "before_median_ms": 12.552,
+    "after_median_ms": 13.019,
+    "delta_percent": 3.72,
+    "stdout_equal": true
+   },
+   "record-reference-copy": {
+    "before_median_ms": 7.745,
+    "after_median_ms": 7.607,
+    "delta_percent": -1.78,
+    "stdout_equal": true
+   },
+   "record-create": {
+    "before_median_ms": 18.472,
+    "after_median_ms": 18.442,
+    "delta_percent": -0.16,
+    "stdout_equal": true
+   },
+   "array-grow": {
+    "before_median_ms": 7.021,
+    "after_median_ms": 6.909,
+    "delta_percent": -1.59,
+    "stdout_equal": true
+   },
+   "array-reserved": {
+    "before_median_ms": 7.263,
+    "after_median_ms": 7.229,
+    "delta_percent": -0.48,
+    "stdout_equal": true
+   },
+   "bfs-int": {
+    "before_median_ms": 8.069,
+    "after_median_ms": 7.958,
+    "delta_percent": -1.37,
+    "stdout_equal": true
+   },
+   "bfs-record": {
+    "before_median_ms": 9.627,
+    "after_median_ms": 9.435,
+    "delta_percent": -1.99,
+    "stdout_equal": true
+   },
+   "catalog-pipeline": {
+    "before_median_ms": 31.133,
+    "after_median_ms": 30.594,
+    "delta_percent": -1.73,
+    "stdout_equal": true
+   },
+   "parse-result": {
+    "before_median_ms": 15.765,
+    "after_median_ms": 15.959,
+    "delta_percent": 1.23,
+    "stdout_equal": true
+   },
+   "insertion": {
+    "before_median_ms": 54.689,
+    "after_median_ms": 52.961,
+    "delta_percent": -3.16,
+    "stdout_equal": true
+   },
+   "heap-sort": {
+    "before_median_ms": 33.356,
+    "after_median_ms": 33.281,
+    "delta_percent": -0.23,
+    "stdout_equal": true
+   },
+   "stack": {
+    "before_median_ms": 9.88,
+    "after_median_ms": 10.101,
+    "delta_percent": 2.24,
+    "stdout_equal": true
+   },
+   "queue": {
+    "before_median_ms": 10.224,
+    "after_median_ms": 9.971,
+    "delta_percent": -2.47,
+    "stdout_equal": true
+   },
+   "min-heap": {
+    "before_median_ms": 53.993,
+    "after_median_ms": 52.567,
+    "delta_percent": -2.64,
+    "stdout_equal": true
+   },
+   "dsu": {
+    "before_median_ms": 30.838,
+    "after_median_ms": 30.731,
+    "delta_percent": -0.35,
+    "stdout_equal": true
+   },
+   "bfs": {
+    "before_median_ms": 72.39,
+    "after_median_ms": 71.774,
+    "delta_percent": -0.85,
+    "stdout_equal": true
+   },
+   "dijkstra": {
+    "before_median_ms": 44.223,
+    "after_median_ms": 44.957,
+    "delta_percent": 1.66,
+    "stdout_equal": true
+   },
+   "frequency-map": {
+    "before_median_ms": 30.308,
+    "after_median_ms": 30.259,
+    "delta_percent": -0.16,
+    "stdout_equal": true
+   },
+   "unique-set": {
+    "before_median_ms": 22.222,
+    "after_median_ms": 22.156,
+    "delta_percent": -0.29,
+    "stdout_equal": true
+   },
+   "rune-frequency": {
+    "before_median_ms": 23.029,
+    "after_median_ms": 20.741,
+    "delta_percent": -9.94,
+    "stdout_equal": true
+   }
+  }
+ },
+ "corpus_matrices": {
+  "previous_candidate": "benchmarks/results/perf26-c5-memo-anchors.md",
+  "this_candidate": "benchmarks/results/perf26-c7-rune-dense-anchors.md",
+  "compiler_sha256": "54e7a2d3ff696cf6e667f4b25784245aaa6adb6aa043ad0fc2ba67f707ba3f42",
+  "rows": 32,
+  "status": "passed",
+  "rune_frequency": {
+   "marimay_native_ms": 19.981,
+   "go_ms": 6.589,
+   "rust_ms": 6.599,
+   "ratio_go": 3.03
+  },
+  "note": "matrix-to-matrix deltas are dominated by a uniform 4-5% host drift this hour; the paired rows above are the primary numbers"
+ },
+ "mechanism": {
+  "change": "mmay_native_c_dense_scalar_stride returns sizeof(uint32_t) for MMAY_TYPE_RUNE",
+  "storage_kind": "MMAY_MANAGED_ARRAY_STORAGE_RAW32",
+  "stride_bytes": 4,
+  "runtime_files_changed": false,
+  "vm_path_already_dense": true
+ },
+ "rejected_neighbour": {
+  "mechanism": "inline short-key comparison instead of _platform_memcmp",
+  "probe": "tmp-perf26/probe_map.my",
+  "before_median_ms": 32.953,
+  "after_median_ms": 34.265,
+  "delta_percent": 3.98,
+  "aa_control_percent": -0.63,
+  "shipped": false
+ },
+ "correctness": {
+  "full_debug_suite": {
+   "total": 100,
+   "passed": 99,
+   "failed": [
+    "mmay_macos_package"
+   ],
+   "note": "the single failure is mmay_macos_package, a pre-existing compiler/runtime Mach-O architecture mismatch in the packaging test; it fails identically with the emitter clause stashed"
+  },
+  "asan_ubsan_labels": {
+   "tests": 6,
+   "passed": 6
+  },
+  "asan_ubsan_by_name": {
+   "tests": 20,
+   "passed": 20,
+   "filter": "c_unit|cp33"
+  },
+  "focused_emitter_test": {
+   "passes_with_change": true,
+   "fails_without_change": true
+  },
+  "corpus_checksums": "identical on all 32 rows"
+ },
+ "limitations": [
+  "No Tier 1 baseline, VM column or Bun column.",
+  "rune-frequency remains about 3.1x Go and open.",
+  "frequency-map and unique-set are unchanged; neither iterates []rune.",
+  "The matrix pair carries a 4-5% uniform host drift; only the paired rows are deltas."
+ ]
+}

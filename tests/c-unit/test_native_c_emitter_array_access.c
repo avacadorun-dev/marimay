@@ -233,8 +233,113 @@ static void mmay_test_native_access_case(
     mmay_mir_function_dispose(&function);
 }
 
+/* `rune` shares the dense RAW32 element storage of `u32`, so a rune element
+ * access must stay on the inline scalar path. Reading it through the validated
+ * array view instead used to cost a runtime call per element. */
+static bool mmay_test_native_rune_access_build(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol
+) {
+    MarimayMirRegister array_value = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister index = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister carrier = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister fetched = MMAY_MIR_NO_REGISTER;
+    MarimayMirArrayId array = MMAY_MIR_NO_ARRAY;
+    MarimayMirArrayConstructionId construction = MMAY_MIR_NO_ARRAY_CONSTRUCTION;
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirInstruction instruction;
+    memset(function, 0, sizeof(*function));
+    if (!mmay_mir_function_init(
+            function, mmay_system_allocator(), symbol, NULL, 0,
+            MMAY_TYPE_I64, mmay_mir_function_default_options()
+        ) || !mmay_mir_add_register(
+            function, MMAY_TEST_NATIVE_ACCESS_ARRAY_TYPE, &array_value
+        ) || !mmay_mir_add_register(function, MMAY_TYPE_I64, &index)
+        || !mmay_mir_add_register(
+            function, MMAY_TEST_NATIVE_ACCESS_ARRAY_TYPE, &carrier
+        ) || !mmay_mir_add_register(function, MMAY_TYPE_RUNE, &fetched)
+        || !mmay_mir_add_array(
+            function, MMAY_TEST_NATIVE_ACCESS_ARRAY_TYPE, MMAY_TYPE_RUNE, &array
+        ) || !mmay_mir_add_block(function, &block)
+        || !mmay_mir_add_array_construction(
+            function, array, NULL, 0, &construction
+        )) {
+        goto failure;
+    }
+    instruction = mmay_test_native_instruction(
+        MMAY_MIR_ARRAY_NEW, array_value, MMAY_MIR_NO_REGISTER,
+        MMAY_MIR_NO_REGISTER, 0, false, 41
+    );
+    instruction.array = array;
+    instruction.array_construction = construction;
+    if (!mmay_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = mmay_test_native_instruction(
+        MMAY_MIR_CONSTANT_I64, index, MMAY_MIR_NO_REGISTER,
+        MMAY_MIR_NO_REGISTER, 0, false, 42
+    );
+    if (!mmay_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = mmay_test_native_instruction(
+        MMAY_MIR_ARRAY_REQUIRE_INDEX, carrier, array_value, index,
+        0, false, 43
+    );
+    instruction.array = array;
+    instruction.span.end = 49;
+    if (!mmay_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = mmay_test_native_instruction(
+        MMAY_MIR_ARRAY_GET, fetched, carrier, index, 0, false, 50
+    );
+    instruction.array = array;
+    if (!mmay_mir_append_instruction(function, block, &instruction)
+        || !mmay_mir_set_terminator(
+            function, block, mmay_test_mir_return(index)
+        )) {
+        goto failure;
+    }
+    return true;
+
+failure:
+    mmay_mir_function_dispose(function);
+    return false;
+}
+
+static void mmay_test_native_rune_access_case(unsigned char symbol_byte) {
+    MarimayMirFunction function;
+    const MarimayMirFunction *functions[1];
+    MarimayNativeCProgram program;
+    MarimayOwnedBytes generated;
+    MarimaySymbolId symbol;
+    memset(&program, 0, sizeof(program));
+    memset(&generated, 0, sizeof(generated));
+    memset(&symbol, symbol_byte, sizeof(symbol));
+    MMAY_EXPECT(mmay_test_native_rune_access_build(&function, symbol));
+    MMAY_EXPECT(mmay_mir_verify(&function) == MMAY_MIR_VERIFY_OK);
+    functions[0] = &function;
+    program.functions = functions;
+    program.function_count = 1;
+    program.entry_symbol = symbol;
+    MMAY_EXPECT(mmay_native_c_emit_program(
+        &program, mmay_system_allocator(), mmay_native_c_emit_default_options(),
+        &generated
+    ) == MMAY_NATIVE_C_EMIT_OK);
+    MMAY_EXPECT(mmay_test_native_contains(
+        &generated, "mmay_managed_array_generated_get_scalar("
+    ));
+    MMAY_EXPECT(!mmay_test_native_contains(
+        &generated, "mmay_managed_array_view_get("
+    ));
+    mmay_owned_bytes_dispose(&generated);
+    mmay_mir_function_dispose(&function);
+}
+
 void mmay_test_native_c_emitter_array_access(void) {
     mmay_test_native_access_case(MMAY_TEST_NATIVE_ACCESS_DIRECT, 0xa1);
     mmay_test_native_access_case(MMAY_TEST_NATIVE_ACCESS_CHECKED_PROOF, 0xa2);
     mmay_test_native_access_case(MMAY_TEST_NATIVE_ACCESS_STATIC_PROOF, 0xa3);
+    mmay_test_native_rune_access_case(0xa4);
 }

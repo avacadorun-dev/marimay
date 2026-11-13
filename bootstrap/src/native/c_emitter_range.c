@@ -8,7 +8,11 @@ static size_t mmay_native_c_dense_scalar_stride(MarimayTypeId type) {
     if (type == MMAY_TYPE_I16 || type == MMAY_TYPE_U16) {
         return sizeof(uint16_t);
     }
+    /* `rune` is dense RAW32 with stride 4, exactly like `u32`; the scalar read
+     * and store emitters already convert it, so excluding it only forced rune
+     * element access through the validated runtime view call. */
     if (type == MMAY_TYPE_I32 || type == MMAY_TYPE_U32
+        || type == MMAY_TYPE_RUNE
         || type == MMAY_TYPE_F32) return sizeof(uint32_t);
     if (type == MMAY_TYPE_I64 || type == MMAY_TYPE_U64
         || type == MMAY_TYPE_F64) return sizeof(uint64_t);
