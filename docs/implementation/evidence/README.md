@@ -116,8 +116,9 @@ definition/usage errors, deterministic help, allocation, fuzz, and
 VM/native evidence. [CP38](cp38-bounded-typed-json-2026-09-01.md) supplies
 explicit bounded codecs, privacy, hostile-input, allocation, sustained-fuzz,
 sanitizer, and VM/native evidence. None of these reports closes CLI0 or any
-parent product gate. The user-prioritized CP42 is now the sole in-progress
-checkpoint; CP39–CP42 must each add completion evidence.
+parent product gate. The user-prioritized CP42 is the most recently verified
+checkpoint (2026-11-13); CP41 is `ready` and CP39–CP40 must each add completion
+evidence.
 
 ## CP42
 
@@ -659,6 +660,21 @@ same two calls measures 25.8 ns per pair, so the generated code is not the gap.
 The ranked next hypothesis is a fused collection update for the adjacent
 get-then-put idiom at 8-10 ns per pair, a MIR-level pass that needs its own
 decision (D127).
+
+[The prepared 0.2.0-alpha.4 package, validated locally](alpha4-package-validation-2026-11-13.md)
+builds the portable arm64 distribution at compiler `9cc2a41` and checks what a
+prepared asset set can honestly be checked for without a system installation:
+every checksum sibling, the installed prefix inventory and hashes, the relocated
+archive prefix (1371 files, provenance revision pinned), the archive and source
+inventories, and the flat component package whose payload is the same 1372-file
+set as the archive with identifier `org.marimay.mmay.0.2.0-alpha.4`,
+`install-location` `/usr/local/lib/marimay/0.2.0-alpha.4`, minimum macOS 15.0 and
+the three installer scripts. The compiler runs from the relocated prefix —
+`version --json`, `fmt --check`, `check`, `test --engine both`, `run` and a native
+build all pass — and `pkgutil --check-signature` reports `no signature`, the
+documented unsigned state. The real Installer gate needs an ephemeral runner and
+is a publication precondition, so it did not run; nothing was tagged, uploaded or
+signed.
 
 [Startup budget re-check](cp42-startup-budget-recheck-2026-11-11.md) runs both
 applications' own measurement harnesses at release compiler `4bf2885`: the small

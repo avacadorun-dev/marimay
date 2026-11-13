@@ -196,7 +196,7 @@ foreach(required_file IN ITEMS
     "${installed_metadata}"
     "${installed_docs}/README.md"
     "${installed_docs}/docs/known-limitations.md"
-    "${installed_docs}/docs/releases/0.1.0-alpha.3.md"
+    "${installed_docs}/docs/releases/${MMAY_TEST_VERSION}.md"
     "${installed_docs}/docs/implementation/cli0-closure-matrix.tsv")
   if(NOT EXISTS "${required_file}")
     message(FATAL_ERROR "CP29 installed file missing: ${required_file}")

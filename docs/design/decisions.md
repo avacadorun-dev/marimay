@@ -4599,3 +4599,35 @@ decision, `#26` closes with these three exits, and `word-frequency` stays above 
 2.0x Go target under issue #3, which keeps its own tracker. Reversal: a new
 decision that adopts the fused update supersedes the debt verdict for these rows
 without changing this record.
+
+## D128 — Publish the fourth experimental macOS alpha
+
+Status: accepted (repository-owner direction, 2026-11-13; issue #28).
+
+The owner authorizes the next GitHub prerelease `v0.2.0-alpha.4` in the D114
+experimental-alpha sequence. Compiler, runtime and shipped standard-library
+versions move from `0.1.0-alpha.3` to `0.2.0-alpha.4`; the channel remains
+`experimental-alpha`, the claim remains `local-checker-backed-slice`, and
+`publicationReady` remains `false`. The version crosses a minor digit because
+this slot changes what the alpha contains as a whole — a re-measured startup
+budget, a pinned reference application and a performance timebox with recorded
+debt — not because any language or wire contract changed. `0.1-design` stays the
+selected language version, and no bytecode format becomes public.
+
+Published `v0.1.0-alpha.3` assets stay immutable per D114. This alpha publishes
+the CP42 closure: the ten-application portfolio coverage matrix with a
+disposition for every finding (#24), the D125 startup-budget redefinition with
+its same-host baseline (#25), the reference slice pinned in the reference-slice
+contract and built from a clean public checkout by the `reference-slice` CI job
+(#27), and the bounded performance timebox (#26), whose outcome is two paired
+improvements — `word-frequency` −34.4% and `rune-frequency` −9.94% — and two
+accepted debts recorded by D127 (`frequency-map`, `unique-set`). No performance
+number in this record applies to a row the paired runs did not cover, and
+`word-frequency` stays above its 2.0x Go target under issue #3.
+
+Nothing here promotes CLI0, CP41, CP39 or CP40, or closes N0; D123 keeps N0
+outside the bounded CLI claim. The release workflow contract, portable installed
+macOS policy, package layout, receipt identity rules and security review
+obligations are unchanged from D114. Publication requires the owner's explicit
+authorization and an exact-tag workflow pass; preparing the contract, the
+changelog and a locally validated package is not publication.

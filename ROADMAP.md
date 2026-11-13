@@ -1,7 +1,7 @@
 # Roadmap
 
 Status: release ladder and working agreement.
-Last revision: 2026-11-10, after `0.1.0-alpha.3`.
+Last revision: 2026-11-13, after CP42 closed and `0.2.0-alpha.4` was prepared.
 
 Three sources answer three different questions, and none of them answers another:
 
@@ -20,7 +20,7 @@ is right about the next step and the ledger is stale — fix both in one commit.
 | Slot | Scope (exit criterion) | Due | State |
 |---|---|---|---|
 | `0.1.0-alpha.3` | Experimental macOS alpha. `publicationReady: false`, claim `local-checker-backed-slice`. | shipped 2026-11-10 | done |
-| [`0.2.0-alpha.4`](https://github.com/marimay-lang/marimay/milestone/2) | **CP42 closed**: portfolio coverage matrix with a disposition for every finding, startup budgets met or re-budgeted, one bounded perf timebox, canonical notes program in CI. | 2027-02-28 | active |
+| [`0.2.0-alpha.4`](https://github.com/marimay-lang/marimay/milestone/2) | **CP42 closed**: portfolio coverage matrix with a disposition for every finding, startup budgets met or re-budgeted, one bounded perf timebox, canonical notes program in CI. Contract, changelog, limitations and a locally validated package are prepared ([release notes](docs/releases/0.2.0-alpha.4.md), D128); publication awaits owner authorization. | 2027-02-28 | prepared 2026-11-13 |
 | [`0.3.0-alpha.5`](https://github.com/marimay-lang/marimay/milestone/3) | **CLI0**: CP41 x86_64 pressure, CP39 clean-host install, CP40 publication audit, plus the N0 and E0 decisions. | 2027-06-14 | next |
 | [`0.4.0-alpha.6`](https://github.com/marimay-lang/marimay/milestone/4) | **I6 slice**: typed JSON/config -> concurrent HTTP fan-out -> timeout/race/cancel -> `defer` cleanup -> deterministic VM/native trace. Cards #14-#22, parked until entry. | 2028-02-29 (provisional) | parked |
 | E0 | **Agent pilot** per D124: three independent sessions on two platforms, zero undocumented steps, gate report. Replaces the five-developer bar; human ergonomics stay explicitly unproven. | — | entry: alpha.6 closed |

@@ -367,10 +367,11 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP42
 
 The verification sequence is linear with exactly one active checkpoint. CP29
-through CP38 are `verified`; CP42 is `in-progress`, and CP41 plus CP39–CP40
-remain `planned` behind their declared predecessors. The user's 2026-09-05
-priority change makes execution order CP42, CP41, CP39, then CP40;
-numeric order does not override those explicit dependencies.
+through CP38 and CP42 are `verified`; CP41 is `ready` and CP39–CP40 remain
+`planned` behind their declared predecessors. The user's 2026-09-05 priority
+change made the execution order CP42, CP41, CP39, then CP40; CP42 closed on
+2026-11-13, so CP41 is next, and numeric order does not override those explicit
+dependencies.
 
 ### Accepted CLI0 execution route
 
@@ -1512,7 +1513,8 @@ the focused I6 planning audit assigns CP42+.
 
 ## CP41 - x86_64 native code-generation pressure
 
-State: `planned`. Parent gate: I4. Predecessor: CP42. Evidence scope: `pushed-ci`.
+State: `ready`. Parent gate: I4. Predecessor: CP42 (verified 2026-11-13).
+Evidence scope: `pushed-ci`.
 Trigger evidence:
 [CP41 x86_64 code-generation trigger](evidence/cp41-x86-codegen-trigger-2026-08-24.md).
 
@@ -1670,14 +1672,21 @@ the first atomic I6 card remains CP43 or later.
 
 ## CP42 - Notes-driven CLI ergonomics
 
-State: `in-progress`. Parent gate: CLI0. Predecessor: CP38. Evidence scope: `local`.
+State: `verified`. Parent gate: CLI0. Predecessor: CP38. Evidence scope: `local`.
+Closed 2026-11-13 on the alpha.4 acceptance contract: the coverage matrix with a
+disposition for every finding (#24), the re-budgeted startup rows (#25, D125),
+the pinned reference slice and its CI job (#27), and the bounded perf timebox
+with three exits (#26, D127). The `0.2.0-alpha.4` release is prepared under D128
+and is not published; publication needs explicit owner authorization and an
+exact-tag workflow pass, and promotes no product gate.
 
 Portfolio coverage and dispositions are recorded in
 [the matrix](evidence/cp42-portfolio-matrix-2026-11-11.md): 51 source tests and
 312 process cases across the ten applications at compiler `9139cca`, on both
-engines, with a disposition for every finding. That closes the coverage item;
-startup budgets, the perf timebox, the canonical program and the release stay
-open.
+engines, with a disposition for every finding. The startup budgets, the perf
+timebox, the canonical program and the release followed; all five queue items
+are delivered as of 2026-11-13, the last one as a prepared contract that is not
+published.
 
 ### Alpha.4 closure queue (owner-accepted 2026-11-10)
 
@@ -1791,8 +1800,12 @@ release slot:
    [run](https://github.com/marimay-lang/marimay/actions/runs/42877531917/job/130047390041) passed in 84 s with 36 process cases and 21 closed-pipe checks. `known-limitations.md` and the draft alpha.4
    contract state what it does and does not exercise, so the supported slice is
    no longer described only by exclusions.
-5. **Release (#28).** Finish the draft `0.2.0-alpha.4` contract and changelog,
-   regenerate the limitations, package and publish; no CLI0 claim.
+5. **Release (#28).** Prepared 2026-11-13 under D128: the draft contract became
+   `docs/releases/0.2.0-alpha.4.md` with the slot's changelog, the limitations are
+   regenerated for the new version, the release contract gate and its fixtures
+   follow the version, and a checksummed macOS package is built and validated
+   locally. Publication still needs the owner's explicit authorization and an
+   exact-tag workflow pass; no CLI0 claim follows.
 
 The slot assumes the owner's stated capacity of ~5 h/week, is due 2027-02-28,
 and moves only together with a written note. At most two issues carry the `now`
@@ -1837,6 +1850,8 @@ failures and continuing check/run/build/test close this diagnostic removal gap.
 The conservative precision boundary remains explicit; full CP42/Tier 1
 acceptance is still open.
 Reference slice: [pinned application, derived profile and CI job](evidence/cp42-reference-slice-2026-11-11.md).
+Timebox exit, last two rows: [rune dense scalars](evidence/cp42-rune-dense-scalar-2026-11-13.md) and
+[the scalar-keyed collection debt](evidence/cp42-collection-rows-debt-2026-11-13.md) (D127, D128).
 The stateful wave implements the remaining delimited/source-lint apps locally:
 [evidence](evidence/cp42-stateful-2026-09-09.md). All ten now have implementations.
 Shared RPO and selected-range copying fixes preserve D058/D076. The first-native,

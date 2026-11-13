@@ -1,6 +1,6 @@
-# Marimay 0.1.0-alpha.3 known limitations
+# Marimay 0.2.0-alpha.4 known limitations
 
-Version: `0.1.0-alpha.3`
+Version: `0.2.0-alpha.4`
 
 Channel: `experimental-alpha`
 
@@ -12,7 +12,7 @@ This field records incomplete CLI0/CP40 readiness. The owner separately
 authorized D114's bounded experimental macOS prerelease; neither authorization
 nor publication promotes a product milestone.
 
-Standard library: `0.1.0-alpha.3`, scope `bounded-preview`, compatibility
+Standard library: `0.2.0-alpha.4`, scope `bounded-preview`, compatibility
 `alpha-source`
 
 Bytecode: `unavailable`, compatibility `none`
@@ -143,6 +143,27 @@ a workaround or a bounded scope. None of them is a silent exclusion.
   code-signing validation, measured with a trivial C program — so the budget row
   reports 5-11 ms of application startup and carries the first-execution number
   beside the baseline it must be compared with.
+- **`word-frequency` is still about 4.3x its Go column, above the 2.0x target.**
+  The 2026-11-11 to 2026-12-09 timebox took it from 130.70 ms to 85.73 ms
+  (-34.4%) and closed with recorded debt instead of an extension; the remaining
+  map work is what D127's fused-update hypothesis would address. Tracked as
+  issue #3.
+- **Two scalar-keyed collection rows are the slowest per operation in the
+  catalogue.** `frequency-map` and `unique-set` exit the timebox as accepted debt
+  under D127: measured at corpus size with the corpus call shape, an `int`-keyed
+  get+put pair costs 23.9 ns and a `Set<int>` insertion 16.4 ns, which is 81% and
+  74% of those rows, and an isolated C replication of the same calls costs
+  25.8 ns per pair, so the gap is in the collection implementation rather than
+  in generated code. A fused collection update (8-10 ns per pair of the
+  get-then-put idiom) is the named hypothesis and needs its own decision, a MIR
+  pass and a new runtime entry point. Evidence:
+  [collection-row debt](implementation/evidence/cp42-collection-rows-debt-2026-11-13.md).
+- **The bytecode decoder accepts a non-canonical integer encoding and
+  re-encoding writes the canonical form**, so `encode(decode(x))` differs from
+  `x` in one byte for such an input; the fuzz round-trip invariant is the only
+  thing that notices. No memory-safety finding accompanies it, both operations
+  report success, and bytecode remains `unavailable` as a public wire format.
+  This defect predates the current alpha and is tracked as issue #46.
 
 ## Publication blockers
 

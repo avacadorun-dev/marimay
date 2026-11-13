@@ -88,48 +88,25 @@ cache-independence, and VM/native process gates are verified.
 Release slots are GitHub milestones; this section names the slot each checkpoint
 belongs to. The milestone description carries the exit criteria and the date.
 
-- **Now — `0.2.0-alpha.4`, due 2027-02-28:**
+- **Now — `0.2.0-alpha.4`, due 2027-02-28, prepared 2026-11-13:**
   [CP42 — notes-driven CLI ergonomics](checkpoints.md#cp42-notes-driven-cli-ergonomics)
-  closes. All ten portfolio applications are implemented; what remains is
-  acceptance work, not features. The coverage matrix with a disposition for every
-  finding (#24) is delivered, startup budgets are met or re-budgeted (#25), and
+  is `verified` and the slot's content is finished; what remains is the owner's
+  publication decision. The coverage matrix with a disposition for every finding
+  (#24) is delivered, the startup budgets are met or re-budgeted by D125 (#25),
   the reference slice is pinned, derived and built from a clean checkout in CI
-  (#27). What is left is one bounded perf timebox for `frequency-map` /
-  `unique-set` / `rune-frequency` and #3 (#26), then the release (#28). The
-  timebox runs from 2026-11-11 to a hard stop on 2026-12-09 and opened with
-  [a measured decomposition](evidence/cp42-perf-timebox-2026-11-11.md): each of
-  the four rows now has a per-row floor and a ranked hypothesis instead of the
-  open-ended September wave. Four candidates have landed since: the
-  [one-owner separator search](evidence/cp42-split-separator-search-2026-11-11.md)
-  took `word-frequency` 27.0% (6.68x to 5.06x its Go column), the
-  [single-allocation enum](evidence/cp42-enum-single-allocation-2026-11-11.md)
-  took the split probe a further 8.98% while correcting the timebox's cost model
-  from "per-call scaffolding" to "per-object allocation and sweep, ten
-  allocations per call", the
-  [released-object pool](evidence/cp42-released-object-pool-2026-11-11.md) was
-  measured across three retention policies and not adopted because the row never
-  collects, and
-  [one validation and one resolution per string-keyed lookup](evidence/cp42-string-key-lookup-2026-11-11.md)
-  took the map probe 12.43% and the row 5.92% with the checksums unchanged, and
-  [a memo that survives the read-modify-write pair](evidence/cp42-string-key-lookup-memo-2026-11-11.md)
-  took the map probe a further 10.06% and the row 2.77%, putting `word-frequency`
-  at 85.73 ms, −34.4% since the timebox opened, and
-  [a rune array element is a dense scalar](evidence/cp42-rune-dense-scalar-2026-11-13.md)
-  took the first collection row, `rune-frequency`, 9.94% (23.03 → 20.74 ms) by
-  letting the emitter use the inline element read its storage already allowed,
-  with the same step measuring and rejecting an inline short-key comparison as
-  3.98% slower than the platform `memcmp`. The last two rows,
-  [the scalar-keyed collection rows](evidence/cp42-collection-rows-debt-2026-11-13.md),
-  exit as accepted debt under D127: with probes matching the corpus call shape a
-  `Map<int,int>` get+put pair measures 23.9 ns and a `Set<int>` insertion 16.4 ns,
-  81% and 74% of those rows, and the next hypothesis - a fused collection update
-  at 8-10 ns per pair - is a MIR-level pass with its own decision, so the timebox
-  closes with three exits and nothing further enters the alpha line without a new
-  decision. `word-frequency` stays above its 2.0× Go target under #3. The
-  stale
-  sentence about finishing the mutable-capture warning and the delimited /
-  source-lint applications was already delivered on 2026-09-09 (D103,
-  `cp42-stateful-2026-09-09.md`) and no longer describes the next step.
+  (#27), and the bounded perf timebox closed on 2026-11-13 (#26) with three
+  exits: `word-frequency` −34.4% (130.70 → 85.73 ms, ~4.3x Go), `rune-frequency`
+  −9.94% (23.03 → 20.74 ms, ~3.1x Go) and
+  [the two scalar-keyed collection rows](evidence/cp42-collection-rows-debt-2026-11-13.md)
+  as accepted debt under D127 — a `Map<int,int>` get+put pair measures 23.9 ns
+  and a `Set<int>` insertion 16.4 ns at the corpus call shape, 81% and 74% of
+  those rows, with a fused collection update named as the next hypothesis and no
+  further perf candidate allowed into the alpha line without a new decision.
+  `word-frequency` therefore stays above its 2.0x Go target under #3, which keeps
+  its own tracker. The release contract, changelog, regenerated limitations and a
+  locally validated package are in place under D128
+  ([0.2.0-alpha.4](../releases/0.2.0-alpha.4.md)); publication needs the owner's
+  explicit authorization and an exact-tag workflow pass, and promotes no gate.
 - **Next — `0.3.0-alpha.5`, due 2027-06-14:** CP41 x86_64 native code-generation
   pressure (#29), CP39 clean-host installation (#30), CP40 publication audit
   (#31), plus the N0 identity decision (#32) and the E0 gate decision (#33).
@@ -210,7 +187,7 @@ authorization. These are never synonyms.
 | I3 | Typed bytecode VM | `in-progress` | `pushed-ci` | Portable public bundles and the full hostile-verifier/fuzz/limit gate remain open. | Every opcode and required bundle boundary passes verifier/execution/fuzz/limit tests and MIR/VM differential on Tier 1; [evidence](evidence/README.md#i3). |
 | I4 | C17 AOT and equivalence | `in-progress` | `pushed-ci` | Native run/install/doctor, the full compiler/platform differential matrix, and the measured x86_64 code-pressure gap remain open. | CP39 and CP41 plus complete O0/O2 Clang/GCC/MSVC sanitizer and engine-equivalence evidence meet the I4 gate; [CP41](checkpoints.md#cp41-x86_64-native-code-generation-pressure). |
 | I5 | Managed data and standard core | `in-progress` | `pushed-ci` | The CP30–CP38 bounded CLI data surface is verified, but remaining managed-heap/property/GC/workload and claimed-platform gates are open. | Those remaining gates close with VM/native and claimed-platform evidence; [CP38 evidence](evidence/cp38-bounded-typed-json-2026-09-01.md). |
-| CLI0 | Bounded public CLI alpha | `planned` | `none` | The CP42 perf timebox and the alpha release, then CP41 and CP39–CP40, remain open. N0 is excluded from this claim by D123. | CP29–CP42 are verified, the claimed platform gates are closed, the CP40 audit supports only the bounded CLI claim, and the contract states the D123 residual risk. |
+| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP41 and CP39–CP40 remain open, and the prepared `0.2.0-alpha.4` release waits for the owner's publication authorization (D128). N0 is excluded from this claim by D123. | CP29–CP42 are verified, the claimed platform gates are closed, the CP40 audit supports only the bounded CLI claim, and the contract states the D123 residual risk. |
 | I6 | Direct-style tasks, scheduler, and I/O | `planned` | `none` | CLI0 and CP41 precede the executable I6 prototype. | Suspension, scope/task lifetime, cancellation, race/select, non-blocking I/O, and deterministic VM/native traces pass the defined vertical scenario. |
 | E0 | Pre-self-host ergonomics pilot | `planned` | `none` | A working I6 vertical slice is unavailable. | Under D124: three independent agent sessions on at least two platforms follow [the pilot protocol](pilot-protocol.md) with zero undocumented steps, and the gate report separates what was proven from what was not. |
 | I7 | Packages, cache, and supply chain | `planned` | `none` | N0 and external semantic feedback are not verified. | Deterministic offline lock/cache, hostile archive, provenance, and registry-prototype gates pass without dependency code execution. |
@@ -259,9 +236,11 @@ self-hosting.
 CP28 is the fixed algorithm/performance integration boundary. CP29 established
 the release contract and closure matrix for N0, A0, I0, I1, and the applicable
 I2–I5 slices. That matrix assigns missing evidence; it does not mark those gates
-verified. CP38 is verified. The user's 2026-09-05 priority change inserts CP42
-before CP41; CP42 is the sole in-progress card. CP42 must not be called verified
-on the strength of its initial automatic-JSON slice alone.
+verified. CP38 is verified. The user's 2026-09-05 priority change inserted CP42
+before CP41; CP42 closed on 2026-11-13 on its complete acceptance contract — the
+portfolio matrix with a disposition for every finding, the re-budgeted startup
+rows, the pinned reference slice and the bounded timebox with recorded debt —
+not on its initial automatic-JSON slice, and CP41 is now the `ready` checkpoint.
 The user's 2026-09-06 extension requires the complete
 [external CLI portfolio](cli-ergonomics-suite.md) before CP42/CLI0 closure.
 Useful applications, combined coverage and resolved ergonomics findings are

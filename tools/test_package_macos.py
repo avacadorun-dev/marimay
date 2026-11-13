@@ -32,7 +32,7 @@ SMOKE_LOADER = importlib.machinery.SourceFileLoader("macos_install_gate", str(TO
 SMOKE_SPEC = importlib.util.spec_from_loader(SMOKE_LOADER.name, SMOKE_LOADER)
 SMOKE = importlib.util.module_from_spec(SMOKE_SPEC)
 SMOKE_LOADER.exec_module(SMOKE)
-VERSION = "0.1.0-alpha.3"
+VERSION = "0.2.0-alpha.4"
 ARCH = "arm64"
 
 
